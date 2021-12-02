@@ -141,11 +141,11 @@ Definition Rseq (n m : R) : list R :=
 
 Lemma Rseq0 (n : R) : Rnat n -> Rseq n 0 = nil.
 Proof.
+intros [n' nnat].
 assert (exv : exists v, Rseq_Prop n 0 v).
-  exists nil; intros n' z nn'.
+  exists (map INR (seq n' 0)); intros n2 z nn2.
   change 0 with (INR 0); intros z0; apply INR_eq in z0.
   now rewrite <- z0.
-intros [n' nnat].
 exact (epsilon_spec (inhabits nil)
              (Rseq_Prop n 0)
              exv n' 0%nat nnat refl_equal).
@@ -253,12 +253,15 @@ Lemma sumr_seq (n : R) : Rnat n -> sumr (Rseq 0 n) = n * (n - 1) / 2.
 Proof.
 intros nnat; induction nnat using Rnat_ind.
   rewrite Rseq0; try apply Rnat0; simpl.
+  (* field. can finish here. *)
   now unfold Rdiv; rewrite !Rmult_0_l.
 rewrite Rseq_app; try (apply Rnat0 || apply Rnat1 || assumption).
-rewrite sumr_app, IHnnat.
+rewrite sumr_app.
+rewrite IHnnat.
 replace 1 with (0 + 1) at 2 by now rewrite Rplus_0_l.
 rewrite Rseq_S;[ | apply Rnat_add | ]; try apply Rnat0; auto.
 rewrite Rseq0; simpl.
+  (*  field. can finish here. *)
   rewrite Rplus_0_l.
   rewrite Rplus_0_r.
   unfold Rminus at 2.
@@ -281,6 +284,7 @@ rewrite Rseq0; simpl.
     reflexivity.
   (* The next line needs more thinking *)
   lra.
+  (* end of the proof done by field. *)
 repeat apply Rnat_add; auto; apply Rnat0 || apply Rnat1.
 Qed.
 
