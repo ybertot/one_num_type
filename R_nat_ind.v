@@ -1,4 +1,4 @@
-Require Import Reals ClassicalEpsilon Lia Lra List.
+Require Import Wf Reals ClassicalEpsilon Lia Lra List.
 
 Open Scope R_scope.
 
@@ -130,6 +130,89 @@ rewrite !Rnat_iterS; auto.
 now apply Rnat_add.
 Qed.
 
+Definition Rseq_Prop (n m : R) (v : list R) :=
+  forall n' m' : nat, n = INR n' -> m = INR m' ->
+              v = map (fun e => IZR (Z.of_nat e)) (seq n' m').
+
+Definition Rseq (n m : R) : list R :=
+  epsilon (inhabits nil) (Rseq_Prop n m).
+
+(* The next two lemmas reproduce the reduction rules of Coq.Lists.List.seq *)
+
+Lemma Rseq0 (n : R) : Rnat n -> Rseq n 0 = nil.
+Proof.
+assert (exv : exists v, Rseq_Prop n 0 v).
+  exists nil; intros n' z nn'.
+  change 0 with (INR 0); intros z0; apply INR_eq in z0.
+  now rewrite <- z0.
+intros [n' nnat].
+exact (epsilon_spec (inhabits nil)
+             (Rseq_Prop n 0)
+             exv n' 0%nat nnat refl_equal).
+Qed.
+
+Lemma Rseq_S (n m : R) : Rnat n -> Rnat m ->
+  Rseq n (m + 1) = n :: (Rseq (n + 1) m).
+Proof.
+intros [n' nnat] [m' mnat].
+assert (exv1 : exists v, Rseq_Prop (n + 1) m v).
+  exists (map (fun e => IZR (Z.of_nat e)) (seq (S n') m')).
+  intros n'' m''; rewrite nnat, mnat; intros nnat' mnat'.
+  rewrite <- S_INR in nnat'.
+  now apply INR_eq in nnat', mnat'; rewrite <- nnat', mnat'.
+assert (exv2 : exists v, Rseq_Prop n (m + 1) v).
+  exists (map (fun e => IZR (Z.of_nat e)) (seq n' (S m'))).
+  intros n'' m''; rewrite nnat, mnat, <- S_INR; intros nnat' mnat'.
+  now apply INR_eq in nnat', mnat'; rewrite <- nnat', mnat'.
+assert (m1nat : m + 1 = INR (S m')) by now rewrite mnat, <- S_INR.
+assert (n1nat : n + 1 = INR (S n')) by now rewrite nnat, <- S_INR.
+assert (tmp := epsilon_spec (inhabits nil) _ exv2 n' (S m') nnat m1nat).
+assert (tmp2 := epsilon_spec (inhabits nil) _ exv1 (S n') m' n1nat mnat).
+unfold Rseq; rewrite tmp, tmp2; simpl.
+now rewrite <- INR_IZR_INZ, nnat.
+Qed.
+
+
+(* This is the translation of theorem seq_app; most of the work is
+  automatic. *)
+Lemma Rseq_app (n m p : R) : Rnat n -> Rnat m -> Rnat p ->
+  Rseq n (m + p) = (Rseq n m) ++ Rseq (n + m) p.
+intros [n' nnat] [m' mnat] [p' pnat].
+assert (exv1 : exists v, Rseq_Prop n (m + p) v).
+  exists (map (fun e => IZR (Z.of_nat e)) (seq n' (m' + p'))).
+  intros n'' mp''; rewrite nnat, mnat, pnat; intros nnat' mpnat'.
+  rewrite <- plus_INR in mpnat'.
+  now apply INR_eq in nnat', mpnat'; rewrite <- nnat', mpnat'.
+assert (exv2 : exists v, Rseq_Prop n m v).
+  exists (map (fun e => IZR (Z.of_nat e)) (seq n' m')).
+  intros n'' m''; rewrite nnat, mnat; intros nnat' mnat'.
+  now apply INR_eq in nnat', mnat'; rewrite <- nnat', mnat'.
+assert (exv3 : exists v, Rseq_Prop (n + m) p v).
+  exists (map (fun e => IZR (Z.of_nat e)) (seq (n' + m') p')).
+  intros n'' m''; rewrite nnat, mnat, pnat; intros nmnat' mnat'.
+  rewrite <- plus_INR in nmnat'.
+  now apply INR_eq in nmnat', mnat'; rewrite <- nmnat', mnat'.
+assert (mpnat : m + p = INR (m' + p')) by now rewrite mnat, pnat, plus_INR.
+assert (nmnat : n + m = INR (n' + m')) by now rewrite nnat, mnat, plus_INR.
+assert (tmp1 :=
+   epsilon_spec (inhabits nil) _ exv1 n' (m' + p')%nat nnat mpnat).
+assert (tmp2 :=
+   epsilon_spec (inhabits nil) _ exv2 n' m' nnat mnat).
+assert (tmp3 :=
+   epsilon_spec (inhabits nil) _ exv3 (n' + m')%nat p' nmnat pnat).
+now unfold Rseq; rewrite tmp1, tmp2, tmp3, seq_app, map_app.
+Qed.
+
+Example seq14 : Rseq 1 4 = 1 :: 2 :: 3 :: 4 :: nil.
+Proof.
+assert (i4 : 4 = INR 4) by now rewrite INR_IZR_INZ.
+assert (exv : exists v, Rseq_Prop 1 4 v).
+  exists (map (fun e => IZR (Z.of_nat e))(seq 1 4)).
+  intros n' m'; change 1 with (INR 1); rewrite i4.
+  now intros n'1 m'4; apply INR_eq in n'1, m'4; rewrite <- n'1, m'4.
+exact (epsilon_spec (inhabits nil) (Rseq_Prop 1 4) exv 1%nat _ refl_equal i4).
+Qed.
+
 Definition increase_list (l : list R) :=
   match l with nil => 0::nil | a :: tl => (a + 1) :: l end.
 
@@ -157,6 +240,49 @@ Qed.
 
 Fixpoint sumr (l : list R) : R :=
   match l with nil => 0 | a :: tl => a + sumr tl end.
+
+Lemma sumr_app (l1 l2 : list R) :
+  sumr (l1 ++ l2) = sumr l1 + sumr l2.
+Proof.
+induction l1 as [ | a l1 Ih].
+  now simpl; rewrite Rplus_0_l.
+now simpl; rewrite Ih, Rplus_assoc.
+Qed.
+
+Lemma sumr_seq (n : R) : Rnat n -> sumr (Rseq 0 n) = n * (n - 1) / 2.
+Proof.
+intros nnat; induction nnat using Rnat_ind.
+  rewrite Rseq0; try apply Rnat0; simpl.
+  now unfold Rdiv; rewrite !Rmult_0_l.
+rewrite Rseq_app; try (apply Rnat0 || apply Rnat1 || assumption).
+rewrite sumr_app, IHnnat.
+replace 1 with (0 + 1) at 2 by now rewrite Rplus_0_l.
+rewrite Rseq_S;[ | apply Rnat_add | ]; try apply Rnat0; auto.
+rewrite Rseq0; simpl.
+  rewrite Rplus_0_l.
+  rewrite Rplus_0_r.
+  unfold Rminus at 2.
+  rewrite Rplus_assoc.
+  rewrite Rplus_opp_r.
+  rewrite Rplus_0_r.
+  replace k with ((2 * k) / 2) at 3.
+    rewrite <- Rdiv_plus_distr.
+    rewrite (Rmult_comm k).
+    rewrite <- Rmult_plus_distr_r.
+    unfold Rminus; rewrite Rplus_assoc.
+    (* The next line needs more thinking. *)
+    replace (-(1) + 2) with 1 by ring.
+    reflexivity.
+  unfold Rdiv.
+  rewrite (Rmult_comm 2).
+  rewrite Rmult_assoc.
+  rewrite Rinv_r.
+    rewrite Rmult_1_r.
+    reflexivity.
+  (* The next line needs more thinking *)
+  lra.
+repeat apply Rnat_add; auto; apply Rnat0 || apply Rnat1.
+Qed.
 
 Definition rev_iota (n : R) := Rnat_iter n increase_list nil.
 
