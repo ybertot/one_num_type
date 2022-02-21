@@ -413,3 +413,18 @@ simpl in IHnnat |- *.
 rewrite IHnnat.
 intros k'k; rewrite k'k; field.
 Qed.
+
+Fact Rseq_example : Rseq 0 5 = [0; 1; 2; 3; 4].
+Proof.
+assert (nat0 : Rnat 0) by now exists 0%nat.
+assert (nat4 : Rnat 4) by now exists 4%nat; simpl; ring.
+change 5%Z with (((((0 + 1) + 1) + 1)+ 1) + 1)%Z;
+ rewrite !plus_IZR, !Rseq_S, Rseq0;
+ repeat (apply Rnat_add || apply Rnat1 || apply Rnat0).
+rewrite <- ! plus_IZR; simpl.
+reflexivity.
+Qed.
+
+Notation "'\big[' f / idf ]_( a <= i < b ) E" :=
+  (fold_left (fun v e => f v E) (Rseq a b))
+(at level 35, E at level 36, f, idf at level 10, i at level 0, right associativity).
