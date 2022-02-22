@@ -1,8 +1,31 @@
-Require Import Wf Reals ClassicalEpsilon Lia Lra List.
+Require Import Reals ClassicalEpsilon Lia Lra List.
+
+Import ListNotations.
 
 Open Scope R_scope.
 
 Definition Rnat (x : R) := exists n, x = INR n.
+
+Definition Rnat' (x : R) := exists z, x = IZR z /\ (0 <= z)%Z.
+
+Lemma Rnat_to_Rnat' r : Rnat r <-> Rnat' r.
+Proof.
+split; intros [w pw].
+  exists (Z.of_nat w).
+  split; [now rewrite pw; apply INR_IZR_INZ | ].
+  apply Zle_0_nat.
+exists (Z.to_nat w).
+rewrite INR_IZR_INZ, Z2Nat.id; tauto.
+Qed.
+
+Lemma Rnat_IZR z : (0 <= z)%Z -> Rnat (IZR z).
+Proof.
+intros znn; rewrite Rnat_to_Rnat'.
+now unfold Rnat'; eapply ex_intro;split; [eapply eq_refl | ].
+Qed.
+
+#[export]
+Hint Extern 1 (Rnat (IZR _)) => (now apply Rnat_IZR; discriminate) : core.
 
 Lemma Rnat_ind (n : R) (P : R -> Prop) :
   P 0 ->
@@ -203,14 +226,29 @@ assert (tmp3 :=
 now unfold Rseq; rewrite tmp1, tmp2, tmp3, seq_app, map_app.
 Qed.
 
-Example seq14 : Rseq 1 4 = 1 :: 2 :: 3 :: 4 :: nil.
+Lemma INR_IZN x : (0 <= x)%Z -> IZR x = INR (Z.to_nat x).
 Proof.
-assert (i4 : 4 = INR 4) by now rewrite INR_IZR_INZ.
-assert (exv : exists v, Rseq_Prop 1 4 v).
-  exists (map (fun e => IZR (Z.of_nat e))(seq 1 4)).
-  intros n' m'; change 1 with (INR 1); rewrite i4.
-  now intros n'1 m'4; apply INR_eq in n'1, m'4; rewrite <- n'1, m'4.
-exact (epsilon_spec (inhabits nil) (Rseq_Prop 1 4) exv 1%nat _ refl_equal i4).
+intros xge0.
+destruct (IZN _ xge0) as [n Pn].
+now rewrite Pn, <- INR_IZR_INZ, Nat2Z.id.
+Qed.
+
+Ltac expand_Rseq :=
+  match goal with
+  | |- context[Rseq (IZR ?x) (IZR ?y)] =>
+    let Hex := fresh "existential_hypothesis" in
+    assert (Hex : exists v, Rseq_Prop (IZR x) (IZR y) v);
+    [exists (map (fun e => (IZR (Z.of_nat e))) (seq (Z.to_nat x) (Z.to_nat y)));
+     let x := fresh "x" in let y := fresh "y" in
+     intros x y; rewrite 2!INR_IZR_INZ;
+     let xeq := fresh "eq_for_x" in let yeq := fresh "eq_for_y" in
+     intros xeq yeq; apply eq_IZR in xeq; apply eq_IZR in yeq; rewrite xeq, yeq, !Nat2Z.id; reflexivity |
+  apply (epsilon_spec (inhabits nil) (Rseq_Prop (IZR x) (IZR y)) Hex (Z.to_nat x) (Z.to_nat y)); apply INR_IZN; lia]
+  end.
+
+Example seq14 : Rseq 1 4 = [1; 2; 3; 4].
+Proof.
+expand_Rseq.
 Qed.
 
 Definition increase_list (l : list R) :=
@@ -357,8 +395,7 @@ replace (rnth 0 (p - 1 + 1) (k :: rev_iota k)) with
   (rnth 0 (p - 1) (rev_iota k)).
   rewrite IH'; ring.
 unfold rnth.
-rewrite Rnat_iter_add, Rnat_iter1; auto.
-exact Rnat1.
+now rewrite Rnat_iter_add, Rnat_iter1; auto.
 Qed.
 
 Lemma increase_listP n : Rnat n ->
