@@ -426,5 +426,24 @@ reflexivity.
 Qed.
 
 Notation "'\big[' f / idf ]_( a <= i < b ) E" :=
-  (fold_left (fun v e => f v E) (Rseq a b))
-(at level 35, E at level 36, f, idf at level 10, i at level 0, right associativity).
+  (fold_left (fun v i => f v E) (Rseq a b) idf)
+  (at level 35, a at level 30,  b at level 30, E at level 36, f,
+   idf at level 10, i at level 0, right associativity).
+
+Lemma Rseq1 n : Rnat n -> Rseq n 1 = [n].
+Proof.
+intros nn; replace 1 with (0 + 1) at 1 by ring.
+rewrite Rseq_S; auto; rewrite Rseq0; auto.
+now apply Rnat_add; auto.
+Qed.
+
+Lemma sumr_again n :
+  Rnat n -> \big[Rplus / 0]_(0 <= i < n) i = n * (n - 1) / 2.
+Proof.
+induction 1 as [ | p Np Ih] using Rnat_ind.
+  rewrite Rseq0; [now simpl; unfold Rdiv; rewrite !Rmult_0_l | auto].
+rewrite Rseq_app; auto.
+rewrite Rseq1; auto;[ | now apply Rnat_add; auto].
+rewrite fold_left_app; simpl; rewrite Ih; clear Ih.
+field.
+Qed.
