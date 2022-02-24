@@ -378,6 +378,7 @@ split;[exact (fun x y z => eq_sym (Rplus_assoc x y z))| ].
 split;[exact Rplus_0_r | exact Rplus_0_l].
 Qed.
 
+#[export]
 Hint Resolve associative_monoid_Rplus : core.
 
 Lemma sumr_again n :
@@ -391,3 +392,160 @@ rewrite big_recr; auto.
 replace (p + 1 - 1) with p by ring.
 rewrite Ih; field.
 Qed.
+
+Section sqrt2_not_rational.
+
+Definition multiple (a b : R) :=
+  exists k, Rnat k /\ b = k * a.
+
+Lemma multiple_sub (a b c : R) :
+  0 < a ->
+  c <= b -> multiple a b -> multiple a c -> multiple a (b - c).
+Proof.
+intros agt0 cmp [k [nk mb]] [l [nl mc]].
+exists (k - l); split.
+  apply Rnat_sub; auto.
+  (* Here nra finishes the proof. *)
+  apply (Rmult_le_reg_r a); auto.
+  now rewrite <- mc, <- mb.
+now rewrite Rmult_minus_distr_r, mb, mc.
+Qed.
+
+Lemma even_or_odd (n : R) :
+  Rnat n -> multiple 2 n \/ multiple 2 (n - 1).
+Proof.
+induction 1 as [ | p pnat Ih] using Rnat_ind.
+  left; exists 0; split; auto; field.
+destruct Ih as [mp | [l [lnat mp]]].
+  now right; replace (p + 1 - 1) with p by ring.
+left; exists (l + 1); split; auto; lra.
+Qed.
+
+Lemma even_minus2 (n : R) :
+  Rnat n -> multiple 2 (n + 2) -> multiple 2 n.
+Proof.
+intros nnat evennp2.
+replace n with (n + 2 - 2) by ring.
+apply multiple_sub; auto; try lra.
+  assert (tmp := Rnat_ge0 _ nnat); lra.
+exists 1; split; auto; ring.
+Qed.
+
+Lemma not_even_and_odd (n : R) :
+  Rnat n -> multiple 2 n -> ~multiple 2 (n - 1).
+Proof.
+enough (Rnat n -> ((multiple 2 n -> ~multiple 2 (n - 1)) /\
+                   (multiple 2 (n + 1) -> ~multiple 2 n))).
+  tauto.
+induction 1 as [ | p pnat Ih] using Rnat_ind.
+  split.
+    intros _ [k [knat odd0]].
+    assert (tmp := Rnat_ge0 _ knat); lra.
+  rewrite Rplus_0_l; intros [k [knat even1]].
+  revert even1; induction knat as [ | p pnat Ih] using Rnat_ind.
+    lra.
+  assert (tmp := Rnat_ge0 _ pnat); lra.
+split.
+  replace (p + 1 - 1) with p by ring.
+  tauto.
+destruct Ih as [Ih1 Ih2].
+replace (p + 1 + 1) with (p + 2) by ring.
+intros evenpp2.
+assert (evenp : multiple 2 p).
+  replace p with (p + 2 - 2) by ring; apply multiple_sub; auto; try lra. 
+  assert (tmp := Rnat_ge0 _ pnat); lra.
+  exists 1; split; auto; ring.
+intros [k [knat evenpp1]]; case (Ih1 evenp).
+assert (tmp := Rnat_ge0 _ knat).
+exists (k - 1); split;[ | lra].
+apply Rnat_sub; auto.
+assert (tmp' := Rnat_ge0 _ pnat).
+apply Rnat_gt_pred; auto; lra.
+(* This part is a bit iffy, lra solves the problem in ways I don't
+  really understand. *)
+Qed.
+
+Lemma even_square_to_even (n : R) :
+  Rnat n -> multiple 2 (n * n) -> multiple 2 n.
+Proof.
+intros nnat evensqr.
+case (even_or_odd _ nnat); auto.
+intros [k [knat keq]].
+assert (nsqr : Rnat (n * n)) by now apply Rnat_mul.
+case (not_even_and_odd (n * n) nsqr evensqr).
+exists (k * k * 2 + (n - 1)).
+split.
+  apply Rnat_add;[apply Rnat_mul;[apply Rnat_mul | ] | ]; auto.
+  rewrite keq; apply Rnat_mul; auto.
+replace n with (n - 1 + 1) by ring; rewrite keq.
+ring.
+Qed.
+
+Lemma course_of_value_induction (P : R -> Prop) :
+  (forall p, (forall r, r < p -> Rnat r -> P r) -> Rnat p -> P p) ->
+  forall n, Rnat n -> P n.
+Proof.
+intros main n nnat.
+enough (course_of_value : forall x, x <= n -> Rnat x -> P x).
+  apply course_of_value; auto; lra.
+induction nnat as [ | p pnat Ih] using Rnat_ind.
+  intros r rle0 rnat; apply main; auto.
+  assert (rge0 := Rnat_ge0 _ rnat).
+  intros r' r'ltr r'nat.
+  assert (r'ge0 := Rnat_ge0 _ r'nat); lra.
+intros x xlep1 xnat; assert (xge0 := Rnat_ge0 _ xnat).
+assert (xltp1Veq : x < p + 1 \/  x = p + 1) by lra.
+  destruct xltp1Veq as [xltp1 | xisp1].
+  assert (xlep : x <= p) by now apply Rnat_lt_succ.
+  apply main; auto.
+  intros r rltx rnat; apply Ih; auto; lra.
+apply main; auto.
+intros r rltx rnat.
+assert (rlep : r <= p) by now apply Rnat_lt_succ; auto; lra.
+now apply Ih; auto.
+Qed.
+
+Lemma sqr2_not_rational (p q : R) :
+  Rnat p -> Rnat q -> q <> 0 -> 2 <> (p ^ 2 / q ^ 2).
+Proof.
+intros pnat qnat qn0 abs.
+assert (abs' : q ^ 2 * 2 = p ^ 2).
+  assert (0 < q ^ 2) by nra.
+  apply (Rmult_eq_reg_r (/ q ^ 2)).
+  rewrite abs; field; auto.
+  apply Rinv_neq_0_compat; nra.
+clear abs.
+assert (main :
+     forall p q,  Rnat p /\ Rnat q /\ q <> 0 /\ q ^ 2 * 2 = p ^ 2 ->
+        exists r, r < q /\ Rnat r /\ r <> 0 /\ r ^ 2 * 2 = q ^ 2).
+  clear p q pnat qnat qn0 abs'.
+  intros p q [pnat [qnat [qn0 sqrt2eq]]].
+  assert (evenp2 : multiple 2 (p * p)).
+    exists (q ^ 2); split.
+      now simpl; rewrite Rmult_1_r; apply Rnat_mul; auto.
+    nra.
+  destruct (even_square_to_even _ pnat evenp2) as [k [knat kp]].
+  exists k.
+  assert (kgt0 : 0 < k).
+    assert (tmp := Rnat_ge0 _ knat); nra.
+  assert (keq : (k ^ 2) * 2 = q ^ 2).
+    apply (Rmult_eq_reg_r 2); try lra.
+    replace (k ^ 2 * 2 * 2) with ((k * 2) ^ 2) by ring.
+    rewrite <- kp; lra.
+  assert (kltq : k < q).
+    assert (k ^ 2 < q ^ 2) by nra.
+    case (Rlt_le_dec k q); auto.
+    intros qlek; enough (q ^ 2 <= k ^ 2) by nra.
+    apply pow_incr.
+    assert (tmp := Rnat_ge0 _ qnat); lra.
+  repeat split; (auto || (try lra)).
+revert qn0 p pnat abs'.
+elim qnat using course_of_value_induction.
+clear q qnat.
+intros q Ih qnat qneq0 p pnat sqrt2eq.
+destruct (main p q) as [r [rlt1 [rnat [rn0 req]]]].
+  now repeat split; auto.
+now revert req; apply Ih; auto.
+Qed.
+  
+End sqrt2_not_rational.
