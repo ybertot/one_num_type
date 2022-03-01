@@ -1,5 +1,5 @@
 Require Import Reals ClassicalEpsilon Lia Lra List.
-
+From Coquelicot Require Import Coquelicot.
 Import ListNotations.
 
 Open Scope R_scope.
@@ -26,6 +26,12 @@ Qed.
 
 #[export]
 Hint Extern 1 (Rnat (IZR _)) => (now apply Rnat_IZR; discriminate) : core.
+
+Lemma Rnat_INR n : Rnat (INR n).
+Proof. now exists n. Qed.
+
+#[export]
+Hint Resolve Rnat_INR : core.
 
 Lemma Rnat_ind (n : R) (P : R -> Prop) :
   P 0 ->
@@ -71,6 +77,30 @@ Proof. apply Rnat_imm. Qed.
 Lemma Rnat1 : Rnat 1.
 Proof. apply Rnat_imm. Qed.
 
+Lemma course_of_value_induction (P : R -> Prop) :
+  (forall p, (forall r, r < p -> Rnat r -> P r) -> Rnat p -> P p) ->
+  forall n, Rnat n -> P n.
+Proof.
+intros main n nnat.
+enough (course_of_value : forall x, x <= n -> Rnat x -> P x).
+  apply course_of_value; auto; lra.
+induction nnat as [ | p pnat Ih] using Rnat_ind.
+  intros r rle0 rnat; apply main; auto.
+  assert (rge0 := Rnat_ge0 _ rnat).
+  intros r' r'ltr r'nat.
+  assert (r'ge0 := Rnat_ge0 _ r'nat); lra.
+intros x xlep1 xnat; assert (xge0 := Rnat_ge0 _ xnat).
+assert (xltp1Veq : x < p + 1 \/  x = p + 1) by lra.
+  destruct xltp1Veq as [xltp1 | xisp1].
+  assert (xlep : x <= p) by now apply Rnat_lt_succ.
+  apply main; auto.
+  intros r rltx rnat; apply Ih; auto; lra.
+apply main; auto.
+intros r rltx rnat.
+assert (rlep : r <= p) by now apply Rnat_lt_succ; auto; lra.
+now apply Ih; auto.
+Qed.
+
 Lemma Rnat_add (x y : R) : Rnat x -> Rnat y -> Rnat (x + y).
 Proof.
 intros [x' xnat] [y' ynat]; exists (x' + y')%nat.
@@ -85,6 +115,9 @@ Proof.
 intros [x' xnat] [y' ynat]; exists (x' * y')%nat.
 now rewrite xnat, ynat, mult_INR.
 Qed.
+
+#[export]
+Hint Resolve Rnat_mul : core.
 
 Lemma Rnat_sub (x y : R) : Rnat x -> Rnat y -> y <= x ->
   Rnat (x - y).
@@ -217,6 +250,15 @@ rewrite Rseq_S';
   replace (m' + 1 + p - 1) with (m' + p) by ring; auto.
 rewrite Rseq_S; simpl; auto; rewrite Ih.
 now rewrite <- (Rplus_comm 1 m'), <- Rplus_assoc.
+Qed.
+
+Lemma Rseq_nat (n m : R) : Rnat n -> Rnat m ->
+  List.Forall (fun i => Rnat i) (Rseq n m).
+Proof.
+intros nnat mnat; revert n nnat.
+induction mnat as [ | p pnat Ih] using Rnat_ind; intros n nnat.
+  now rewrite Rseq0.
+now rewrite Rseq_S; auto.
 Qed.
 
 Lemma INR_IZN x : (0 <= x)%Z -> IZR x = INR (Z.to_nat x).
@@ -421,16 +463,6 @@ destruct Ih as [mp | [l [lnat mp]]].
 left; exists (l + 1); split; auto; lra.
 Qed.
 
-Lemma even_minus2 (n : R) :
-  Rnat n -> multiple 2 (n + 2) -> multiple 2 n.
-Proof.
-intros nnat evennp2.
-replace n with (n + 2 - 2) by ring.
-apply multiple_sub; auto; try lra.
-  assert (tmp := Rnat_ge0 _ nnat); lra.
-exists 1; split; auto; ring.
-Qed.
-
 Lemma not_even_and_odd (n : R) :
   Rnat n -> multiple 2 n -> ~multiple 2 (n - 1).
 Proof.
@@ -471,38 +503,12 @@ Proof.
 intros nnat evensqr.
 case (even_or_odd _ nnat); auto.
 intros [k [knat keq]].
-assert (nsqr : Rnat (n * n)) by now apply Rnat_mul.
+assert (nsqr : Rnat (n * n)) by auto.
 case (not_even_and_odd (n * n) nsqr evensqr).
 exists (k * k * 2 + (n - 1)).
-split.
-  apply Rnat_add;[apply Rnat_mul;[apply Rnat_mul | ] | ]; auto.
-  rewrite keq; apply Rnat_mul; auto.
-replace n with (n - 1 + 1) by ring; rewrite keq.
-ring.
-Qed.
-
-Lemma course_of_value_induction (P : R -> Prop) :
-  (forall p, (forall r, r < p -> Rnat r -> P r) -> Rnat p -> P p) ->
-  forall n, Rnat n -> P n.
-Proof.
-intros main n nnat.
-enough (course_of_value : forall x, x <= n -> Rnat x -> P x).
-  apply course_of_value; auto; lra.
-induction nnat as [ | p pnat Ih] using Rnat_ind.
-  intros r rle0 rnat; apply main; auto.
-  assert (rge0 := Rnat_ge0 _ rnat).
-  intros r' r'ltr r'nat.
-  assert (r'ge0 := Rnat_ge0 _ r'nat); lra.
-intros x xlep1 xnat; assert (xge0 := Rnat_ge0 _ xnat).
-assert (xltp1Veq : x < p + 1 \/  x = p + 1) by lra.
-  destruct xltp1Veq as [xltp1 | xisp1].
-  assert (xlep : x <= p) by now apply Rnat_lt_succ.
-  apply main; auto.
-  intros r rltx rnat; apply Ih; auto; lra.
-apply main; auto.
-intros r rltx rnat.
-assert (rlep : r <= p) by now apply Rnat_lt_succ; auto; lra.
-now apply Ih; auto.
+split;[now rewrite keq; auto | ].
+replace n with (n - 1 + 1) by ring.
+rewrite keq; ring.
 Qed.
 
 Lemma sqr2_not_rational (p q : R) :
@@ -522,7 +528,7 @@ assert (main :
   intros p q [pnat [qnat [qn0 sqrt2eq]]].
   assert (evenp2 : multiple 2 (p * p)).
     exists (q ^ 2); split.
-      now simpl; rewrite Rmult_1_r; apply Rnat_mul; auto.
+      now simpl; auto.
     nra.
   destruct (even_square_to_even _ pnat evenp2) as [k [knat kp]].
   exists k.
@@ -549,3 +555,167 @@ now revert req; apply Ih; auto.
 Qed.
   
 End sqrt2_not_rational.
+
+Lemma associative_mul : associative_monoid Rmult 1.
+Proof.
+split.
+  exact (fun x y z => eq_sym (Rmult_assoc x y z)).
+split.
+  exact Rmult_1_r.
+exact Rmult_1_l.
+Qed.
+
+#[export]
+Hint Resolve associative_mul : core.
+
+Section Taylor_Lagrange.
+
+Definition Rnat_to_nat (n : R) : nat :=
+  Z.to_nat (Int_part n).
+
+Lemma Rnat_to_natP (n : R) : Rnat n -> INR (Rnat_to_nat n) = n.
+Proof.
+rewrite Rnat_to_Rnat'; intros [k [keq kge0]].
+unfold Rnat_to_nat.
+assert (toz : Int_part n = k).
+  destruct (base_Int_part n) as [P1 P2].
+  rewrite keq in P1 at 2.
+  apply le_IZR in P1.
+  rewrite keq in P2 at 2.
+  rewrite <- minus_IZR in P2.
+  apply lt_IZR in P2.
+  lia.
+now rewrite toz, <- INR_IZN; auto.
+Qed.
+
+Lemma Rnat_to_natP' (n : nat) : Rnat_to_nat (INR n) = n.
+Proof.
+now apply INR_eq; rewrite Rnat_to_natP; auto.
+Qed.
+
+Definition ex_der_n (f : R -> R) (n : R) :=
+  ex_derive_n f (Rnat_to_nat n).
+
+Definition fact (n : R) := \big[Rmult / 1]_(1 <= x < n + 1) x.
+
+Definition Der_n (f : R -> R) (n : R) :=
+  Rnat_iter n (fun (dp : R -> R) => Derive dp) f.
+
+Lemma Der_n_correct (f : R -> R) (n : nat) (x : R) :
+  Der_n f (INR n) x = Derive_n f n x.
+Proof.
+revert x; induction n as [ | p Ih]; intros x.
+  now unfold Der_n; simpl; rewrite Rnat_iter0.
+unfold Der_n; rewrite S_INR, Rnat_iterS; auto; simpl.
+apply Derive_ext; exact Ih.
+Qed.
+
+Lemma sum_f_R0_big f n :
+  sum_f_R0 f n = \big[Rplus / 0]_(0 <= x < INR n + 1) f (Rnat_to_nat x).
+Proof.
+induction n as [ | p Ih].
+  simpl.
+  rewrite big_recr; try (lra || auto).
+    replace (0 + 1 - 1) with 0 by ring.
+    rewrite big0, Rplus_0_l.
+    replace 0 with (INR 0) by auto.
+    now rewrite Rnat_to_natP'.
+  replace (0 + 1 - 0) with 1 by ring; auto.
+rewrite S_INR; simpl; rewrite big_recr; try (lra || auto).
+    replace (INR p + 1 + 1 - 1) with (INR p + 1) by ring.
+    rewrite <- Ih; clear Ih.
+    now rewrite <- S_INR, Rnat_to_natP'.
+  now apply Rnat_sub; auto with real.
+now auto with real.
+Qed.
+
+Lemma Rnat_to_nat0 : Rnat_to_nat 0 = 0%nat.
+Proof.
+now replace 0 with (INR 0) by (simpl; ring); rewrite Rnat_to_natP'.
+Qed.
+
+Lemma Rnat_to_natS n :
+  Rnat n -> Rnat_to_nat (n + 1) = S (Rnat_to_nat n).
+Proof.
+now intros [n' n'eq]; rewrite n'eq, <- S_INR, !Rnat_to_natP'.
+Qed.
+
+
+Lemma factP n : Rnat n -> fact n = INR (Factorial.fact (Rnat_to_nat n)).
+Proof.
+induction 1 as [ | p pnat Ih] using Rnat_ind.
+  unfold fact.
+  replace (0 + 1) with 1 by ring.
+  rewrite big0.
+  replace 0 with (INR 0) by (simpl; ring); rewrite Rnat_to_natP'.
+  easy.
+replace (fact (p + 1)) with ((p + 1) * fact p).
+  rewrite Rnat_to_natS; auto; cbn [Factorial.fact].
+  rewrite mult_INR, S_INR, Rnat_to_natP; auto.
+  now rewrite Ih.
+unfold fact at 2.
+rewrite big_recr; auto.
+    replace (p + 1 + 1 - 1) with (p + 1) by ring.
+    now rewrite Rmult_comm.
+  now replace (p + 1 + 1 - 1) with (p + 1) by ring; auto.
+assert (tmp := Rnat_ge0 p pnat); lra.
+Qed.
+
+Lemma big_eq_Rnat (E2 E1 : R -> R)
+  (f : R -> R -> R) (idx : R) (a b : R) :
+  (forall i, Rnat i -> E1 i = E2 i) ->
+  Rnat a -> Rnat b -> a <= b ->
+  \big[f / idx]_(a <= i < b) E1 i =
+  \big[f / idx]_(a <= i < b) E2 i.
+Proof.
+intros ext anat bnat altb.
+rewrite (map_ext_Forall _ E2); auto.
+rewrite Forall_forall; intros x xin.
+apply ext; revert x xin; rewrite <- Forall_forall.
+apply Rseq_nat; auto.
+now apply Rnat_sub.
+Qed.
+
+Definition Rnat_pow (x n : R) := x ^ Rnat_to_nat n.
+
+Lemma Taylor_Lagrange (f : R -> R) (n x y : R) :
+  Rnat n ->
+  x < y ->
+  (forall t, x <= t <= y ->
+     forall k,  Rnat k -> k <= n + 1 -> ex_der_n f k t) ->
+  exists zeta : R,
+     x < zeta < y /\
+     f y =
+     \big[Rplus / 0]_(0 <= m < n + 1)
+        (Rnat_pow (y - x) m / fact m * Der_n f m x) +
+     Rnat_pow (y - x) (n + 1) / fact (n + 1) * Der_n f (n + 1) zeta.
+Proof.
+intros [n' n'eq]; rewrite n'eq.
+intros xlty.
+intros ders.
+assert (ders' :
+  forall t, x <= t <= y -> forall k, (k <= S n')%nat -> ex_derive_n f k t).
+  intros t xty k kleSn'.
+  assert (INRkleSn' : INR k <= INR n' + 1).
+    change 1 with (INR 1).
+    now rewrite <- plus_INR, Nat.add_1_r; apply le_INR.
+  generalize (ders t xty (INR k) (Rnat_INR _) INRkleSn').
+  now unfold ex_der_n; rewrite Rnat_to_natP'.
+destruct (Derive.Taylor_Lagrange f n' x y xlty ders') as
+  [zeta [intzeta eqn]].
+exists zeta; split;[exact intzeta | rewrite eqn].
+rewrite sum_f_R0_big.
+assert (ext: forall i,  Rnat i ->
+   (y - x) ^ Rnat_to_nat i / INR (Factorial.fact (Rnat_to_nat i)) *
+     Derive_n f (Rnat_to_nat i) x =
+   Rnat_pow (y - x) i / fact i * Der_n f i x).
+  intros i [i' i'eq]; rewrite i'eq, factP; auto.
+  rewrite Der_n_correct; auto.
+  now unfold Rnat_pow; rewrite !Rnat_to_natP'.
+rewrite (big_eq_Rnat _ _ Rplus 0 _ _ ext); auto.
+  apply f_equal.
+  rewrite <- S_INR, factP; auto.
+  unfold Rnat_pow; rewrite !Rnat_to_natP'.
+  now rewrite Der_n_correct.
+now auto with real.
+Qed.
