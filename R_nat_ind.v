@@ -622,6 +622,23 @@ unfold Der_n; rewrite S_INR, Rnat_iterS; auto; simpl.
 apply Derive_ext; exact Ih.
 Qed.
 
+Lemma Der_n_0 (f : R -> R) x : Der_n f 0 x = f x.
+Proof.
+replace 0 with (INR 0) by (simpl; ring).
+now rewrite Der_n_correct.
+Qed.
+
+Lemma Der_n_S (f : R -> R) n x : Rnat n -> 1 <= n ->
+  Der_n f n x = Derive (Der_n f (n - 1)) x.
+Proof.
+intros [[ | p] peq] nge1.
+  rewrite peq in nge1; simpl in nge1; lra.
+rewrite peq, Der_n_correct.
+change 1 with (INR 1); rewrite <- minus_INR; try lia.
+simpl; apply Derive_ext; intros t; rewrite Der_n_correct.
+now rewrite Nat.sub_0_r.
+Qed.
+
 Lemma sum_f_R0_big f n :
   sum_f_R0 f n = \big[Rplus / 0]_(0 <= x < INR n + 1) f (Rnat_to_nat x).
 Proof.
@@ -784,52 +801,278 @@ Proof.
 unfold Rnat_pow; rewrite Rnat_to_nat0; ring.
 Qed.
 
-Lemma ln23 : ln 3 - ln 2 < 1 / 4 - 1 / 8 + 1 / 18.
+Lemma is_derive_Rnat_pow_0 :
+  forall t, is_derive (fun x => Rnat_pow x 0) t 0.
 Proof.
-assert (tmp:= Taylor_Lagrange ln 3 2 3).
-assert (nat3 : Rnat 3) by auto.
+intros t; unfold Rnat_pow; rewrite Rnat_to_nat0.
+auto_derive; auto; ring.
+Qed.
+
+Global Instance UnaryDiff_Rnat0 :
+  UnaryDiff (fun x => Rnat_pow x 0).
+Proof.
+exists (fun x => 0).
+now apply is_derive_Rnat_pow_0.
+Defined.
+
+Lemma is_derive_Rnat_pow_S :
+  forall n, Rnat n -> 1 <= n ->
+  forall t,
+  is_derive (fun x => Rnat_pow x n) t (n * Rnat_pow t (n - 1)).
+Proof.
+intros n nnat nge1 t.
+unfold Rnat_pow.
+auto_derive; auto.
+rewrite Rnat_to_natP, Rmult_1_l; auto.
+replace n with ((n - 1) + 1) at 2 by ring.
+rewrite Rnat_to_natS; auto; simpl.
+apply Rnat_sub; auto; lra.
+Qed.
+
+Global Instance UnaryDiff_Rnat_powS :
+  forall n, Rnat n -> 1 <= n -> UnaryDiff (fun x => Rnat_pow x n).
+Proof.
+  intros n nnat nge0.
+  exists (fun x => n * Rnat_pow x (n - 1)).
+intros x.
+now apply is_derive_Rnat_pow_S.
+Defined.
+
+Lemma Rnat_pow1n n : Rnat n -> Rnat_pow 1 n = 1.
+Proof.
+intros nnat; induction nnat as [ | p pnat Ih] using Rnat_ind.
+  now rewrite Rnat_pow_0.
+rewrite Rnat_pow_S; replace (p + 1 - 1) with p by ring; auto.
+rewrite Ih; ring.
+Qed.
+
+Lemma Rnat_pow_incr x y n :
+  Rnat n -> 0 < n -> 0 < x < y -> 0 < Rnat_pow x n < Rnat_pow y n.
+Proof.
+induction 1 as [ | p pnat Ih] using Rnat_ind.
+  lra.
+generalize (refl_equal p).
+pattern p at -1; induction pnat as [ | q qnat _] using Rnat_ind.
+  intros pis0 _ xlty.
+  replace (0 + 1) with 1 by ring.
+  rewrite (Rnat_pow_S x), (Rnat_pow_S y); replace (1 - 1) with 0 by ring;
+    auto.
+  now rewrite !Rnat_pow_0, !Rmult_1_l.
+intros peq _ xlty; rewrite <- peq.
+rewrite !(Rnat_pow_S _ (p + 1)); replace (p + 1 - 1) with p by ring;
+  try (now rewrite peq; auto).
+assert (pgt0 : 0 < p).
+  assert (tmp := Rnat_ge0 _ qnat); lra.
+assert (Ih' := Ih pgt0 xlty).
+split.
+  apply Rmult_lt_0_compat; lra.
+apply Rlt_trans with (Rnat_pow x p * y).
+  nra.
+nra.
+Qed.
+
+Lemma ln23 : ln 3 - ln 2 < 1 / 2 - 1 / 8 + 1 / 24.
+Proof.
+assert (tmp:= Taylor_Lagrange ln 2 2 3).
+assert (nat2 : Rnat 2) by auto.
 assert (cmp23 : 2 < 3) by lra.
-assert (tmp2 := tmp nat3 cmp23); clear tmp; rename tmp2 into tmp.
 assert (ex_der_n0 : forall t, 2 <= t <= 3 -> ex_der_n ln 0 t).
   now intros t tint; apply ex_der_n_0.
-assert (dln : forall t, 2 <= t <= 3 ->
+assert (dln : forall t, 0 < t ->
          is_derive ln t ((fun x => / x) t)).
   intros t tint; auto_derive; lra.
-assert (dV : forall t, 2 <= t <= 3 ->
+assert (dV : forall t, 0 < t ->
          is_derive (fun x => / x) t ((fun x => - / (Rnat_pow t 2)) t)).
   intros t tint; auto_derive;[lra | ].
   rewrite 2!Rnat_pow_S; auto.
       replace (2 - 1 - 1) with 0 by ring; rewrite Rnat_pow_0; field; lra.
     now replace (2 - 1 - 1) with 0 by ring; auto.
   now replace (2 - 1) with 1 by ring; auto.
-assert (dV2 : forall t, 2 <= t <= 3 ->
-         is_derive (fun x => / Rnat_pow x 2) t
-          ((fun x =>  / (Rnat_pow t 3)) t)).
-  intros t tint; auto_derive;[lra | ].
-  rewrite 2!Rnat_pow_S; auto.
-      replace (2 - 1 - 1) with 0 by ring; rewrite Rnat_pow_0; field; lra.
-    now replace (2 - 1 - 1) with 0 by ring; auto.
+assert (dp2 : forall t,
+  Derive (fun x => Rnat_pow x 2) t = 2 * Rnat_pow t (2 - 1)).
+  intros t.
+  apply is_derive_unique.
+  apply is_derive_Rnat_pow_S; auto; lra.
+assert (dp3 : forall t,
+  Derive (fun x => Rnat_pow x 3) t = 3 * Rnat_pow t (3 - 1)).
+  intros t.
+  apply is_derive_unique.
+  apply is_derive_Rnat_pow_S; auto; lra.
+assert (dV2 : forall t, 0 < t ->
+         is_derive (fun x => -/ Rnat_pow x 2) t
+          ((fun x =>  2 / (Rnat_pow t 3)) t)).
+  intros t tint; auto_derive.
+    split.
+      exists (2 * Rnat_pow t (2 - 1)).
+      apply is_derive_Rnat_pow_S; auto; lra.
+    split; auto.
+    rewrite Rnat_pow_S; replace (2 - 1) with 1 by ring; auto.
+    rewrite Rnat_pow_S; replace (1 - 1) with 0 by ring; auto.
+    rewrite Rnat_pow_0; nra.
+  rewrite dp2.
+  rewrite !Ropp_mult_distr_l, Ropp_involutive, Rmult_1_l.
+  replace (2 - 1) with 1 by ring.
+  rewrite Rnat_pow_S; replace (1 - 1) with 0 by ring; auto.
+  rewrite Rnat_pow_0, Rmult_1_l.
+  rewrite (Rnat_pow_S _ 3); replace (3 - 1) with 2 by ring; auto.
+  rewrite 2!Rnat_pow_S; replace (2 - 1) with 1 by ring;
+   replace (1 - 1) with 0 by ring; auto.
+  rewrite Rnat_pow_0, Rmult_1_l; field; lra.
+assert (dV3 : forall t, 0 < t ->
+          is_derive (fun x => 2 / Rnat_pow x 3) t
+                ((fun x => -6 / Rnat_pow t 4) t)).
+  intros t tint; auto_derive.
+    split.
+      exists (3 * Rnat_pow t (3 - 1)).
+      apply is_derive_Rnat_pow_S; auto; lra.
+    split; auto.
+    rewrite Rnat_pow_S; replace (3 - 1) with 2 by ring; auto.
+    rewrite Rnat_pow_S; replace (2 - 1) with 1 by ring; auto.
+    rewrite Rnat_pow_S; replace (1 - 1) with 0 by ring; auto.
+    rewrite Rnat_pow_0, Rmult_1_l.
+    repeat apply Rmult_integral_contrapositive_currified; lra.
+  rewrite (Rnat_pow_S _ 4); replace (4 - 1) with 3 by ring; auto.
+  rewrite dp3.
+  rewrite (Rnat_pow_S _ 3); replace (3 - 1) with 2 by ring; auto.
+  rewrite 2!Rnat_pow_S;
+   replace (2 - 1) with 1 by ring;
+   replace (1 - 1) with 0 by ring; auto.
+  rewrite Rnat_pow_0, Rmult_1_l; field; lra.
+assert (tmp2 := tmp nat2 cmp23); clear tmp; rename tmp2 into tmp.
+assert (der1 : forall t, 0 < t -> Der_n ln 1 t = / t).
+  intros t tgt0; rewrite Der_n_S; auto; try lra.
+  apply is_derive_unique; replace (1 - 1) with 0 by ring.
+  now generalize (dln t tgt0); apply is_derive_ext; intros u; rewrite Der_n_0.
+assert (der2 : forall t, 0 < t -> Der_n ln 2 t = - / Rnat_pow t 2).
+  intros t tgt0; rewrite Der_n_S; auto; try lra.
+  apply is_derive_unique; replace (2 - 1) with 1 by ring.
+  generalize (dV t tgt0); apply is_derive_ext_loc.
+  exists (mkposreal _ tgt0); simpl; intros u uloc.
+  apply Rabs_def2 in uloc; unfold minus, plus, opp in uloc; simpl in uloc.
+  assert (uint0 : 0 < u) by lra.
+  now symmetry; apply der1.
+assert (der3 : forall t, 0 < t -> Der_n ln 3 t = 2 / Rnat_pow t 3).
+  intros t tgt0; rewrite Der_n_S; auto; try lra.
+  apply is_derive_unique; replace (3 - 1) with 2 by ring.
+  generalize (dV2 t tgt0); apply is_derive_ext_loc.
+  exists (mkposreal _ tgt0); simpl; intros u uloc.
+  apply Rabs_def2 in uloc; unfold minus, plus, opp in uloc; simpl in uloc.
+  assert (uint0 : 0 < u) by lra.
+  now symmetry; apply der2.
+assert (allders : forall t, 2 <= t <= 3 ->
+          forall k,  Rnat k -> k <= 2 + 1 -> ex_der_n ln k t).
+  intros t tint k knat.
+  assert (tint0 : 0 < t) by lra.
+  induction knat as [ | k1 k1nat _] using Rnat_ind.
+    now intros _; apply ex_der_n0.
+  intros k1le'; assert (k1le : k1 <= 2) by lra; clear k1le'.
+  rewrite ex_der_n_S'; replace (k1 + 1 - 1) with k1 by ring; auto; cycle 1.
+    assert (tmp3 := Rnat_ge0 _ k1nat); lra.
+  revert k1le; induction k1nat as [ | k2 k2nat _] using Rnat_ind.
+    intros _.
+    exists (/ t).
+    generalize (dln _ tint0); apply is_derive_ext.
+    now intros u; rewrite Der_n_0.
+  intros k2le'; assert (k2le : k2 <= 1) by lra; clear k2le'.
+  revert k2le; induction k2nat as [ | k3 k3nat _] using Rnat_ind.
+    intros _.
+    exists (- / Rnat_pow t 2).
+    replace (0 + 1) with 1 by ring.
+        generalize (dV _ tint0); apply is_derive_ext_loc.
+    exists posreal_one.
+    intros u uloc.
+    apply Rabs_def2 in uloc; unfold minus, plus, opp in uloc; simpl in uloc.
+    assert (uint0 : 0 < u) by lra.
+    now rewrite der1.
+  intros k3le0.
+  assert (tmp3 := Rnat_ge0 _ k3nat).
+  assert (k3is0 : k3 = 0) by lra; clear tmp3.
+  rewrite k3is0.
+  replace (0 + 1 + 1) with 2 by (simpl; ring).
+  exists (2 / Rnat_pow t 3).
+  generalize (dV2 _ tint0).
+  apply is_derive_ext_loc.
+  exists (mkposreal _ tint0).
+  intros u uloc.
+  apply Rabs_def2 in uloc; unfold minus, plus, opp in uloc; simpl in uloc.
+  assert (uint0 : 0 < u) by lra.
+  now rewrite der2.
+destruct (tmp allders) as [zeta [zetaint formula]]; clear tmp.
+assert (fact0 : fact 0 = 1).
+  now unfold fact; replace (0 + 1) with 1 by ring; rewrite big0.
+assert (fact1 : fact 1 = 1).
+  unfold fact; rewrite big_recl; auto; try lra; cycle 1.
+    now replace (1 + 1 - 1) with 1 by ring; auto.
+  rewrite big0; ring.
+assert (fact2 : fact 2 = 2).
+  unfold fact; rewrite big_recl; auto; try lra; cycle 1.
+    now replace (2 + 1 - 1) with 2 by ring; auto.
+  rewrite big_recl; auto; try lra; cycle 1.
+    now replace (2 + 1 - (1 + 1)) with 1 by ring; auto.
+  rewrite big0; ring.
+assert (fact3 : fact 3 = 6).
+  unfold fact; rewrite big_recl; auto; try lra; cycle 1.
+    now replace (3 + 1 - 1) with 3 by ring; auto.
+  rewrite big_recl; auto; try lra; cycle 1.
+    now replace (3 + 1 - (1 + 1)) with 2 by ring; auto.
+  rewrite big_recl; auto; try lra; cycle 1.
+    now replace (3 + 1 - (1 + 1 + 1)) with 1 by ring; auto.
+  replace (1 + 1 + 1 + 1) with 4 by ring.
+  replace (3 + 1) with 4 by ring.
+  rewrite big0; ring.
+revert formula; rewrite big_recr; auto; try lra; cycle 1.
+  now replace (2 + 1 - 0) with 3 by ring; auto.
+replace (2 + 1) with 3 by ring.
+replace (3 - 1) with 2 by ring.
+replace (3 - 2) with 1 by ring.
+rewrite fact2, fact3, !Rnat_pow1n; auto.
+rewrite big_recr; auto; try lra; cycle 1.
+  now replace (2 - 0) with 2 by ring; auto.
+replace (2 - 1) with 1 by ring.
+rewrite Rnat_pow1n; auto.
+rewrite big_recl; auto; try lra; cycle 1.
+  now replace (1 - 0) with 1 by ring; auto.
+replace (0 + 1) with 1 by ring.
+rewrite big0, !Rnat_pow1n, fact0, fact1; auto.
+rewrite Der_n_0, der1, der2, der3; try lra.
+replace (1 / 1 * ln 2) with (ln 2) by field.
+replace (1 / 1 * / 2) with (/ 2) by field.
+intros tf_formula; rewrite tf_formula; clear tf_formula.
+rewrite 2!Rnat_pow_S;
+    replace (2 - 1 - 1) with 0 by ring; auto; cycle 1.
   now replace (2 - 1) with 1 by ring; auto.
+rewrite Rnat_pow_0.
+assert (Rnat_pow zeta 3 <> 0).
+  rewrite 3!Rnat_pow_S; cycle 1.
+        now replace (3 - 1 - 1 - 1) with 0 by ring; auto.
+      now replace (3 - 1 - 1) with 1 by ring; auto.
+    now replace (3 - 1) with 2 by ring; auto.
+  replace (3 - 1 - 1 - 1) with 0 by ring; rewrite Rnat_pow_0.
+  rewrite Rmult_1_l.
+  repeat apply Rmult_integral_contrapositive_currified; lra.
+match goal with |- ?x < _ =>
+  replace x with (1 / 2 - 1 / 8 + 1 / ( 3 * Rnat_pow zeta 3));
+  [ | now field; auto]
+end.
+repeat apply Rplus_lt_compat_l.
+apply Rmult_lt_compat_l;[lra | ].
+apply Rinv_1_lt_contravar;[lra | ].
+apply Rle_lt_trans with (3 * Rnat_pow 2 3).
+  rewrite 3!Rnat_pow_S; cycle 1.
+        now replace (3 - 1 - 1 - 1) with 0 by ring; auto.
+      now replace (3 - 1 - 1) with 1 by ring; auto.
+    now replace (3 - 1) with 2 by ring; auto.
+  replace (3 - 1 - 1 - 1) with 0 by ring; rewrite Rnat_pow_0; lra.
+enough (Rnat_pow 2 3 < Rnat_pow zeta 3) by lra.
+assert (rnat3 : Rnat 3) by auto.
+assert (gt0 : 0 < 3) by lra.
+assert (zetagt2 : 0 < 2 < zeta) by lra.
+assert (tmp := Rnat_pow_incr _ _ _ rnat3 gt0 zetagt2); lra.
+Qed.
 
-  rewrite Rnat_pow_S.
-assert (ex_der_n1 : forall t, 2 <= t <= 3 -> ex_der_n ln 1 t).
-  intros t tint; apply ex_der_n_S'; auto with core real.
-  rewrite Rminus_eq_0.
-  change 0 with (INR 0).
-  assert (exdlnt : ex_derive ln t).
-    auto_derive; lra.
-  revert exdlnt; apply ex_derive_ext.
-  now intros t'; rewrite Der_n_correct; simpl.
-  (* auto_derive should be extended to handle these cases too. *)
-assert (ex_der_n2 : forall t, 2 <= t <= 3 -> ex_der_n ln 2 t).
-  intros t tint.
-  assert (exddlnt
-  compute_Rnat_to_nat 1.
-  simpl.
-  auto_derive; lra.
-assert (ex_der_n2 : forall t, 2 <= t <= 3 -> ex_der_n ln 2 t).
-  intros t tint; unfold ex.
+(* This example shows that all lemmas about pow should be ported for
+  Rnat_pow. *)
 
-  rewrite (Rnat_to_natP' ).
-  admit.
-  rewrite INR_IZN; auto.
+(* It also shows that computation about immediate natural number values
+  needs to be made more fluid: see all the patterns
+     replace ... with ... by ring  *)
