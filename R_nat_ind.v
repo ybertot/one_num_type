@@ -593,6 +593,18 @@ Proof.
 now apply INR_eq; rewrite Rnat_to_natP; auto.
 Qed.
 
+Ltac compute_Rnat_to_nat n :=
+  match n with
+  | IZR Z0 =>
+    (replace (IZR Z0) with (INR 0) by reflexivity);
+    rewrite (Rnat_to_natP' 0)
+  | IZR (Zpos ?x) =>
+    let v1 := eval compute in (Pos.to_nat x) in
+    replace (IZR (Zpos x)) with (INR v1);
+    [ rewrite Rnat_to_natP' | change v1 with (Pos.to_nat x);
+        rewrite INR_IZN; auto; lia]
+  end.
+
 Definition ex_der_n (f : R -> R) (n : R) :=
   ex_derive_n f (Rnat_to_nat n).
 
@@ -719,3 +731,105 @@ rewrite (big_eq_Rnat _ _ Rplus 0 _ _ ext); auto.
   now rewrite Der_n_correct.
 now auto with real.
 Qed.
+
+Lemma Rnat_to_nat_interval n : 0 <= n ->
+  INR (Rnat_to_nat n) <= n < INR (Rnat_to_nat n) + 1.
+Proof.
+intros nge0; unfold Rnat_to_nat.
+rewrite <- INR_IZN.
+  assert (tmp := base_Int_part n); lra.
+enough (-1 < Int_part n)%Z by lia.
+assert (tmp := base_Int_part n).
+apply lt_IZR; lra.
+Qed.
+
+Lemma ex_der_n_0 f x : ex_der_n f 0 x.
+Proof.
+now unfold ex_der_n; rewrite Rnat_to_nat0.
+Qed.
+
+Lemma ex_der_n_S' n f x :
+  Rnat n ->
+  1 <= n ->
+  ex_der_n f n x <-> ex_derive (Der_n f (n - 1)) x.
+Proof.
+intros nnat nge1.
+unfold ex_der_n.
+assert (exists p, Rnat_to_nat n = S p) as [p pneq].
+  destruct (Rnat_to_nat n) as [ | p] eqn:rnat_eq; cycle 1.
+    now exists p.
+  assert (nge0 : 0 <= n) by lra.
+  destruct (Rnat_to_nat_interval n nge0) as [_ abs].
+  rewrite rnat_eq in abs; simpl in abs; lra.
+rewrite pneq; simpl.
+assert (nm1nat : Rnat (n - 1)) by now apply Rnat_sub; auto.
+assert (nm1eq : n - 1 = INR p).
+  enough (step : n = INR p + INR 1) by now simpl in step; lra.
+  now rewrite <- plus_INR, Nat.add_1_r, <- pneq, Rnat_to_natP.
+rewrite nm1eq.
+split;
+  now apply ex_derive_ext; intros t; rewrite Der_n_correct.
+Qed.
+
+Lemma Rnat_pow_S x n : Rnat (n - 1) -> Rnat_pow x n = Rnat_pow x (n - 1) * x.
+Proof.
+intros nnat.
+unfold Rnat_pow.
+replace n with ((n - 1) + 1) at 1 by ring.
+rewrite Rnat_to_natS; simpl;[ring | easy].
+Qed.
+
+Lemma Rnat_pow_0 x : Rnat_pow x 0 = 1.
+Proof.
+unfold Rnat_pow; rewrite Rnat_to_nat0; ring.
+Qed.
+
+Lemma ln23 : ln 3 - ln 2 < 1 / 4 - 1 / 8 + 1 / 18.
+Proof.
+assert (tmp:= Taylor_Lagrange ln 3 2 3).
+assert (nat3 : Rnat 3) by auto.
+assert (cmp23 : 2 < 3) by lra.
+assert (tmp2 := tmp nat3 cmp23); clear tmp; rename tmp2 into tmp.
+assert (ex_der_n0 : forall t, 2 <= t <= 3 -> ex_der_n ln 0 t).
+  now intros t tint; apply ex_der_n_0.
+assert (dln : forall t, 2 <= t <= 3 ->
+         is_derive ln t ((fun x => / x) t)).
+  intros t tint; auto_derive; lra.
+assert (dV : forall t, 2 <= t <= 3 ->
+         is_derive (fun x => / x) t ((fun x => - / (Rnat_pow t 2)) t)).
+  intros t tint; auto_derive;[lra | ].
+  rewrite 2!Rnat_pow_S; auto.
+      replace (2 - 1 - 1) with 0 by ring; rewrite Rnat_pow_0; field; lra.
+    now replace (2 - 1 - 1) with 0 by ring; auto.
+  now replace (2 - 1) with 1 by ring; auto.
+assert (dV2 : forall t, 2 <= t <= 3 ->
+         is_derive (fun x => / Rnat_pow x 2) t
+          ((fun x =>  / (Rnat_pow t 3)) t)).
+  intros t tint; auto_derive;[lra | ].
+  rewrite 2!Rnat_pow_S; auto.
+      replace (2 - 1 - 1) with 0 by ring; rewrite Rnat_pow_0; field; lra.
+    now replace (2 - 1 - 1) with 0 by ring; auto.
+  now replace (2 - 1) with 1 by ring; auto.
+
+  rewrite Rnat_pow_S.
+assert (ex_der_n1 : forall t, 2 <= t <= 3 -> ex_der_n ln 1 t).
+  intros t tint; apply ex_der_n_S'; auto with core real.
+  rewrite Rminus_eq_0.
+  change 0 with (INR 0).
+  assert (exdlnt : ex_derive ln t).
+    auto_derive; lra.
+  revert exdlnt; apply ex_derive_ext.
+  now intros t'; rewrite Der_n_correct; simpl.
+  (* auto_derive should be extended to handle these cases too. *)
+assert (ex_der_n2 : forall t, 2 <= t <= 3 -> ex_der_n ln 2 t).
+  intros t tint.
+  assert (exddlnt
+  compute_Rnat_to_nat 1.
+  simpl.
+  auto_derive; lra.
+assert (ex_der_n2 : forall t, 2 <= t <= 3 -> ex_der_n ln 2 t).
+  intros t tint; unfold ex.
+
+  rewrite (Rnat_to_natP' ).
+  admit.
+  rewrite INR_IZN; auto.
