@@ -608,7 +608,49 @@ Ltac compute_Rnat_to_nat n :=
 Definition ex_der_n (f : R -> R) (n : R) :=
   ex_derive_n f (Rnat_to_nat n).
 
+Definition sumn (n : R) := \big[Rplus / 0]_(0 <= x < n) x.
+
+Ltac rid_of_Rnat :=   match goal with |- Rnat ?A => field_simplify A end; auto.
+
+Lemma sumn_eq (n : R) : Rnat n -> sumn n = n * (n - 1) / 2.
+Proof.
+induction 1 using Rnat_ind.
+  unfold sumn.
+  rewrite big0.
+  field.
+unfold sumn; rewrite big_recr; cycle 1.
+    exact associative_monoid_Rplus.
+  rid_of_Rnat.
+  apply Rnat_ge0 in H.
+ lra.
+field_simplify.
+field_simplify (k + 1 - 1).
+unfold sumn in IHRnat.
+rewrite IHRnat.
+field.
+Qed.
+
 Definition fact (n : R) := \big[Rmult / 1]_(1 <= x < n + 1) x.
+
+Lemma fact_ge0 n : Rnat n -> 1 <= fact n.
+Proof.
+induction 1 as [ | p pnat Ih] using Rnat_ind .
+  unfold fact.
+  field_simplify (0 + 1).
+  rewrite big0.
+  lra.
+replace (fact (p + 1)) with (fact p * (p + 1)). (* postponed justification *)
+  replace 1 with (1 * 1) at 1 by field.
+  apply Rmult_le_compat; try lra.
+  apply Rnat_ge0 in pnat; lra.
+(* Now proving the postponed justification *)
+unfold fact at 2.
+rewrite big_recr; auto.
+    field_simplify (p + 1 + 1 - 1).
+    easy.
+  field_simplify (p + 1 + 1 - 1); auto.
+apply Rnat_ge0 in pnat; lra.
+Qed.
 
 Definition Der_n (f : R -> R) (n : R) :=
   Rnat_iter n (fun (dp : R -> R) => Derive dp) f.
