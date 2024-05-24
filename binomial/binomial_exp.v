@@ -1,4 +1,4 @@
-Require Import Reals ClassicalEpsilon Lia Lra.
+Require Import List Reals ClassicalEpsilon Lia Lra.
 
 Open Scope R_scope.
 
@@ -220,6 +220,14 @@ rewrite <- plus_IZR, !IRZ_IZR, Zfactorial_succ, mult_IZR; auto.
 now apply le_IZR; rewrite <- xz.
 Qed.
 
+Lemma Rfactorial_succ' x : 1 <= x -> Rint x -> Rfactorial x =
+    Rfactorial (x - 1) * x.
+Proof.
+intros xge1 xint.
+replace x with ((x - 1) + 1) at 1 by ring.
+rewrite Rfactorial_succ; [ring | lra | auto with rnat].
+Qed.
+
 Lemma Rfactorial_gt_0 n : Rint n -> 0 < Rfactorial n.
 Proof.
 intros nint.
@@ -301,8 +309,84 @@ replace (n - n) with 0 by ring.
 now rewrite binomial_n_0.
 Qed.
 
+(* This proof could be given as an exercise.  It shows how much of the
+  "fake typing information" clutters the proof: each time we need to prove
+  that arguments to Rfactorial is natural number! *)
+Lemma binomial_succ n m : Rint n -> 0 <= n -> Rint m -> 0 <= m < n ->
+  binomial (n + 1) (m + 1) = binomial n m + binomial n (m + 1).
+Proof.
+intros nint nge0 mint mbounds.
+unfold binomial at 2 3.
+replace (Rfactorial n / (Rfactorial m * Rfactorial (n - m))) with
+  ((Rfactorial n * (m + 1)) / ((Rfactorial m * (m + 1)) * Rfactorial (n - m)));
+  cycle 1.
+  field; repeat split; try lra.
+    assert (tmp1 : Rint (n - m)) by auto with rnat.
+    assert (tmp2 : 0 < Rfactorial (n - m)) by now apply Rfactorial_gt_0.
+    lra.
+  assert (tmp3 : 0 < Rfactorial m) by now apply Rfactorial_gt_0.
+  lra.
+replace (n - m) with ((n + 1) - (m + 1)) by ring.
+replace (Rfactorial n / (Rfactorial (m + 1) * Rfactorial (n - (m + 1)))) with
+   (Rfactorial n * ((n + 1) - (m + 1)) /
+    (Rfactorial (m + 1) * (Rfactorial (n - (m + 1)) * ((n + 1) - (m + 1)))));
+  cycle 1.
+  field.
+  assert (tmp1 : Rint (n - (m + 1))) by auto with rnat.
+  assert (tmp2 : Rint (m + 1)) by auto with rnat.
+  assert (tmp3 : 0 < Rfactorial (n - (m + 1))) by now apply Rfactorial_gt_0.
+  assert (tmp4 : 0 < Rfactorial (m + 1)) by now apply Rfactorial_gt_0.
+  lra.
+replace (Rfactorial m * (m + 1)) with (Rfactorial (m + 1)); cycle 1.
+  apply Rfactorial_succ; auto with rnat; lra.
+replace (Rfactorial (n - (m + 1)) * (n + 1 - (m + 1))) with
+  (Rfactorial ((n + 1) - (m + 1))); cycle 1.
+  rewrite (Rfactorial_succ' (n + 1 - (m + 1))); cycle 1.
+    enough (m + 1 <= n) by lra.
+    apply Rint_le_lt; auto; lra.
+    now auto with rnat.
+  now replace (n + 1 - (m + 1) - 1) with (n - (m + 1)) by ring.
+assert (tech : forall a b c, c <> 0 -> a / c + b / c = (a + b) / c).
+  now intros a b c cn0; field.
+rewrite tech; cycle 1.
+  apply Rmult_integral_contrapositive.
+  assert (tmp1 : Rint (n + 1 - (m + 1))) by auto with rnat.
+  assert (tmp2 : Rint (m + 1)) by auto with rnat.
+  assert (tmp3 : 0 < Rfactorial (n + 1 - (m + 1))) by now apply Rfactorial_gt_0.
+  assert (tmp4 : 0 < Rfactorial (m + 1)) by now apply Rfactorial_gt_0.
+  lra.
+replace (Rfactorial n * (m + 1) + Rfactorial n * (n + 1 - (m + 1))) with
+  (Rfactorial n * (n + 1)) by ring.
+replace (Rfactorial n * (n + 1)) with (Rfactorial (n + 1)); cycle 1.
+  rewrite Rfactorial_succ; auto.
+reflexivity.
+Qed.
+
 (* This ends the section of tools that should be provided to students about
   binomial numbers. *)
+
+(* Small recreation: another definition of factorial, an efficient one,
+   but with no proof of correctness here.  It can be use to find the value
+   empirically. *)
+Fixpoint p_fact (base : Z) (p : positive) :=
+  match p with
+  | xH => (base + 1)%Z
+  | xI p' => (p_fact base p' * p_fact (base + Z.pos p') p' * (base + Z.pos p))%Z
+  | xO p' => (p_fact base p' * p_fact (base + Z.pos p') p')%Z
+  end.
+
+Definition Zfact (x : Z) :=
+  match x with Z.pos p => p_fact 0 p | _ => 1%Z end.
+
+Compute filter (fun p => (fst p =? 100)%Z) (map
+          (fun x => (((100 * Zfact x / (Zfact 5 * Zfact (x - 5))) /
+                      (17 * (Zfact x / (Zfact 4 * Zfact (x - 4)))))%Z, x))
+             (rev (Z.iter 100 (fun l =>
+           match l with a :: tl => (a + 1)%Z :: l | nil => 1%Z :: nil end)
+           (5%Z :: nil)))).
+(* This says that the value expected at the next exercise could be 89, the
+   computation of the division is approximated to 1/100, and we test values
+   between 5 and 105. *)
 
 (* Now we come to the exercise that triggered my curiosity. *)
 Lemma exo : exists n, binomial n 5 = 17 * binomial n 4.
@@ -311,48 +395,52 @@ Proof.
   gathering constraints about this number.  Here we go, we assume
   the existance of the number. *)
 eapply ex_intro with ?[ex_n].
+(* The remember trick is used to make sure the existential variable will not be affected
+  by uses of the ring tactic. *)
 remember ?ex_n as n.
 unfold binomial.
-rewrite Rdiv_def, Rinv_mult, (Rmult_comm (/ Rfactorial 5)), <- Rmult_assoc.
-enough (Rint n).
-enough (0 <= n - 5).
-
-replace (Rfactorial n * / Rfactorial (n - 5)) with
-  (n * (n - 1) * (n - 2) * (n - 3) * (n - 4)); cycle 1.
-  apply eq_sym.
-  replace n with ((n - 5) + 1 + 1 + 1 + 1 + 1) at 1 by ring.
-  repeat (rewrite Rfactorial_succ; [ | lra | auto 10 with rnat]).
-  field.
-  apply not_eq_sym, Rlt_not_eq, Rfactorial_gt_0; auto with rnat.
-replace (Rfactorial n / (Rfactorial 4 * Rfactorial (n - 4))) with
-   (n * (n - 1) * (n - 2) * (n - 3) / Rfactorial 4); cycle 1.
-  apply eq_sym.
-  replace n with ((n - 4) + 1 + 1 + 1 + 1) at 1 by ring.
-  repeat (rewrite Rfactorial_succ; [ | lra | auto 10 with rnat]).
-  field.
-  split; apply not_eq_sym, Rlt_not_eq, Rfactorial_gt_0; auto with rnat.
-  replace (17 * (n * (n - 1) * (n - 2) * (n - 3) / Rfactorial 4))
-    with ((n * (n - 1) * (n - 2) * (n - 3)) *
-        (17 * (/Rfactorial 4)))
-    by (rewrite Rdiv_def; ring).
-  replace (n * (n - 1) * (n - 2) * (n - 3) * (n - 4) * / Rfactorial 5) with
-   ((n * (n - 1) * (n - 2) * (n - 3)) * ((n - 4) * / Rfactorial 5)) by ring.
-  apply Rmult_eq_compat_l.
-  replace 5 with (4 + 1) by ring.
-  rewrite Rfactorial_succ;[ | lra | auto with rnat].
-  rewrite Rinv_mult, (Rmult_comm (/ Rfactorial _)), <- Rmult_assoc.
-  apply Rmult_eq_compat_r.
-  replace (4 + 1) with 5 by ring.
-  apply (Rmult_eq_reg_r 5);[ | lra].
-  rewrite Rmult_assoc, Rinv_l;[ | lra].
-  rewrite Rmult_1_r; apply (Rplus_eq_reg_r 4).
-  replace (n - 4 + 4) with n by ring.
-  rewrite Heqn.
-  (* We give the value here, but just reflexivity would make it possible
-     to solve the problem without ever writing the value in the script. *)
-  enough (?ex_n = 17 * 5 + 4) by assumption; reflexivity.
-(* The value for n is then propagated to the equation Heqn and we can
-   proved the delayed obligations about the value. *)
-rewrite Heqn; lra.
-rewrite Heqn; auto with rnat.
+(* The first step is to remove factorial 4 from both side.  On the left side,
+ factorial 4 is found inside factorial 5. *)
+rewrite !Rdiv_def, !Rinv_mult, (Rmult_comm (/ Rfactorial 5)), <- Rmult_assoc.
+replace (Rfactorial 5) with (5 * Rfactorial 4); cycle 1.
+  rewrite (Rfactorial_succ' 5), Rmult_comm.
+    replace (5 - 1) with 4 by ring.
+    reflexivity.
+  lra.
+now auto with rnat.
+rewrite (Rmult_comm (/ Rfactorial 4)), Rinv_mult, <- !Rmult_assoc.
+(* This should be a differently worded tactic, to express explicitely the
+   removal of (/Rfactorial 4) *)
+apply (Rmult_eq_compat_r (/Rfactorial 4)).
+(* This is a dummy tactic to reassert what the goal has become. *)
+enough (it : Rfactorial n * / Rfactorial (n - 5) * / 5 =
+             17 * Rfactorial n * /Rfactorial (n - 4)) by exact it.
+(* The next step is to remove factorial n *)
+rewrite <- (Rmult_comm (Rfactorial n)), !Rmult_assoc.
+apply (Rmult_eq_compat_l (Rfactorial n)).
+enough (it : / Rfactorial (n - 5) * / 5 = 17 * /Rfactorial (n - 4)) by exact it.
+replace (Rfactorial (n - 4)) with (Rfactorial (n - 5) * (n - 4)).
+(* The next step is to remove factorial (n - 5) *)
+rewrite Rinv_mult, <- Rmult_assoc, <- (Rmult_comm (/ Rfactorial (n - 5))), Rmult_assoc.
+apply (Rmult_eq_compat_l (/ Rfactorial (n - 5))).
+enough (it : / 5 = 17 * / (n - 4)) by exact it.
+apply (Rmult_eq_reg_l (5 * (n - 4))).
+field_simplify.
+apply (Rplus_eq_reg_l 4).
+field_simplify.
+enough (it : n = 89) by exact it.
+(* At this point we accept the constraint as defining n. *)
+rewrite Heqn; reflexivity.
+(* We now have to prove all the accumulated constraints. *)
+(* this one was created by field_simplify *)
+lra.
+(* this one was create by field_simplify *)
+lra.
+(* This one was created by the expansion of the factorial function. *)
+rewrite (Rfactorial_succ' (n - 4)).
+    replace (n - 4 - 1) with (n - 5) by ring.
+    reflexivity.
+  lra.
+rewrite Heqn.
+auto with rnat.
 Qed.
