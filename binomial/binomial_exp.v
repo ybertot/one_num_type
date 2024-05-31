@@ -14,6 +14,7 @@ Inductive Rint : R -> Prop :=
   Rint1 : Rint 1
 | Rint_sub : forall x y, Rint x -> Rint y -> Rint (x - y).
 
+#[export]
 Hint Resolve Rint1 Rint_sub : rnat.
 
 (* We then need to have all the stability statements for the ring
@@ -21,6 +22,7 @@ Hint Resolve Rint1 Rint_sub : rnat.
 Lemma Rint0 : Rint 0.
 Proof. now replace 0 with (1 - 1) by ring; auto with rnat. Qed.
 
+#[export]
 Hint Resolve Rint0 : rnat.
 
 Lemma Rint_add x y : Rint x -> Rint y -> Rint (x + y).
@@ -34,6 +36,7 @@ replace ((u - v) * y) with ((u * y) - (v * y)) by ring.
 now auto with rnat.
 Qed.
 
+#[export]
 Hint Resolve Rint_add Rint_mul : rnat.
 
 Lemma Rint_opp x : Rint x -> Rint (- x).
@@ -44,6 +47,7 @@ Proof. intros xint; replace (-x) with (0 - x) by ring; auto with rnat. Qed.
 Lemma Rint2 : Rint 2.
 Proof.  now replace 2 with (1 + 1); auto with rnat. Qed.
 
+#[export]
 Hint Resolve Rint2 : rnat.
 
 Lemma Rint_pos p : Rint (IZR (Z.pos p)).
@@ -54,6 +58,7 @@ induction p as [ p' Ih | p' Ih | ].
 auto with rnat.
 Qed.
 
+#[export]
 Hint Resolve Rint_pos : rnat.
 
 Lemma Rint_neg p : Rint (IZR (Z.neg p)).
@@ -64,6 +69,7 @@ replace (- IZR (Z.pos p)) with (0 - IZR (Z.pos p)) by ring.
 auto with rnat.
 Qed.
 
+#[export]
 Hint Resolve Rint_neg : rnat.
 
 (* This is the general theorem that covers all numbers, even 0, 1, and 2
@@ -77,6 +83,7 @@ Proof.
 now destruct x as [ | p | p]; auto with rnat.
 Qed.
 
+#[export]
 Hint Resolve Rint_Z : rnat.
 
 Example Rint_big : Rint 1043.
@@ -245,7 +252,8 @@ Qed.
 Lemma Rint_factorial n : Rint (Rfactorial n).
 Proof. apply Rint_Z. Qed.
 
-Hint Resolve Rint_factorial.
+#[export]
+Hint Resolve Rint_factorial : rnat.
 (* The binomial function. *)
 (* ================== *)
 
