@@ -193,6 +193,8 @@ rewrite !Rnat_iterS; auto.
 now rewrite IHnnat.
 Qed.
 
+(* Defining Rseq, in two stages, using epsilon *)
+
 Definition Rseq_Prop (n m : R) (v : list R) :=
   forall m' : nat, m = INR m' ->
               v = map (fun e => n + IZR (Z.of_nat e)) (seq 0 m').
@@ -240,7 +242,7 @@ intros mn; replace m with (m - 1 + 1) at 1 by ring.
 now rewrite Rseq_S; auto.
 Qed.
 
-Lemma Rseq_app (n m p : R) : Rnat m -> Rnat p ->
+Lemma Rseq_add_r (n m p : R) : Rnat m -> Rnat p ->
   Rseq n (m + p) = (Rseq n m) ++ Rseq (n + m) p.
 Proof.
 intros mnat pnat; revert n.
@@ -268,35 +270,69 @@ destruct (IZN _ xge0) as [n Pn].
 now rewrite Pn, <- INR_IZR_INZ, Nat2Z.id.
 Qed.
 
-Ltac expand_Rseq :=
-  match goal with
-  | |- context[Rseq ?x (IZR ?y)] =>
-    let Hex := fresh "existential_hypothesis" in
-    assert (Hex : exists v, Rseq_Prop x (IZR y) v);
-    [exists (map (fun e => x + (IZR (Z.of_nat e))) (seq 0 (Z.to_nat y)));
-     let y := fresh "y" in
-     intros y; rewrite ?INR_IZR_INZ;
-     let yeq := fresh "eq_for_y" in
-     intros yeq; apply eq_IZR in yeq; rewrite yeq, !Nat2Z.id; reflexivity |
-  unfold Rseq;
-  rewrite (epsilon_spec (inhabits nil)
-             (Rseq_Prop x (IZR y)) Hex (Z.to_nat y));
-     [simpl; rewrite <- !plus_IZR; reflexivity | rewrite INR_IZN; auto; lia ]]
+Lemma expand_Rseq_thm (x : R) (y : nat) :
+  Rseq x (INR y) = map (fun e => x + (IZR (Z.of_nat e))) (seq 0 y).
+Proof.
+assert (Hex : exists l, Rseq_Prop x (INR y) l).
+  exists (map (fun e => x + (IZR (Z.of_nat e))) (seq 0 y)).
+  now intros u yu; rewrite (INR_eq _ _ yu).
+unfold Rseq.
+now rewrite (epsilon_spec (inhabits nil) _ Hex y).
+Qed.
+
+(* This is an example of tactic that computes the expansion of a sequence
+  of natural numbers (actually, real numbers satisfying that appear to be
+  integers, from the Rseq function.
+
+  The design of this tactic with `remember` is chosen to make sure that
+  only one instance of Rseq _ _ is being modified at a time.  This
+  tactic is also fine-tuned so that the addition with 0 on the left is
+  computed, when the initial pattern is `Rseq 0 _`
+*)
+Ltac expand_Rseq2 :=
+  match goal with |- context[Rseq ?x (IZR (Z.pos ?p))] =>
+  let vvar := fresh "v" in let vvar_eq := fresh "v_eq" in
+  let sandbox := fresh "sandbox" in
+  remember (Rseq x (IZR (Z.pos p))) as vvar eqn:vvar_eq;
+  let y := eval compute in (Z.abs_nat (Z.pos p)) in
+  let v := eval cbn [map Z.of_nat seq Pos.of_succ_nat Pos.succ] in
+    (map (fun e => x + (IZR (Z.of_nat e))) (seq 0 y)) in
+  assert (sandbox : vvar = v);[
+     rewrite vvar_eq;
+     replace (Rseq x (IZR (Z.pos p))) with (Rseq x (INR y));[ |
+         replace (IZR (Z.pos p)) with (INR y) by (simpl; ring); easy ];
+     rewrite expand_Rseq_thm;
+     change (map (fun e => x + (IZR (Z.of_nat e))) (seq 0 y)) with
+       v; easy
+     | rewrite ?Rplus_0_l in sandbox; rewrite sandbox;
+       clear vvar vvar_eq sandbox]
   end.
 
-Ltac expand_Rseq' :=
-  repeat (rewrite Rseq_S', <- minus_IZR;
-     [ | rewrite <- minus_IZR;
-        (apply Rnat_imm || apply Rnat0)]); rewrite Rseq0;
-        rewrite <- !plus_IZR; reflexivity.
+Lemma Rseq1 n : Rseq n 1 = [n].
+Proof.
+replace 1 with (0 + 1) at 1 by ring.
+now rewrite Rseq_S; auto; rewrite Rseq0; auto.
+Qed.
+
+Lemma cons_eq [A : Type] (a b : A) (l1 l2 : list A) :
+  a = b -> l1 = l2 -> a :: l1 = b :: l2.
+Proof.
+now intros q1 q2; rewrite q1, q2.
+Qed.
+
+Ltac list_pointwise_equality := repeat apply cons_eq.
 
 Example seq14 : Rseq 1 4 = [1; 2; 3; 4].
 Proof.
-expand_Rseq'.
-(* expand_Rseq. also works. *)
+expand_Rseq2.
+list_pointwise_equality;[ | | | | easy ].
+ring.
+ring.
+ring.
+ring.
 Qed.
 
-(* We can use structural recursion on datatypes as usual. *)
+(* Here we use structural recursion on datatypes as usual. *)
 
 Fixpoint sumr (l : list R) : R :=
   match l with nil => 0 | a :: tl => a + sumr tl end.
@@ -309,25 +345,43 @@ induction l1 as [ | a l1 Ih].
 now simpl; rewrite Ih, Rplus_assoc.
 Qed.
 
+(* When a function on natural real numbers is defined recursively, we
+  need to exhibit constants as being successive additions of 1 to the left.
+  This is done by this tactic. *)
+Ltac expand_nat_as_sum n :=
+  match n with
+  | IZR (Z.pos ?p) =>
+    let n' := eval compute in (Z.pos p - 1)%Z in
+    replace n with (IZR n' + 1) by ring
+  end.
+
+Lemma sumr_seq10 : sumr (Rseq 0 100) = 4950.
+Proof.
+expand_Rseq2.
+cbn [sumr].
+ring.
+Qed.
+
+(* The main point of the demo starts here. *)
+(* Here is the main theorem about the sum of n integers. *)
 Lemma sumr_seq (n : R) : Rnat n -> sumr (Rseq 0 n) = n * (n - 1) / 2.
 Proof.
 intros nnat; induction nnat using Rnat_ind.
   rewrite Rseq0; try apply Rnat0; simpl.
   (* field. can finish here. *)
   now unfold Rdiv; rewrite !Rmult_0_l.
-rewrite Rseq_app; try (apply Rnat0 || apply Rnat1 || assumption).
+(* The tail of the tactic is concerned with getting rid of the "weak typing"
+  conditions. *)
+rewrite Rseq_add_r; try (apply Rnat0 || apply Rnat1 || assumption).
 rewrite sumr_app.
 rewrite IHnnat.
+rewrite Rseq1.
 replace 1 with (0 + 1) at 2 by now rewrite Rplus_0_l.
-rewrite Rseq_S; auto.
-rewrite Rseq0; simpl.
+cbn [sumr].
   (*  field. can finish here. *)
-rewrite Rplus_0_l.
+rewrite !Rplus_0_l.
 rewrite Rplus_0_r.
-unfold Rminus at 2.
-rewrite Rplus_assoc.
-rewrite Rplus_opp_r.
-rewrite Rplus_0_r.
+replace (k + 1 - 1) with k by ring.
 replace k with ((2 * k) / 2) at 3.
   rewrite <- Rdiv_plus_distr.
   rewrite (Rmult_comm k).
@@ -346,22 +400,44 @@ rewrite Rinv_r.
 lra.
 Qed.
 
+(* Since rlength is defined by structural recursion on lists, the
+  equality theorems are provided for free. *)
 Fixpoint rlength {A : Type} (l : list A) : R :=
   match l with nil => 0 | a :: tl => rlength tl + 1 end.
 
-Definition rnth {A : Type} (e : A) (n : R) (l : list A) :=
+Lemma rlength_Rseq x y : Rnat y -> rlength (Rseq x y) = y.
+Proof.
+intros ynat; revert x.
+induction ynat as [ | y' ynat' Ihy] using Rnat_ind .
+  now intros x; rewrite Rseq0.
+intros x; rewrite Rseq_S; auto.
+simpl.
+rewrite Ihy.
+reflexivity.
+Qed.
+
+Definition rnth {A : Type} (e : A) (l : list A) (n : R) :=
   hd e (Rnat_iter n (@tl A) l).
+
+Lemma rnth0 {A : Type} (e : A) a l :
+  rnth e (a :: l) 0 = a.
+Proof.
+now unfold rnth; rewrite Rnat_iter0.
+Qed.
+
+Lemma rnthS {A : Type} (e : A) a l n :
+  Rnat n ->
+  rnth e (a :: l) (n + 1) = rnth e l n.
+Proof.
+intros nnat.
+unfold rnth.
+rewrite Rnat_iter_add, Rnat_iter1; auto.
+Qed.
 
 Notation "'\big[' f / idf ]_( a <= i < b ) E" :=
   (fold_right f  idf (map (fun i => E) (Rseq a (b - a))))
   (at level 35, a at level 30,  b at level 30, E at level 36, f,
    idf at level 10, i at level 0, right associativity).
-
-Lemma Rseq1 n : Rseq n 1 = [n].
-Proof.
-replace 1 with (0 + 1) at 1 by ring.
-now rewrite Rseq_S; auto; rewrite Rseq0; auto.
-Qed.
 
 Definition associative_monoid {A : Type} (f : A -> A -> A) (idx : A) :=
   (forall x y z, f x (f y z) = f (f x y) z) /\
@@ -432,9 +508,11 @@ assert (Rnat (p + 1 - 0)) by now rewrite Rminus_0_r; auto.
 assert (0 < p + 1) by now assert (tmp := Rnat_ge0 _ Np); lra.
 rewrite big_recr; auto.
 replace (p + 1 - 1) with p by ring.
-rewrite Ih; field.
+rewrite Ih. 
+field.
 Qed.
 
+(* Here are a few exercises about divisibility. *)
 Section sqrt2_not_rational.
 
 Definition multiple (a b : R) :=
@@ -448,7 +526,8 @@ intros agt0 cmp [k [nk mb]] [l [nl mc]].
 exists (k - l); split.
   apply Rnat_sub; auto.
   (* Here nra finishes the proof. *)
-  apply (Rmult_le_reg_r a); auto.
+  apply (Rmult_le_reg_r a).
+    auto.
   now rewrite <- mc, <- mb.
 now rewrite Rmult_minus_distr_r, mb, mc.
 Qed.
@@ -460,7 +539,11 @@ induction 1 as [ | p pnat Ih] using Rnat_ind.
   left; exists 0; split; auto; field.
 destruct Ih as [mp | [l [lnat mp]]].
   now right; replace (p + 1 - 1) with p by ring.
-left; exists (l + 1); split; auto; lra.
+left; unfold multiple.
+exists (l + 1).
+split.
+  auto.
+lra.
 Qed.
 
 Lemma not_even_and_odd (n : R) :
@@ -495,6 +578,54 @@ assert (tmp' := Rnat_ge0 _ pnat).
 apply Rnat_gt_pred; auto; lra.
 (* This part is a bit iffy, lra solves the problem in ways I don't
   really understand. *)
+Qed.
+
+Lemma Rnat_cases (n : R) : Rnat n ->
+  (n = 0 \/ exists p, Rnat p /\ n = p + 1).
+Proof.
+induction 1 using Rnat_ind.
+  left; easy.
+clear IHRnat.
+right.
+exists k; split; auto.
+Qed.
+
+Lemma not_even_and_odd_2nd (n : R) :
+  Rnat n -> multiple 2 n -> ~multiple 2 (n - 1).
+Proof.
+induction 1 as [p Ih pnat] using course_of_value_induction.
+intros [k [knat p2k]].
+intros [l [lnat pm12l]].
+destruct (Rnat_cases k knat) as [k0 | [k' [k'nat kk']]].
+  assert (p - 1 <= 0).
+    rewrite p2k, k0; lra.
+  assert (0 <= p - 1).
+    rewrite pm12l.
+    assert (0 <= l) by now apply Rnat_ge0.
+    lra.
+  lra.
+assert (p'nat : Rnat (p - 2)).
+  replace (p - 2) with (k' * 2) by lra.
+  apply Rnat_mul.
+    assumption.
+  apply Rnat_imm.
+assert (p'lt : p - 2 < p) by lra.
+assert (p'mul2 : multiple 2 (p - 2)).
+  exists k'.
+  split.
+    assumption.
+  lra.
+case (Ih (p - 2) p'lt p'nat p'mul2).
+destruct (Rnat_cases l lnat) as [l0 | [l' [l'nat ll']]].
+  assert (p = 1) by lra.
+  assert (p - 2 < 0) by lra.
+  assert (0 <= p - 2) by now apply Rnat_ge0.
+  lra.
+unfold multiple.
+exists l'.
+split.
+  assumption.
+lra.
 Qed.
 
 Lemma even_square_to_even (n : R) :
@@ -747,7 +878,10 @@ apply Rseq_nat; auto.
 now apply Rnat_sub.
 Qed.
 
-Definition Rnat_pow (x n : R) := x ^ Rnat_to_nat n.
+
+(* TODO: Rnat_pow should just be Rpower, and we should use the conventional
+  bridge theorems between the two notions of power. *)
+Definition Rnat_pow (x n : R) := pow x (Rnat_to_nat n).
 
 Lemma Taylor_Lagrange (f : R -> R) (n x y : R) :
   Rnat n ->
