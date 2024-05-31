@@ -428,14 +428,11 @@ rewrite <- (Rmult_comm (Rfactorial n)), !Rmult_assoc.
 apply (Rmult_eq_compat_l (Rfactorial n)).
 enough (it : / Rfactorial (n - 5) * / 5 = 17 * /Rfactorial (n - 4)) by exact it.
 replace (Rfactorial (n - 4)) with (Rfactorial (n - 5) * (n - 4)); cycle 1.
-
-
   rewrite (Rfactorial_succ' (n - 4)).
-    replace (n - 4 - 1) with (n - 5) by ring.
-    reflexivity.
+      replace (n - 4 - 1) with (n - 5) by ring.
+      reflexivity.
+    shelve.
   shelve.
-shelve. 
-
 (* The next step is to remove factorial (n - 5) *)
 rewrite Rinv_mult, <- Rmult_assoc, <- (Rmult_comm (/ Rfactorial (n - 5))), Rmult_assoc.
 apply (Rmult_eq_compat_l (/ Rfactorial (n - 5))).
