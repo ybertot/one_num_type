@@ -151,7 +151,7 @@ Definition Zfactorial x :=
 Lemma Zfactorial0 : Zfactorial 0 = 1%Z.
 Proof. easy. Qed.
 
-Lemma Zfactorial_succ x : (0 <= x)%Z -> 
+Lemma Zfactorial_succ x : (0 <= x)%Z ->
   Zfactorial (x + 1) = (Zfactorial x * (x + 1))%Z.
 Proof.
 intros xge0.
@@ -262,7 +262,7 @@ Definition binomial x y :=
   pair of number n and m, such that 0 <= m <= n, is also available.
   Here is one of the equalities. *)
 Lemma binomial_rec n m : 0 <= n -> 0 <= m -> m < n ->
-  Rint n -> Rint m -> 
+  Rint n -> Rint m ->
   binomial (n + 1) (m + 1) = binomial n m + binomial n (m + 1).
 Proof.
 intros nge0 mge0 mlen nint mint.
@@ -419,7 +419,15 @@ enough (it : Rfactorial n * / Rfactorial (n - 5) * / 5 =
 rewrite <- (Rmult_comm (Rfactorial n)), !Rmult_assoc.
 apply (Rmult_eq_compat_l (Rfactorial n)).
 enough (it : / Rfactorial (n - 5) * / 5 = 17 * /Rfactorial (n - 4)) by exact it.
-replace (Rfactorial (n - 4)) with (Rfactorial (n - 5) * (n - 4)).
+replace (Rfactorial (n - 4)) with (Rfactorial (n - 5) * (n - 4)); cycle 1.
+
+
+  rewrite (Rfactorial_succ' (n - 4)).
+    replace (n - 4 - 1) with (n - 5) by ring.
+    reflexivity.
+  shelve.
+shelve. 
+
 (* The next step is to remove factorial (n - 5) *)
 rewrite Rinv_mult, <- Rmult_assoc, <- (Rmult_comm (/ Rfactorial (n - 5))), Rmult_assoc.
 apply (Rmult_eq_compat_l (/ Rfactorial (n - 5))).
@@ -437,9 +445,7 @@ lra.
 (* this one was create by field_simplify *)
 lra.
 (* This one was created by the expansion of the factorial function. *)
-rewrite (Rfactorial_succ' (n - 4)).
-    replace (n - 4 - 1) with (n - 5) by ring.
-    reflexivity.
+Unshelve.
   lra.
 rewrite Heqn.
 auto with rnat.
