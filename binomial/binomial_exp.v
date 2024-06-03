@@ -265,6 +265,10 @@ Hint Resolve Rint_factorial : rnat.
 Definition binomial x y :=
   Rfactorial x / (Rfactorial y * Rfactorial (x - y)).
 
+Lemma binomial_eq x y :
+  binomial x y = Rfactorial x / (Rfactorial y * Rfactorial (x - y)).
+Proof. reflexivity. Qed.
+
 (* In a full presentation, one would need to show that the other approach
   to the binomial function, where it is defined recusively over any
   pair of number n and m, such that 0 <= m <= n, is also available.
@@ -374,8 +378,7 @@ Qed.
   binomial numbers. *)
 
 (* Small recreation: another definition of factorial, an efficient one,
-   but with no proof of correctness here.  It can be use to find the value
-   empirically. *)
+   It can be used to find the value empirically. *)
 Fixpoint p_fact (base : Z) (p : positive) :=
   match p with
   | xH => (base + 1)%Z
@@ -383,11 +386,56 @@ Fixpoint p_fact (base : Z) (p : positive) :=
   | xO p' => (p_fact base p' * p_fact (base + Z.pos p') p')%Z
   end.
 
+Lemma p_fact_correct (base : Z) (p : positive) :
+  (0 <= base)%Z -> (Z.of_nat (fact (Z.abs_nat base)) *
+  p_fact base p = Z.of_nat (fact (Z.abs_nat  (base + Z.pos p))))%Z.
+Proof.
+revert base; induction p as [ p Ih | p Ih | ]; simpl.
+- intros base basege0; simpl.
+  rewrite !Z.mul_assoc.
+  rewrite !Ih; [ | lia | assumption].
+  set (w := (base + Z.pos p~1)%Z).
+  replace w with (Z.of_nat (Z.abs_nat w)) at 1; cycle 1.
+    rewrite Zabs2Nat.id_abs; apply Z.abs_eq; unfold w; lia.
+  rewrite <- Nat2Z.inj_mul.
+  replace (Z.abs_nat w) with (S (Z.abs_nat (base + Z.pos p + Z.pos p))); cycle 1.
+    unfold w; lia.
+  rewrite Nat.mul_comm; easy.
+- intros base basege0; simpl.
+  rewrite !Z.mul_assoc.
+  rewrite !Ih; try lia.
+  replace (base + Z.pos p + Z.pos p)%Z with (base + Z.pos p~0)%Z by lia.
+  easy.
+- intros base basege0.
+  replace (base + 1)%Z with (Z.of_nat (S (Z.abs_nat base)))%Z at 1 by lia.
+  rewrite Z.mul_comm.
+  rewrite <- Nat2Z.inj_mul.
+  replace (Z.abs_nat (base + 1)) with (S (Z.abs_nat base)) by lia.
+  easy.
+Qed.
+
 Definition Zfact (x : Z) :=
   match x with Z.pos p => p_fact 0 p | _ => 1%Z end.
 
-Compute filter (fun p => (fst p =? 100)%Z) (map
-          (fun x => (((100 * Zfact x / (Zfact 5 * Zfact (x - 5))) /
+Lemma Zfact_correct (x : Z) : Zfact x = Zfactorial x.
+Proof.
+unfold Zfact, Zfactorial.
+destruct x as [ | p | p]; simpl; auto.
+assert (main := p_fact_correct 0 p (Z.le_refl 0)).
+now rewrite Z.mul_1_l, Z.add_0_l in main.
+Qed.
+
+Definition nums_5_105 := (rev (Z.iter 100 (fun l =>
+           match l with a :: tl => (a + 1)%Z :: l | nil => 1%Z :: nil end)
+           (5%Z :: nil))).
+
+Compute nums_5_105.
+Compute last nums_5_105 0%Z.
+
+(* This is an example computing many instances of binomial values, using
+   the fact that we have an efficient way to compute factorials.   *)
+Compute filter (fun p => (fst p =? 0)%Z) (map
+          (fun x => ((Zfact x / (Zfact 5 * Zfact (x - 5)) -
                       (17 * (Zfact x / (Zfact 4 * Zfact (x - 4)))))%Z, x))
              (rev (Z.iter 100 (fun l =>
            match l with a :: tl => (a + 1)%Z :: l | nil => 1%Z :: nil end)
@@ -396,17 +444,52 @@ Compute filter (fun p => (fst p =? 100)%Z) (map
    computation of the division is approximated to 1/100, and we test values
    between 5 and 105. *)
 
+(* This is a specific tactic to compute factorials, but we could have a
+  more general tactics (based on a database of correspondence between
+  real functions and integer functions), to provide computation on ground terms
+  for real function. *)
+
+Ltac compute_factorial :=
+  match goal with |- context[Rfactorial (IZR (Z.pos ?p))] =>
+    let vfp := eval compute in (Zfact (Z.pos p)) in
+    replace (Rfactorial (IZR (Z.pos p))) with (IZR vfp);
+      [ try reflexivity |
+        now unfold Rfactorial; rewrite IRZ_IZR, <- Zfact_correct]
+  end.
+
+(* This would be unpractical if we had preserved the computation based on
+  natural numbers. *)
+Compute Zfact 100.
+Lemma fact100 : Rfactorial 100 = 93326215443944152681699238856266700490715968264381621468592963895217599993229915608941463976156518286253697920827223758251185210916864000000000000000000000000.
+Proof. compute_factorial. Qed.
+
+(* End of recreation. *)
+
+
 (* Now we come to the exercise that triggered my curiosity. *)
+(* The objective of the experiment here, is to show a Coq proof, where
+  discovery of the solution can happen as we progress in the proof.
+  Here, we exploit the fact that there is an equality between
+  binomial n m and n! / (m! * (n - m)!.  In the present  experiment, this
+  equality is given by definition, but if binomial was given by the
+  usual recursive definition based on the Pascal triangle, it would also
+  work, as soon as one proves that the recursive definition implies the
+  equality with factorials.
+
+  We use eexists to postpone the choice of the answer, and shelve to postpone
+  the proof of the various properties that the answer should satisfy
+  (being a natural number, being larger that 5, etc. *)
+
 Lemma exo : exists n, binomial n 5 = 17 * binomial n 4.
 Proof.
 (* One way to perform math is to prove the existence of a number by
   gathering constraints about this number.  Here we go, we assume
-  the existance of the number. *)
-eapply ex_intro with ?[ex_n].
-(* The remember trick is used to make sure the existential variable will not be affected
-  by uses of the ring tactic. *)
-remember ?ex_n as n.
-unfold binomial.
+  the existence of the number. *)
+eexists ?[ex_n].
+(* The remember trick is used to make sure the existential variable will
+  not be affected by uses of the ring tactic. *)
+remember ?ex_n as n eqn:Heqn.
+rewrite !binomial_eq.
 (* The first step is to remove factorial 4 from both side.  On the left side,
  factorial 4 is found inside factorial 5. *)
 rewrite !Rdiv_def, !Rinv_mult, (Rmult_comm (/ Rfactorial 5)), <- Rmult_assoc.
@@ -454,4 +537,110 @@ Unshelve.
   lra.
 rewrite Heqn.
 auto with rnat.
+Qed.
+
+(* This second version only uses Field for algebraic computation and lra
+  for bound conditions. *)
+Lemma exo' : exists n, binomial n 5 = 17 * binomial n 4.
+Proof.
+(* One way to perform math is to prove the existence of a number by
+  gathering constraints about this number.  Here we go, we assume
+  the existance of the number. *)
+eexists ?[ex_n].
+(* The remember trick is used to make sure the existential variable will
+  not be affected by uses of the ring tactic. *)
+remember ?ex_n as n eqn:Heqn.
+unfold binomial.
+(* Preparatory work to get rid of Rfactorial n *)
+replace (17 * (Rfactorial n / (Rfactorial 4 * Rfactorial (n - 4)))) with
+  (Rfactorial n * (17 / (Rfactorial 4 * Rfactorial (n - 4)))); cycle 1.
+  field.
+    assert (0 < Rfactorial (n - 4) /\ (0 < Rfactorial 4)).
+      split; apply Rfactorial_gt_0.
+        (* we need to wait until n is known for this one. *)
+        shelve.
+      (* this one can be proved right away. *)
+      auto with rnat.
+    lra.
+(* Getting rind of Rfactorial n *)
+apply Rmult_eq_compat_l.
+(* We now have to prove ... *)
+enough (it : / (Rfactorial 5 * Rfactorial (n - 5)) = 17 /
+            (Rfactorial 4 * (Rfactorial (n - 4)))) by exact it.
+(* Preparatory work to get rid of (Rfactorial (n - 5)) *)
+replace (/(Rfactorial 5 * Rfactorial (n - 5))) with
+  (/(Rfactorial 5) * /(Rfactorial (n - 5))); cycle 1.
+  field.
+    assert (0 < Rfactorial (n - 5) /\ 0 < Rfactorial 5).
+       split; apply Rfactorial_gt_0.
+          shelve.
+       auto with rnat.
+     lra.
+replace (17 / (Rfactorial 4 * Rfactorial (n - 4))) with
+   (17 / (Rfactorial 4 * (n - 4)) * /(Rfactorial (n - 5))); cycle 1.
+  rewrite (Rfactorial_succ' (n - 4)); cycle 1.
+      shelve.
+    shelve.
+  replace (n - 4 - 1) with (n - 5) by field.
+  field.
+  split.
+    shelve.
+    assert (0 < Rfactorial (n - 5) /\ 0 < Rfactorial 4).
+       split; apply Rfactorial_gt_0.
+          shelve.
+       auto with rnat.
+     lra.
+apply Rmult_eq_compat_r.
+(* We now have to prove ... *)
+enough (it : / Rfactorial 5  = 17 / (Rfactorial 4 * (n - 4))) by exact it.
+(* We now want to isolate Rfactorial 4. *)
+replace (/ Rfactorial 5) with (/ Rfactorial 4 * / 5); cycle 1.
+  rewrite (Rfactorial_succ' 5); cycle 1.
+      lra.
+    auto with rnat.
+  replace (5 - 1) with 4 by field.
+  field.
+  (* Here we could use the factorial computation tactic.
+  compute_factorial; lra.
+  *)
+  assert (0 < Rfactorial 4).
+    now apply Rfactorial_gt_0; auto with rnat.
+  lra.
+replace (17 / (Rfactorial 4 * (n - 4))) with
+     (/Rfactorial 4 * (17 / (n - 4))); cycle 1.
+  field.
+  split.
+    shelve.
+    (* When discovering the duplication, users could go back and include
+       the proof that 4! is non zero as an shared first proof. *)
+  assert (0 < Rfactorial 4).
+    now apply Rfactorial_gt_0; auto with rnat.
+  lra.
+apply Rmult_eq_compat_l.
+(* We need a better tool to move multiplication and division on both sides of
+   equality *)
+apply (Rmult_eq_reg_l (5 * (n - 4))); cycle 1.
+  assert (0 < n - 4).
+    shelve.
+  lra.
+field_simplify; cycle 1.
+  assert (0 < n - 4).
+    shelve.
+  lra.
+apply (Rplus_eq_reg_l 4).
+field_simplify.
+(* The solution has been discovered! *)
+rewrite Heqn.
+(* Instantiate the unknown, and propagate *)
+reflexivity.
+Unshelve.
+(* There are two kinds of postponed goals.  The first kind is about showing that
+   n - 4 or n - 5 is an integer. Here is a way to prove it. *)
+rewrite Heqn.
+auto with rnat.
+(* Let solve all the goals where the same tactic works. *)
+all : try solve [rewrite Heqn; auto with rnat].
+(* All the remaining goal are about showing that n - 4 is positive, when
+  one knows that n = 89.  lra uses the context and will solve that. *)
+all : lra.
 Qed.
