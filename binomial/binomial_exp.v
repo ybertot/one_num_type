@@ -144,6 +144,405 @@ apply eq_sym, eq_IZR.
 now apply epsilon_spec.
 Qed.
 
+Lemma IRZ_add n m : Rint n -> Rint m -> IRZ (n + m) = (IRZ n + IRZ m)%Z.
+Proof.
+intros nint mint.
+destruct (Rint_exists_Z n nint) as [n' nn'].
+destruct (Rint_exists_Z m mint) as [m' mm'].
+now rewrite nn', mm', <- plus_IZR, !IRZ_IZR.
+Qed.
+
+(* We should also have an induction principle for natural numbers. *)
+Lemma Rnat'_ind (P : R -> Prop) (v0 : P 0) 
+  (step : forall n, Rint n -> 0 <= n -> P n -> P (n + 1)) :
+  (forall n, Rint n -> 0 <= n -> P n). 
+Proof.
+intros n nint nge0.
+destruct (Rint_exists_Z n nint) as [nz Pnz].
+rewrite Pnz.
+assert (nge0' : (0 <= nz)%Z).
+  now apply le_IZR; rewrite <- Pnz.
+assert (Pnz' : nz = Z.of_nat (Z.abs_nat nz)).
+  now rewrite Nat2Z.inj_abs_nat, Z.abs_eq.
+rewrite Pnz'.
+generalize (Z.abs_nat nz); clear Pnz' nge0' Pnz nz.
+intros n'; induction n'.
+  exact v0.
+replace (IZR (Z.of_nat (S n'))) with (IZR (Z.of_nat n') + 1); cycle 1.
+  rewrite <- plus_IZR.
+  replace 1%Z with (Z.of_nat 1) by easy.
+  rewrite <- Nat2Z.inj_add.
+  now rewrite Nat.add_1_r.
+apply step; auto with rnat.
+apply IZR_le.
+apply Zle_0_nat.
+Qed.
+
+(* It turns out Rnat'_ind is cumbersome to use, so we attempt another
+  inductive description of natural numbers. *)
+Inductive Rnat : R -> Prop :=
+  Rnat0 : Rnat 0
+| Rnat_succ : forall x, Rnat x -> Rnat (x + 1).
+
+Lemma Rnat_Rint x : Rnat x -> Rint x /\ 0 <= x.
+Proof.
+induction 1 as [ | y ynat [yint yge0]].
+  now split; auto with rnat.
+split; auto with rnat; lra.
+Qed.
+
+Lemma Rint_Rnat x : Rint x -> 0 <= x -> Rnat x.
+Proof.
+intros xint xge0.
+destruct (Rint_exists_Z x xint) as [x' px].
+assert (x'ge0 : (0 <= x')%Z).
+  now apply le_IZR; rewrite <- px.
+assert (x'n : x' = Z.of_nat (Z.abs_nat x')).
+  now rewrite Nat2Z.inj_abs_nat, Z.abs_eq.
+rewrite px, x'n.
+generalize (Z.abs_nat x'); intros n.
+induction n.
+  exact Rnat0.
+replace (S n) with (n + 1)%nat by ring.
+rewrite Nat2Z.inj_add.
+rewrite plus_IZR.
+now apply Rnat_succ.
+Qed.
+
+Lemma Rnat_ge0 x : Rnat x -> 0 <= x.
+Proof.
+induction 1; lra.
+Qed.
+
+Lemma Rnat_cst x : Rnat (IZR (Z.pos x)).
+Proof. apply Rint_Rnat;[apply Rint_Z | apply IZR_le; lia]. Qed.
+
+Hint Resolve Rnat0 Rnat_succ Rnat_cst : rnat.
+
+Lemma Rnat_add x y : Rnat x -> Rnat y -> Rnat (x + y).
+Proof.
+induction 1 as [ | x xnat Ih].
+  now rewrite Rplus_0_l.
+intros ynat.
+replace (x + 1 + y) with (x + y + 1) by ring.
+apply Rnat_succ.
+apply Ih.
+assumption.
+Qed.
+
+Lemma Rnat_mul x y : Rnat x -> Rnat y -> Rnat (x * y).
+Proof.
+induction 1 as [ | x xnat Ih].
+  now rewrite Rmult_0_l; intros; apply Rnat0.
+intros ynat; replace ((x + 1) * y) with (x * y + y) by ring.
+apply Rnat_add.
+  apply Ih.
+  assumption.
+assumption.
+Qed.
+
+Lemma Rnat_sub x y : Rnat x -> Rnat y -> y <= x -> Rnat (x - y).
+Proof.
+intros xnat ynat ylex.
+destruct (Rnat_Rint _ xnat) as [xint xge0].
+destruct (Rnat_Rint _ ynat) as [yint yge0].
+apply Rint_Rnat; auto with rnat.
+lra.
+Qed.
+
+Hint Resolve Rnat_add Rnat_mul : rnat.
+
+(* Order properties for natural numbers. *)
+
+Lemma Rnat_le_lt x y : Rnat x -> Rnat y -> x < y -> x + 1 <= y.
+Proof.
+intros xnat ynat xlty; apply Rint_le_lt; auto.
+  now destruct (Rnat_Rint _ xnat).
+now destruct (Rnat_Rint _ ynat).
+Qed.
+
+Lemma Rnat_gt_pred (x y : R) : Rnat x -> Rnat y ->
+  x - 1 < y -> x <= y.
+Proof.
+intros xnat ynat xlty.
+induction xnat as [ | x' x'nat _].
+  now apply Rnat_ge0.
+apply Rnat_le_lt; auto with rnat.
+lra.
+Qed.
+
+Lemma Rnat_exists_nat x : Rnat x -> exists n, x = IZR (Z.of_nat n).
+Proof.
+induction 1 as [ | x xnat [n xn]].
+  exists 0%nat; easy.
+exists (S n).
+now rewrite Nat2Z.inj_succ, <- Z.add_1_r, plus_IZR, xn.
+Qed.
+
+(* The function IRN is only a tool for expert.  It should not be seen
+  by students. *)
+Definition IRN (x : R) := Z.abs_nat (IRZ x).
+
+Lemma INR_IRN x : Rnat x -> INR (IRN x) = x.
+Proof.
+intros xnat; destruct (Rnat_exists_nat _ xnat) as [x' xx'].
+rewrite xx'.
+unfold IRN.
+rewrite IRZ_IZR.
+rewrite INR_IZR_INZ.
+now rewrite Zabs2Nat.id.
+Qed.
+
+Lemma IRN0 : IRN 0 = 0%nat.
+Proof.
+now unfold IRN; rewrite IRZ_IZR.
+Qed.
+
+Lemma IRN1 : IRN 1 = 1%nat.
+Proof.
+now unfold IRN; rewrite IRZ_IZR.
+Qed.
+
+Lemma IRN2 : IRN 2 = 2%nat.
+Proof.
+now unfold IRN; rewrite IRZ_IZR.
+Qed.
+
+Lemma IRN_pos p : IRN (IZR (Z.pos p)) = Pos.to_nat p.
+Proof. now unfold IRN; rewrite IRZ_IZR, Zabs2Nat.inj_pos. Qed.
+
+Example IRN_42 : IRN 42 = 42%nat.
+Proof. now rewrite IRN_pos. Qed.
+
+Lemma IRN_add n m : 
+Rnat n -> Rnat m -> IRN (n + m) = (IRN n + IRN m)%nat.
+Proof.
+intros nnat mnat.
+destruct (Rnat_Rint _ nnat) as [nint nge0].
+destruct (Rnat_Rint _ mnat) as [mint mge0].
+unfold IRN; rewrite IRZ_add; auto.
+rewrite Zabs2Nat.inj_add; auto; apply le_IZR.
+  destruct (Rint_exists_Z _ nint) as [n' nn'].
+  now rewrite nn' in nge0 |- *; rewrite IRZ_IZR.
+destruct (Rint_exists_Z _ mint) as [m' mm'].
+now rewrite mm' in mge0 |- *; rewrite IRZ_IZR.
+Qed.
+
+Lemma IRN_succ n : Rnat n -> IRN (n + 1) = S (IRN n).
+Proof.
+now intros nnat; rewrite IRN_add, IRN1, Nat.add_1_r; auto with rnat.
+Qed.
+
+(* Iteration: a first way to use natural numbers to compute. This function
+  should be well understood by students, well documented, and well provided
+  in theorems. *)
+
+Definition Rnat_iter {A : Type} (n : R) (f : A -> A) (e : A) :=
+  Nat.iter (IRN n) f e.
+
+Lemma Rnat_iter0 {A : Type} (f : A -> A) (e : A) :
+  Rnat_iter 0 f e = e.
+Proof. now unfold Rnat_iter; rewrite IRN0. Qed.
+
+Lemma Rnat_iter1 {A : Type} (f : A -> A) (e : A) :
+  Rnat_iter 1 f e = f e.
+Proof. now unfold Rnat_iter; rewrite IRN1. Qed.
+
+Lemma Rnat_iter_add {A : Type} (f : A -> A) (e : A) n m :
+  Rnat n -> Rnat m ->
+  Rnat_iter (n + m) f e = Rnat_iter n f (Rnat_iter m f e).
+Proof.
+intros nnat mnat.
+unfold Rnat_iter.
+rewrite IRN_add; auto.
+now rewrite Nat.iter_add.
+Qed.
+
+(* TODO : add theorems for successors of iteration, but iter_add and
+  and iter1 are already powerful enough. *)
+
+(* For instance, nth can be viewed as an instance of iteration. *)
+Definition rnth {A : Type} (e : A) (l : list A) (n : R) :=
+  hd e (Rnat_iter n (@tl A) l).
+
+Lemma rnth0 {A : Type} (e : A) a l :
+  rnth e (a :: l) 0 = a.
+Proof.
+now unfold rnth; rewrite Rnat_iter0.
+Qed.
+
+Lemma rnthS {A : Type} (e : A) a l n :
+  Rnat n ->
+  rnth e (a :: l) (n + 1) = rnth e l n.
+Proof.
+intros nnat.
+unfold rnth.
+rewrite Rnat_iter_add, Rnat_iter1; auto with rnat.
+Qed.
+
+(* It is sensible that students see the primitives used to program
+  recursively on lists, so this definition may be part of the visible
+  interface.  Otherwise, we could decide to only have big operations. *)
+Fixpoint rlength {A : Type} (l : list A) : R :=
+  match l with
+  | nil => 0
+  | a :: l => 1 + rlength l
+  end.
+
+(* Ideally all theorems about the length of lists and its interactions with
+   map, filter, app, etc. should be made available to the students.  The
+   following theorem is a tool for that, but it is not for the students' eyes. *)
+
+Lemma rlength_nat {A : Type} (l : list A) : rlength l = INR (length l).
+Proof.
+induction l as [ | a l Ih]; auto.
+cbn [rlength length]; rewrite S_INR; ring [Ih].
+Qed.
+
+(* Subsection: making big operations on sequence of natural numbers.
+   Rseq n m is the sequence of length m of numbers n, n + 1, m + 2, ...
+   iteraction could be used for that, but we decide here to rely on the
+   existing function in Coq's standard library.
+ *)
+
+Definition Rseq (n m : R) :=
+  map (fun x => n + INR x) (seq 0 (IRN m)).
+
+Lemma rlength_Rseq x y : Rnat y -> rlength (Rseq x y) = y.
+Proof.
+intros ynat.
+rewrite rlength_nat; unfold Rseq.
+now rewrite map_length, seq_length, INR_IRN.
+Qed.
+
+Lemma Rseq0 (n : R) : Rseq n 0 = nil.
+Proof.
+now unfold Rseq; rewrite IRN0.
+Qed.
+
+Lemma Rseq1 (n : R) : Rseq n 1 = n :: nil.
+Proof.
+unfold Rseq; rewrite IRN1; simpl; apply (f_equal (fun x => x :: nil)); ring.
+Qed.
+
+Lemma seq_shift_add (n l m : nat) : seq (n + l) m =
+  map (fun x => Nat.add x l) (seq n m).
+Proof.
+revert n l; induction m as [ | m Ih].
+  easy.
+intros n l; simpl; apply f_equal.
+replace (S (n + l))%nat with ((S n) + l)%nat by ring.
+now apply Ih.
+Qed.
+
+(* This is a workhorse, making it possible to chip off elements at each
+  extremity, or to cut a big sequence in the middle. *)
+Lemma Rseq_add (n l m : R) : 
+  Rnat l -> Rnat m -> Rseq n (l + m) = Rseq n l ++ Rseq (n + l) m.
+Proof.
+intros lnat mnat.
+unfold Rseq.
+rewrite IRN_add; auto.
+rewrite seq_app, map_app.
+apply f_equal.
+rewrite seq_shift_add, map_map.
+apply map_ext.
+intros a; rewrite plus_INR, INR_IRN; auto; ring.
+Qed.
+
+Lemma Rseq_S (n m : R) : Rnat m ->
+  Rseq n (m + 1) = n :: (Rseq (n + 1) m).
+Proof.
+now intros mnat; rewrite Rplus_comm; rewrite Rseq_add, Rseq1; auto with rnat.
+Qed.
+
+Lemma Rseq_S' (n m : R) : Rnat (m - 1) ->
+  Rseq n m = n :: Rseq (n + 1) (m - 1).
+Proof.
+intros mn; replace m with (1 + (m - 1)) at 1 by ring.
+rewrite Rseq_add; auto with rnat.
+now rewrite Rseq1.
+Qed.
+
+(* Now providing a big operation, inspired by mathematical components. *)
+
+Notation "'\big[' f / idf ]_( a <= i < b ) E" :=
+  (fold_right f  idf (map (fun i => E) (Rseq a (b - a))))
+  (at level 35, a at level 30,  b at level 30, E at level 36, f,
+   idf at level 10, i at level 0, right associativity).
+
+Lemma big0 {A : Type}(E : R -> A) (f : A -> A -> A) (idx : A) (a : R) :
+  \big[f / idx]_(a <= i < a) E i = idx.
+Proof.
+now rewrite Rminus_eq_0, Rseq0.
+Qed.
+
+Lemma big_recl {A : Type}(E : R -> A) (f : A -> A -> A) (idx : A) (a b : R) :
+  Rnat (b - a) -> a < b ->
+  \big[f / idx]_(a <= i < b) E i =
+   f (E a) (\big[f / idx]_((a + 1) <= i < b) E i).
+Proof.
+intros hnat altb.
+rewrite Rseq_S'; [ | apply Rnat_sub; auto with rnat]; simpl.
+  replace (b - a - 1) with (b - (a + 1)) by ring.
+  easy.
+replace 1 with (0 + 1) by ring; apply Rnat_le_lt; auto with rnat.
+lra.
+Qed.
+
+Definition associative_monoid {A : Type} (f : A -> A -> A) (idx : A) :=
+  (forall x y z, f x (f y z) = f (f x y) z) /\
+   (forall x, f x idx = x) /\
+   (forall x, f idx x = x).
+
+Lemma big_recr {A : Type}(E : R -> A) (f : A -> A -> A) (idx : A) (a b : R) :
+  associative_monoid f idx ->
+  Rnat (b - a) -> a < b ->
+  \big[f / idx]_(a <= i < b) E i =
+   f (\big[f / idx]_(a <= i < (b - 1)) E i)
+    (E (b - 1)).
+Proof.
+intros amf hnat altb.
+assert (induct_arg : Rnat (b - a  - 1)).
+  apply Rnat_sub; auto with rnat; apply Rnat_gt_pred; auto with rnat; lra.
+enough (main : forall p, Rnat p ->
+  forall a, fold_right f idx (map (fun i => E i) (Rseq a (p + 1))) =
+   f (fold_right f idx (map (fun i => E i) (Rseq a p))) (E (a + p))).
+  replace (b - a) with (b - a - 1 + 1) by ring.
+  rewrite main; auto.
+  replace (a + (b - a - 1)) with (b - 1) by ring.
+  now replace (b - 1 - a) with (b - a - 1) by ring.
+clear hnat altb induct_arg a.
+intros p'; induction 1 as [ | p pnat Ih] using Rnat_ind.
+  intros a; rewrite Rplus_0_l, Rplus_0_r, Rseq0, Rseq1; simpl.
+  now destruct amf as [_ [P1 P2]]; rewrite P1, P2.
+intros a; rewrite Rseq_S; auto with rnat; simpl.
+rewrite (Rseq_S a); auto; simpl.
+destruct amf as [Pa [P1 P2]].
+now rewrite Ih, Pa; replace (a + (p + 1)) with (a + 1 + p) by ring.
+Qed.
+
+Lemma associative_monoid_Rplus : associative_monoid Rplus 0.
+Proof.
+split;[exact (fun x y z => eq_sym (Rplus_assoc x y z))| ].
+split;[exact Rplus_0_r | exact Rplus_0_l].
+Qed.
+
+#[export]
+Hint Resolve associative_monoid_Rplus : core.
+
+Lemma associative_mul : associative_monoid Rmult 1.
+Proof.
+split.
+  exact (fun x y z => eq_sym (Rmult_assoc x y z)).
+split.
+  exact Rmult_1_r.
+exact Rmult_1_l.
+Qed.
+
+#[export]
+Hint Resolve associative_mul : core.
+
 (* Subsection: defining a factorial function on R. *)
 (* ============ *)
 (* We could use a direct definition by induction on positive, this could
@@ -254,6 +653,27 @@ Proof. apply Rint_Z. Qed.
 
 #[export]
 Hint Resolve Rint_factorial : rnat.
+
+(* The factorial could also have been defined using a big operator. *)
+
+Lemma Rfactorial_iterated_product n :
+  Rnat n ->
+  Rfactorial n = \big[Rmult/1]_(1 <= i < n + 1) i.
+Proof.
+induction 1 as [ | x xnat Ih].
+  now rewrite Rfactorial0, Rplus_0_l, big0.
+rewrite Rfactorial_succ; cycle 1.
+    now apply Rnat_ge0.
+  now destruct (Rnat_Rint _ xnat).
+rewrite big_recr; auto; cycle 1.
+    replace (x + 1 + 1 - 1) with (x + 1) by ring.
+    now auto with rnat.
+  apply Rnat_ge0 in xnat.
+  lra.
+replace (x + 1 + 1 - 1) with (x + 1) by ring.
+now rewrite Ih.
+Qed.
+
 (* The binomial function. *)
 (* ================== *)
 
@@ -321,9 +741,105 @@ replace (n - n) with 0 by ring.
 now rewrite binomial_n_0.
 Qed.
 
+(* Up to now,  we described natural numbers as the conjunction of being an
+  integer and being positive, hoping that the recursive statement Rnat'_ind
+  would be enough for practical proofs.  The following proof shows how the
+  Rnat'_ind theorem can be used.  *)
+Lemma Rint_binomial n m : Rint n -> 0 <= n -> Rint m -> 0 <= m <= n ->
+  Rint (binomial n m).
+Proof.
+intros nint nge0; revert nint nge0 m.
+Fail elim n using Rnat'_ind.
+assert (base : forall m, Rint m -> 0 <= m <= 0 -> Rint (binomial 0 m)).
+  clear n.
+  intros m mint m00.
+  assert (m0 : m = 0) by lra.
+  rewrite m0, binomial_n_0; auto with rnat.
+  lra.
+assert (step : forall n, Rint n -> 0 <= n ->
+           (forall m, Rint m -> 0 <= m <= n -> Rint (binomial n m))
+  ->
+  (forall m, Rint m -> 0 <= m <= n + 1 -> Rint (binomial (n + 1) m))).
+  clear n.
+  intros n nint nge0 Ihn m.
+  intros mint [mge0 mlenp1].
+  assert (cases_on_m : m = 0 \/ exists m', Rint m' /\ 0 <= m' /\ m = m' + 1).
+    destruct (Rle_lt_dec 1 m) as [ mge1| mlt1].
+      right; exists (m - 1); split;[auto with rnat | split;[lra | ring]].
+    assert (tmp:= Rint_le_lt m 1 mint Rint1 mlt1); lra.
+  destruct cases_on_m as [m0 | [m' [m'int [m'ge0 msucc]]]].
+    rewrite m0, binomial_n_0; auto with rnat; lra.
+  rewrite msucc.
+  destruct (Rle_lt_dec m n) as [mlen | mgtn].
+    rewrite binomial_rec; auto with rnat; try lra.
+    apply Rint_add.
+      apply Ihn; auto with rnat; lra.
+    apply Ihn; auto with rnat; lra.
+  assert (n + 1 <= m) by now apply Rint_le_lt.
+  replace (m' + 1) with (n + 1) by lra.
+  rewrite binomial_n_n; auto with rnat; lra.
+intros nint nge0.
+revert nint nge0.
+apply (Rnat'_ind _ base step).
+Qed.
+
+(* Transfering the binomial recursive properties to the natural number
+  interface. *)
+Lemma binomial_n_0_nat n : Rnat n -> binomial n 0 = 1.
+Proof.
+now intros nnat; destruct (Rnat_Rint _ nnat); apply binomial_n_0.
+Qed.
+
+Lemma binomial_n_n_nat n : Rnat n -> binomial n n = 1.
+Proof.
+now intros nnat; destruct (Rnat_Rint _ nnat); apply binomial_n_n.
+Qed.
+
+Lemma binomial_rec_nat n m : Rnat n -> Rnat m -> m < n ->
+  binomial (n + 1) (m + 1) = binomial n m + binomial n (m + 1).
+Proof.
+intros nnat mnat mbound; apply binomial_rec; auto with rnat;
+   try now apply Rnat_ge0.
+all: now apply Rnat_Rint.
+Qed.
+
+(* Illustrating a proof by induction on natural numbers relying on
+  the Rnat predicate.   This is made smoother by the fact that all the
+  theorems natively use the Rnat interface. *)
+Lemma Rnat_binomial n m : Rnat n -> Rnat m -> m <= n ->
+  Rnat (binomial n m).
+Proof.
+intros nnat; revert nnat m; induction 1 as [ | n nnat Ih].
+  intros m mnat mle0.
+  assert (m0 : m = 0).
+    assert (0 <= m) by now apply Rnat_ge0.
+    lra.
+  rewrite m0, binomial_n_0_nat.
+    now auto with rnat.
+  now auto with rnat.
+intros m mnat mbound.
+induction mnat as [ | m' m'nat _].  (*case analysis on m *)
+  destruct (Rnat_Rint _ nnat) as [nint nge0].
+  rewrite binomial_n_0_nat.
+    now auto with rnat.
+  now auto with rnat.
+destruct (Rle_lt_dec n m') as [nlem' | m'ltn].
+  assert (nm' : n = m') by lra.
+  now rewrite <- nm', binomial_n_n_nat; auto with rnat.
+rewrite binomial_rec_nat; try auto with rnat.
+apply Rnat_add.
+  apply Ih.
+    now auto with rnat.
+  lra.
+apply Ih.
+  now auto with rnat.
+now apply Rnat_le_lt.
+Qed.
+
 (* This proof could be given as an exercise.  It shows how much of the
   "fake typing information" clutters the proof: each time we need to prove
   that arguments to Rfactorial is natural number! *)
+
 Lemma binomial_succ n m : Rint n -> 0 <= n -> Rint m -> 0 <= m < n ->
   binomial (n + 1) (m + 1) = binomial n m + binomial n (m + 1).
 Proof.
@@ -372,6 +888,237 @@ replace (Rfactorial n * (m + 1) + Rfactorial n * (n + 1 - (m + 1))) with
 replace (Rfactorial n * (n + 1)) with (Rfactorial (n + 1)); cycle 1.
   rewrite Rfactorial_succ; auto.
 reflexivity.
+Qed.
+
+Definition Rnat_rect {A : Type} (v0 : A) (stf : R -> A -> A) (x : R) :=
+  nat_rect (fun _ => A) v0 (fun x => stf (INR x)) (IRN x).
+
+Lemma Rnat_rect0 {A : Type} (v0 : A) stf : Rnat_rect v0 stf 0 = v0.
+Proof.
+now unfold Rnat_rect, IRN; rewrite IRZ_IZR.
+Qed.
+
+Lemma Rnat_rect_succ {A : Type} (v0 : A) stf (x : R) :
+  Rnat x ->
+  Rnat_rect v0 stf (x + 1) = stf x (Rnat_rect v0 stf x).
+Proof.
+intros xnat.
+destruct (Rnat_exists_nat _ xnat) as [x' xx'].
+unfold Rnat_rect.
+replace (IRN (x + 1)) with (S (IRN x)).
+  now simpl; rewrite INR_IRN.
+rewrite xx'.
+unfold IRN.
+rewrite <- plus_IZR.
+rewrite !IRZ_IZR.
+replace 1%Z with (Z.of_nat 1) by (simpl; ring).
+rewrite <- Nat2Z.inj_add.
+rewrite !Zabs2Nat.id.
+ring.
+Qed.
+
+(* thanks to Rnat_rect, we can define recursive sequences of numbers. *)
+
+Definition factr (x : R) :=
+  Rnat_rect 1 (fun y fact_y => fact_y * (y + 1)) x.
+
+(* We have enough material to show that this new definition of factorial
+   is correct with respect to the other ones. *)
+Lemma factr_correct x : Rnat x -> factr x = Rfactorial x.
+Proof.
+induction 1 as [ | x xnat Ih].
+  now unfold factr; rewrite Rnat_rect0, Rfactorial0.
+destruct (Rnat_Rint _ xnat) as [xint xge0].
+unfold factr; rewrite Rnat_rect_succ; auto.
+fold (factr x).
+rewrite Rfactorial_succ; auto.
+now rewrite Ih.
+Qed.
+
+(* We can also define the binomial function recursively *)
+
+Definition binomialr (n m : R) :=
+  @Rnat_rect (R -> R) (fun x => if Req_dec_T x 0 then 1 else 0)
+     (fun n f m => f (m - 1) + f m) n m.
+
+(* We can then show that this definition of binomial satisfies the
+  expected properties. *)
+Lemma binomialr_0_n (m : R) :
+  binomialr 0 m = if Req_dec_T m 0 then 1 else 0.
+Proof.
+now unfold binomialr; rewrite Rnat_rect0.
+Qed.
+
+Lemma binomialr_succ (n m : R) : Rnat n ->
+  binomialr (n + 1) m = binomialr n (m - 1) + binomialr n m.
+Proof.
+intros nnat.
+unfold binomialr.
+now rewrite Rnat_rect_succ; auto with rnat.
+Qed.
+
+(* This new definition of binomial is slightly different.  We check
+  the equality within the Pascal triangle. *)
+
+Lemma binomialr_right (n m : R) : Rnat n -> Rnat m -> n < m ->
+  binomialr n m = 0.
+Proof.
+intros nnat; revert m; induction nnat as [ | x xnat Ih].
+intros m mnat mbound; rewrite binomialr_0_n; auto with rnat.
+  destruct (Req_dec_T m 0) as [m0 | mn0].
+    lra.
+  easy.
+intros m mnat mgtx2.
+rewrite binomialr_succ; auto with rnat.
+rewrite Ih; cycle 1.
+    apply Rnat_sub; auto with rnat.
+    assert (0 <= x) by now apply Rnat_ge0.
+    lra.
+  lra.
+rewrite Ih.
+    ring.
+  assumption.
+lra.
+Qed.
+
+Lemma binomialr_n_n (n : R) : Rnat n -> binomialr n n = 1.
+Proof.
+induction 1 as [ | x xnat Ih].
+  rewrite binomialr_0_n; auto with rnat.
+  destruct (Req_dec_T 0 0) as [zz | abs]; [ | lra].
+  easy.
+rewrite binomialr_succ; auto with rnat.
+replace (x + 1 - 1) with x by ring.
+rewrite Ih.
+rewrite binomialr_right; auto with rnat.
+  ring.
+lra.
+Qed.
+
+Lemma binomialr_left (n m : R) : Rnat n ->
+  m < 0 -> binomialr n m = 0.
+Proof.
+intros nnat; revert m.
+induction nnat as [ | x xnat Ih].
+  intros m mlt0.
+  rewrite binomialr_0_n.
+  destruct (Req_dec_T m 0) as [m0 | mn0].
+    lra.
+  easy.
+intros m mlt0.
+rewrite binomialr_succ; auto.
+rewrite Ih;[ | lra].
+rewrite Ih.
+  ring.
+lra.
+Qed.
+
+Lemma binomialr_n_0 n : Rnat n -> binomialr n 0 = 1.
+Proof.
+induction 1 as [ | x xnat Ih].
+  now rewrite binomialr_n_n; auto with rnat.
+rewrite binomialr_succ; auto with rnat.
+rewrite Ih.
+rewrite binomialr_left.
+    ring.
+  auto with rnat.
+lra.
+Qed.
+
+(* If we use Rnat_rect to define function, we need to evaluate how hard
+  it is to reason about these functions, using Rnat_ind.  This is an
+  example where we show that the the binomial function, defined recursively
+  coincides when 0 <= m <= n with the binomial function defined with
+  ratios of factorials. *)
+Lemma binomialr_fact (n m : R) : Rnat n -> Rnat m -> m <= n ->
+  binomialr n m = Rfactorial n / (Rfactorial (n - m) * Rfactorial m).
+Proof.
+intros nnat; revert m.
+induction nnat as [ | x xnat Ih].
+  intros m mnat mle0.
+  assert (m0 : m = 0).
+    assert (0 <= m) by now apply Rnat_ge0.
+    lra.
+  rewrite m0.
+  replace (0 - 0) with 0 by ring.
+  rewrite Rfactorial0.
+  rewrite binomialr_n_n; auto with rnat.
+  now field.
+intros m mnat mlex1.
+rewrite binomialr_succ; auto with rnat.
+destruct (Req_dec_T m 0) as [m0 | mn0].
+  rewrite m0.
+  replace (0 - 1) with (-1) by ring.
+  rewrite binomialr_left; auto with rnat; cycle 1.
+    lra.
+  rewrite binomialr_n_0; auto with rnat.
+  replace (x + 1 - 0) with (x + 1) by ring.
+  rewrite Rfactorial0, Rmult_1_r, Rdiv_diag; cycle 1.
+    enough (0 <> Rfactorial (x + 1)) by lra.
+    apply Rlt_not_eq.
+    apply Rfactorial_gt_0.
+    now apply Rnat_Rint; auto with rnat.
+  ring.
+rewrite Ih; cycle 1.
+    apply Rnat_sub; auto with rnat.
+    replace 1 with (0 + 1) by ring.
+    apply Rnat_le_lt; auto with rnat.
+    assert (0 <= m) by now apply Rnat_ge0.
+    lra.
+  lra.
+destruct (Req_dec_T m (x + 1)) as [mx1 | mnx1].
+  rewrite mx1.
+  replace (x - (x + 1 - 1)) with 0 by ring.
+  replace (x + 1 - 1) with x by ring.
+  replace (x + 1 - (x + 1)) with 0 by ring.
+  rewrite binomialr_right; auto with rnat; cycle 1.
+    lra.
+  rewrite Rplus_0_r.
+  rewrite Rfactorial0, Rmult_1_l.
+  assert (xint : Rint x) by now apply Rnat_Rint.
+  rewrite Rdiv_diag; cycle 1.
+    assert (tmp := Rfactorial_gt_0 _ xint).
+    lra.
+  rewrite Rmult_1_l.
+  rewrite Rdiv_diag; cycle 1.
+    assert (xint1 : Rint (x + 1)) by auto with rnat.
+    assert (tmp := Rfactorial_gt_0 _ xint1).
+    lra.
+  ring.
+rewrite Ih; auto with rnat; cycle 1.
+  enough (m + 1 <= x + 1) by lra.
+  assert (m < x + 1) by lra.
+  now apply Rnat_le_lt; auto with rnat.
+replace (Rfactorial (x + 1)) with (Rfactorial x * ((x + 1 - m) + m)); cycle 1.
+  rewrite Rfactorial_succ; cycle 1.
+      now apply Rnat_ge0.
+    now apply Rnat_Rint.
+  ring.
+replace (x - (m - 1)) with (x + 1 - m) by ring.
+replace (Rfactorial (x + 1 - m)) with 
+   ((x + 1 - m) * Rfactorial (x - m)); cycle 1.
+  replace (x + 1 - m) with (x - m + 1) by ring.
+  rewrite Rfactorial_succ; cycle 1.
+      enough (m + 1 <= x + 1) by lra.
+      apply Rnat_le_lt; auto with rnat; lra.
+    now apply Rint_sub; apply Rnat_Rint.
+  ring.
+replace (Rfactorial m) with (Rfactorial (m - 1) * m); cycle 1.
+  assert (1 <= m).
+    replace 1 with (0 + 1) by ring.
+    apply Rnat_le_lt; auto with rnat.
+    assert (0 <= m) by now apply Rnat_ge0.
+    lra.
+  rewrite (Rfactorial_succ' m); auto with rnat.
+  now apply Rnat_Rint.
+field.
+assert (0 < Rfactorial (m - 1)).
+  apply Rfactorial_gt_0; apply Rint_sub; auto with rnat.
+  now apply Rnat_Rint.
+assert (0 < Rfactorial (x - m)).
+  now apply Rfactorial_gt_0; apply Rint_sub; apply Rnat_Rint.
+assert (x + 1 - m <> 0) by lra.
+repeat split; auto; lra.
 Qed.
 
 (* This ends the section of tools that should be provided to students about
@@ -465,6 +1212,195 @@ Proof. compute_factorial. Qed.
 
 (* End of recreation. *)
 
+(* The binomial formula for polynomials. *)
+Definition Rpow (x n : R) :=
+  Rnat_iter n (Rmult x) 1.
+
+Lemma Rpow0 (x : R) : Rpow x 0 = 1.
+Proof. now unfold Rpow; rewrite Rnat_iter0. Qed.
+
+Lemma Rpow1 (x : R) : Rpow x 1 = x.
+Proof. now unfold Rpow; rewrite Rnat_iter1, Rmult_1_r. Qed.
+
+Lemma Rpow_succ (x n : R) : Rnat n ->
+  Rpow x (n + 1) = x * Rpow x n.
+Proof.
+intros nnat.
+unfold Rpow; rewrite Rplus_comm, Rnat_iter_add; auto with rnat.
+now rewrite Rnat_iter1.
+Qed.
+
+Lemma Rpow_succ' (x n : R) : Rnat (n - 1) ->
+  Rpow x n = x * Rpow x (n - 1).
+Proof.
+intros nnat.
+rewrite <- Rpow_succ; auto.
+now replace (n - 1 + 1) with n by ring.
+Qed.
+
+(* TODO : generalize to an arbitrary associative-commutative monoid. *)
+Lemma big_add (f g : R -> R) (b n : R) : Rnat (n - b) ->
+  \big[Rplus/0]_(b <= i < n) f i +
+  \big[Rplus/0]_(b <= i < n) g i = 
+  \big[Rplus/0]_(b <= i < n) (f i + g i).
+Proof.
+set (w := fold_right).
+generalize (n - b); intros k knat; revert b.
+induction knat as [ | k knat Ih]; intros b.
+  rewrite Rseq0; simpl; ring.
+rewrite Rseq_S'; replace (k + 1 - 1) with k by ring; auto.
+unfold w; simpl; fold w.
+rewrite <- Ih; ring.
+Qed.
+
+Lemma big_distr (f : R -> R) (b n a : R) : Rnat (n - b) ->
+  a * \big[Rplus/0]_(b <= i < n) f i =
+  \big[Rplus/0]_(b <= i < n) (a * f i).
+Proof.
+set (w := fold_right).
+generalize (n - b); intros k knat; revert b.
+induction knat as [ | k knat Ih]; intros b.
+   rewrite Rseq0; simpl; ring.
+rewrite Rseq_S'; replace (k + 1 - 1) with k by ring; auto.
+unfold w; simpl; fold w.
+rewrite <- Ih; ring.
+Qed.
+
+Lemma big_shift {A : Type} (op : R -> A -> A) v
+ (f : R -> R) (b k n : R) : Rnat (n - b) ->
+  \big[op/v]_(b <= i < n) (f (i + k)) =
+  \big[op/v]_((b + k) <= i < (n + k)) (f i).
+Proof.
+set (w := fold_right).
+replace (n + k - (b + k)) with (n - b) by ring.
+generalize (n - b); intros l lnat; revert b.
+induction lnat as [ | l lnat Ih]; intros b.
+  now rewrite !Rseq0.
+rewrite !Rseq_S; auto.
+simpl; rewrite Ih.
+now replace (b + 1 + k) with (b + k + 1) by ring.
+Qed.
+
+Lemma big_ext {A : Type} (op : R -> A -> A) v (f g : R -> R)
+  (b n : R) : Rnat (n - b) ->
+  (forall x, Rnat x -> 0 <= x < n - b -> f (b + x) = g (b + x)) ->
+  \big[op/v]_(b <= i < n) f i =
+  \big[op/v]_(b <= i < n) g i.
+Proof.
+set (w := fold_right).
+generalize (n - b); intros l lnat; revert b.
+induction lnat as [ | l lnat Ih]; intros b eq_cnd.
+  now rewrite Rseq0.
+rewrite Rseq_S; auto; simpl.
+replace b with (b + 0) at 1 3 by ring.
+rewrite eq_cnd; cycle 1.
+    auto with rnat.
+  apply Rnat_ge0 in lnat; lra.
+apply f_equal, Ih.
+intros x xnat xint.
+replace (b + 1 + x) with (b + (1 + x)) by ring.
+apply eq_cnd.
+  auto with rnat.
+lra.
+Qed.
+
+(* This lemma is made approximately in a way that could be shown to students. *)
+(* Even for an expert, it is an exercise that requires more than an hour. *)
+Lemma binomial_poly (x y n : R) : Rnat n -> Rpow (x + y) n =
+  \big[Rplus/0]_(0 <= i < n + 1) 
+       (binomial n i * Rpow x i * Rpow y (n - i)).
+Proof.
+induction 1 as [ | n nnat Ih].
+  rewrite Rpow0.
+  rewrite big_recl; cycle 1.
+      now replace (0 + 1 - 0) with 1 by ring; auto with rnat.
+    lra.
+  rewrite binomial_n_n; auto with rnat; cycle 1.
+    lra.
+  replace (0 - 0) with 0 by ring.
+  rewrite !Rpow0; cycle 1.
+  rewrite big0.
+  ring.
+rewrite Rpow_succ, Ih; auto with rnat.
+rewrite Rmult_plus_distr_r.
+rewrite !big_distr;[ |  rewrite Rminus_0_r | rewrite Rminus_0_r]; auto with rnat.
+set (w1 := fold_right _ _ _).
+set (w2 := fold_right _ _ _).
+set (w3 := fold_right _ _ _).
+unfold w2.
+rewrite big_recl; auto; cycle 1.
+    now replace (n + 1 - 0) with (n + 1) by ring; auto with rnat.
+  apply Rnat_ge0 in nnat; lra.
+rewrite <- big_shift; cycle 1.
+  now replace (n - 0) with n by ring.
+set (w4 := fold_right _ _ _).
+replace (n - 0) with n by ring.
+replace (binomial n 0) with (binomial (n + 1) 0); cycle 1.
+  rewrite !binomial_n_0; destruct (Rnat_Rint _ nnat); auto with rnat; lra.
+replace (y * (binomial (n + 1) 0 * Rpow x 0 * Rpow y n)) with
+  (binomial (n + 1) 0 * Rpow x 0 * Rpow y (n + 1 - 0)); cycle 1.
+  rewrite Rminus_0_r, Rpow_succ; auto with rnat; ring.
+unfold w1.
+rewrite big_recr; auto; cycle 1.
+    now replace (n + 1 - 0) with (n + 1) by ring; auto with rnat.
+  apply Rnat_ge0 in nnat; lra.
+replace (n + 1 - 1) with n by ring.
+set (w5 := fold_right _ _ _).
+replace (x * (binomial n n * Rpow x n * Rpow y (n - n))) with
+  (binomial (n + 1) (n + 1) * Rpow x (n + 1) * Rpow y ((n + 1) - (n + 1))); 
+  cycle 1.
+  replace (n - n) with 0 by ring; replace ((n + 1) - (n + 1)) with 0 by ring.
+  rewrite Rpow_succ; auto.
+  rewrite !binomial_n_n; destruct (Rnat_Rint _ nnat); auto with rnat.
+    ring.
+  lra.
+set (tmn := _ * _ * _).
+set (t0 := _ * _ * _).
+replace (w5 + tmn + (t0 + w4)) with (t0 + (w5 + w4) + tmn) by ring.
+replace (w5 + w4) with
+ (\big[Rplus/0]_((0 + 1) <= i < (n + 1))
+   (binomial (n + 1) i * Rpow x i * Rpow y ((n + 1) - i))).
+  unfold t0.
+  rewrite <-
+    (big_recl (fun i => binomial (n + 1) i * Rpow x i * Rpow y ((n + 1) - i)));
+  cycle 1.
+      now rewrite Rminus_0_r; auto with rnat.
+    apply Rnat_ge0 in nnat; lra.
+  unfold tmn.
+  replace (n + 1) with (n + 1 + 1 - 1) at 1 3 4 6 by ring.
+  rewrite <-
+   (big_recr (fun i => binomial (n + 1) i * Rpow x i * Rpow y ((n + 1) - i)));
+    cycle 1.
+        now auto.
+      now rewrite Rminus_0_r; auto with rnat.
+    apply Rnat_ge0 in nnat; lra.  
+  easy.
+unfold w5, w4.
+rewrite big_add; cycle 1.
+  now rewrite Rminus_0_r; auto with rnat.
+rewrite <- big_shift; cycle 1.
+  now rewrite Rminus_0_r; auto with rnat.
+apply big_ext.
+  now rewrite Rminus_0_r; auto with rnat.
+intros i inat ibound.
+replace (0 + i + 1) with (i + 1) by ring.
+replace (0 + i) with i by ring.
+replace (x * (binomial n i * Rpow x i * Rpow y (n - i))) with
+  (binomial n i * Rpow x (i + 1) * Rpow y (n - i)); cycle 1.
+  rewrite Rpow_succ; auto; ring.
+replace (y * (binomial n (i + 1) * Rpow x (i + 1) * Rpow y (n - (i + 1)))) with
+  (binomial n (i + 1) * Rpow x (i + 1) * Rpow y (n - i)); cycle 1.
+  replace (n - i) with (n - (i + 1) + 1) by ring.
+  rewrite (Rpow_succ y); cycle 1.
+    apply Rnat_sub; auto with rnat.
+  assert (iltn : i < n) by lra.
+  now apply Rnat_le_lt; auto.
+  ring.
+rewrite binomial_rec; destruct (Rnat_Rint _ nnat);
+  destruct (Rnat_Rint _ inat); auto with rnat; try lra.
+replace (n + 1 - (i + 1)) with (n - i) by ring.
+ring.
+Qed.
 
 (* Now we come to the exercise that triggered my curiosity. *)
 (* The objective of the experiment here, is to show a Coq proof, where
