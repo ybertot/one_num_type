@@ -1,4 +1,5 @@
 Require Import List Reals ClassicalEpsilon Lia Lra.
+Require Import Wellfounded.
 
 Open Scope R_scope.
 
@@ -116,6 +117,61 @@ intros zu; apply lt_IZR in zu.
 rewrite <- plus_IZR; apply IZR_le; lia.
 Qed.
 
+Module alternative_Rint.
+
+Definition Rint (x : R) : Prop := exists z, x = IZR z.
+
+Lemma Rint_Z (z : Z) : Rint (IZR z).
+Proof. now exists z. Qed.
+
+Lemma Rint0 : Rint 0.
+Proof. now apply Rint_Z. Qed.
+
+Lemma Rint1 : Rint 1. 
+Proof. now apply Rint_Z. Qed.
+
+Lemma Rint_sub x y : Rint x -> Rint y -> Rint (x - y).
+Proof. 
+now intros [x' xx'] [y' yy']; exists (x' - y')%Z; rewrite xx', yy', minus_IZR.
+Qed.
+
+Lemma Rint_ind (P : R -> Prop) (P1 : P 1)
+  (Psub : forall x y, P x -> P y -> P (x - y)) :
+  forall x, Rint x -> P x.
+Proof.
+assert (wf : well_founded (fun x y => (Z.abs_nat x < Z.abs_nat y)%nat)).
+  apply wf_inverse_image.
+  now apply lt_wf.
+intros x [x' xx']; rewrite xx'; clear x xx'.
+induction x' as [x' Ih] using (well_founded_ind wf).
+destruct (Z_lt_le_dec 0 x').
+  destruct (Z_lt_le_dec 1 x').
+    replace x' with (1 - (1 - x'))%Z by ring.
+    rewrite minus_IZR; apply Psub.
+      exact P1.
+    apply Ih.
+    rewrite Zabs2Nat.abs_nat_spec.
+    rewrite <- Z.abs_opp.
+    replace (- (1 - x'))%Z with (x' - 1)%Z by ring.
+    rewrite <- !Zabs2Nat.abs_nat_spec.
+    apply Zabs_nat_lt.
+    lia.
+  replace x' with 1%Z by lia.
+  now apply P1.
+destruct (Z.eq_dec x' 0) as [x0 | xn0].
+  replace x' with (1 - 1)%Z by (rewrite x0; ring).
+  now rewrite minus_IZR; apply (Psub 1 1); auto.
+replace x' with ((x' + 1) - 1)%Z by ring.
+rewrite minus_IZR; apply Psub;[ | exact P1].
+apply Ih.
+rewrite !Zabs2Nat.abs_nat_spec.
+rewrite <- Z.abs_opp, <- (Z.abs_opp x').
+rewrite <- !Zabs2Nat.abs_nat_spec.
+apply Zabs_nat_lt.
+lia.
+Qed.
+
+End alternative_Rint.
 (* This ends the basic stability properties of Rint.  Proving that Rint
   is satisfied is a bit like type-checking.  In the current form, it
   is only provided for the basic ring operations.  *)
@@ -191,6 +247,7 @@ induction 1 as [ | y ynat [yint yge0]].
 split; auto with rnat; lra.
 Qed.
 
+
 Lemma Rint_Rnat x : Rint x -> 0 <= x -> Rnat x.
 Proof.
 intros xint xge0.
@@ -213,6 +270,17 @@ Lemma Rnat_ge0 x : Rnat x -> 0 <= x.
 Proof.
 induction 1; lra.
 Qed.
+
+Module alternative_Rnat.
+
+Definition Rnat x := exists n, x = INR n.
+
+Lemma Rnat_add x y : Rnat x -> Rnat y -> Rnat (x + y).
+Proof.
+now intros [n xn] [m ym]; exists (n + m)%nat; rewrite xn, ym, plus_INR.
+Qed.
+
+End alternative_Rnat.
 
 Lemma Rnat_cst x : Rnat (IZR (Z.pos x)).
 Proof. apply Rint_Rnat;[apply Rint_Z | apply IZR_le; lia]. Qed.
@@ -462,6 +530,17 @@ Proof.
 intros mn; replace m with (1 + (m - 1)) at 1 by ring.
 rewrite Rseq_add; auto with rnat.
 now rewrite Rseq1.
+Qed.
+
+Notation "[ '0 <..> m ]"  := (Rseq 0 m).
+
+Example seq03 : ['0 <..> 3] = 0 :: 1 :: 2 :: nil.
+Proof. 
+unfold Rseq; rewrite IRN_pos; simpl.
+replace (0 + 0) with 0 by ring.
+replace (0 + 1) with 1 by ring.
+replace (0 + (1 + 1)) with 2 by ring.
+easy.
 Qed.
 
 (* Now providing a big operation, inspired by mathematical components. *)
@@ -890,7 +969,7 @@ replace (Rfactorial n * (n + 1)) with (Rfactorial (n + 1)); cycle 1.
 reflexivity.
 Qed.
 
-Definition Rnat_rect {A : Type} (v0 : A) (stf : R -> A -> A) (x : R) :=
+Definition Rnat_rect {A : Type} (v0 : A) (stf : R -> A -> A) (x : R) : A :=
   nat_rect (fun _ => A) v0 (fun x => stf (INR x)) (IRN x).
 
 Lemma Rnat_rect0 {A : Type} (v0 : A) stf : Rnat_rect v0 stf 0 = v0.
@@ -935,10 +1014,79 @@ rewrite Rfactorial_succ; auto.
 now rewrite Ih.
 Qed.
 
+Definition Rnat_rect_2 {A : Type} (v0 v1 : A) (stf : R -> A -> A -> A) :
+  R -> A :=
+  fun y : R => fst (Rnat_rect (v0, v1)
+    (fun x p => (snd p, stf x (fst p) (snd p))) y).
+
+Lemma Rnat_rect_2_0 {A : Type} (v0 v1 : A) stf :
+  Rnat_rect_2 v0 v1 stf 0 = v0.
+Proof. now unfold Rnat_rect_2; rewrite Rnat_rect0. Qed.
+
+Lemma Rnat_rect_2_1 {A : Type} (v0 v1 : A) stf :
+  Rnat_rect_2 v0 v1 stf 1 = v1.
+Proof.
+unfold Rnat_rect_2.
+replace 1 with (0 + 1) by ring.
+rewrite Rnat_rect_succ; auto with rnat.
+now rewrite Rnat_rect0.
+Qed.
+
+Lemma Rnat_rect_2_succ {A : Type} (v0 v1 : A) stf x :
+  Rnat x ->
+  Rnat_rect_2 v0 v1 stf (x + 2) =
+  stf x (Rnat_rect_2 v0 v1 stf x) (Rnat_rect_2 v0 v1 stf (x + 1)).
+Proof.
+intros xnat.
+unfold Rnat_rect_2.
+replace (x + 2) with (x + 1 + 1) by ring.
+now rewrite !Rnat_rect_succ; auto with rnat.
+Qed.
+
+(* It may not be necessary to expose the definition of the fibonacci
+  sequence to students, but the next three properties are the 
+  real usable interface. *)
+Definition fibr := Rnat_rect_2 0 1 (fun n fn fn' => fn + fn').
+
+Lemma fibr0 : fibr 0 = 0.
+Proof.  now unfold fibr; rewrite Rnat_rect_2_0. Qed.
+
+Lemma fibr1 : fibr 1 = 1.
+Proof.  now unfold fibr; rewrite Rnat_rect_2_1. Qed.
+
+Lemma fibr_succ n : Rnat n -> fibr (n + 2) = fibr n + fibr (n + 1).
+Proof.  now intros nnat; unfold fibr; rewrite Rnat_rect_2_succ. Qed.
+
+Example fibr6 : fibr 7 = 13.
+assert (fibr2 : fibr 2 = 1).
+  replace 2 with (0 + 2) by ring.
+  rewrite fibr_succ; auto with rnat; replace (0 + 1) with 1 by ring.
+  now rewrite fibr0, fibr1; ring.
+assert (fibr3 : fibr 3 = 2).
+  replace 3 with (1 + 2) at 1 by ring.
+  rewrite fibr_succ; auto with rnat; replace (1 + 1) with 2 by ring.
+  now rewrite fibr1, fibr2.
+assert (fibr4 : fibr 4 = 3).
+  replace 4 with (2 + 2) by ring.
+  rewrite fibr_succ; auto with rnat; replace (2 + 1) with 3 by ring.
+  now rewrite fibr2, fibr3; ring.
+assert (fibr5 : fibr 5 = 5).
+  replace 5 with (3 + 2) by ring.
+  rewrite fibr_succ; auto with rnat; replace (3 + 1) with 4 by ring.
+  now rewrite fibr3, fibr4; ring.
+assert (fibr6 : fibr 6 = 8).
+  replace 6 with (4 + 2) by ring.
+  rewrite fibr_succ; auto with rnat; replace (4 + 1) with 5 by ring.
+  now rewrite fibr4, fibr5; ring.
+replace 7 with (5 + 2) by ring.
+rewrite fibr_succ; auto with rnat; replace (5 + 1) with 6 by ring.
+rewrite fibr5, fibr6; ring.
+Qed.
+
 (* We can also define the binomial function recursively *)
 
 Definition binomialr (n m : R) :=
-  @Rnat_rect (R -> R) (fun x => if Req_dec_T x 0 then 1 else 0)
+  Rnat_rect (fun x : R => if Req_dec_T x 0 then 1 else 0)
      (fun n f m => f (m - 1) + f m) n m.
 
 (* We can then show that this definition of binomial satisfies the
@@ -1238,6 +1386,17 @@ rewrite <- Rpow_succ; auto.
 now replace (n - 1 + 1) with n by ring.
 Qed.
 
+Lemma Rpow_add_r (x n m : R) : Rnat n -> Rnat m ->
+  Rpow x (n + m) = Rpow x n * Rpow x m.
+Proof.
+intros nnat mnat.
+induction nnat as [ | n nnat Ih].
+  now rewrite Rplus_0_l, Rpow0, Rmult_1_l.
+rewrite Rpow_succ; auto with rnat.
+replace (n + 1 + m) with (n + m + 1) by ring.
+now rewrite Rpow_succ, Ih, Rmult_assoc; auto with rnat.
+Qed.
+
 (* TODO : generalize to an arbitrary associative-commutative monoid. *)
 Lemma big_add (f g : R -> R) (b n : R) : Rnat (n - b) ->
   \big[Rplus/0]_(b <= i < n) f i +
@@ -1400,6 +1559,74 @@ rewrite binomial_rec; destruct (Rnat_Rint _ nnat);
   destruct (Rnat_Rint _ inat); auto with rnat; try lra.
 replace (n + 1 - (i + 1)) with (n - i) by ring.
 ring.
+Qed.
+
+(* The golden ratio *)
+Definition phi := (1 + sqrt 5) / 2.
+
+Definition psi := (1 - sqrt 5) / 2.
+
+Lemma golden_fib n : Rnat n -> fibr n = 
+  (Rpow phi n - Rpow psi n) / (phi - psi).
+Proof.
+assert (phi2q : Rpow phi 2 = phi + 1).
+  replace (Rpow phi 2) with (phi * phi); cycle 1.
+    rewrite Rpow_succ'; auto with rnat; cycle 1.
+      now apply Rnat_sub; auto with rnat; lra.
+    now replace (2 - 1) with 1 by ring; rewrite Rpow1.
+  unfold phi.
+  replace ((1 + sqrt 5) / 2 * ((1 + sqrt 5) / 2)) with
+   ((1 + 2 * sqrt 5 + sqrt 5 * sqrt 5) / 4) by field.
+  replace (sqrt 5 * sqrt 5) with 5; cycle 1.
+    now rewrite sqrt_def; lra.
+  now field.
+assert (psi2q : Rpow psi 2 = psi + 1).
+  replace (Rpow psi 2) with (psi * psi); cycle 1.
+    rewrite Rpow_succ'; auto with rnat; cycle 1.
+      now apply Rnat_sub; auto with rnat; lra.
+    now replace (2 - 1) with 1 by ring; rewrite Rpow1.
+  unfold psi.
+  replace ((1 - sqrt 5) / 2 * ((1 - sqrt 5) / 2)) with
+   ((1 - 2 * sqrt 5 + sqrt 5 * sqrt 5) / 4) by field.
+  replace (sqrt 5 * sqrt 5) with 5; cycle 1.
+    now rewrite sqrt_def; lra.
+  now field.
+assert (phi_n_q : forall x, Rnat x ->
+                  Rpow phi (x + 2) = Rpow phi (x + 1) + Rpow phi x).
+  intros x xnat.
+  replace (Rpow phi x) with (Rpow phi x * 1) by ring.
+  rewrite !Rpow_add_r, Rpow1; auto with rnat.
+  rewrite <- Rmult_plus_distr_l.
+  now apply Rmult_eq_compat_l.
+assert (psi_n_q : forall x, Rnat x ->
+                  Rpow psi (x + 2) = Rpow psi (x + 1) + Rpow psi x).
+  intros x xnat.
+  replace (Rpow psi x) with (Rpow psi x * 1) by ring.
+  rewrite !Rpow_add_r, Rpow1; auto with rnat.
+  rewrite <- Rmult_plus_distr_l.
+  now apply Rmult_eq_compat_l.
+intros nnat.
+assert (psidifphi : phi - psi <> 0).
+  unfold phi, psi.
+  enough (0 < sqrt 5) by lra.
+  now apply sqrt_lt_R0; lra.
+enough (main : fibr n = (Rpow phi n - Rpow psi n) / (phi - psi) /\
+        fibr (n + 1) = (Rpow phi (n + 1) - Rpow psi (n + 1)) / (phi - psi)).
+   now destruct main as [main _].  
+induction nnat as [ | x xnat Ih].
+  split.
+    replace (0 + 1) with 1 by ring; replace (0 + 2) with 2 by ring.
+    now rewrite !Rpow0, Rminus_diag, fibr0; field; auto.
+  now rewrite Rplus_0_l, !Rpow1, fibr1; field.
+destruct Ih as [Ih0 Ih1].
+split.
+  easy.
+replace (x + 1 + 1) with (x + 2) by ring.
+rewrite fibr_succ; auto with rnat.
+rewrite Ih0, Ih1.
+rewrite phi_n_q; auto with rnat.
+rewrite psi_n_q; auto with rnat.
+field; auto.
 Qed.
 
 (* Now we come to the exercise that triggered my curiosity. *)
