@@ -1057,7 +1057,7 @@ Proof.  now unfold fibr; rewrite Rnat_rect_2_1. Qed.
 Lemma fibr_succ n : Rnat n -> fibr (n + 2) = fibr n + fibr (n + 1).
 Proof.  now intros nnat; unfold fibr; rewrite Rnat_rect_2_succ. Qed.
 
-Example fibr6 : fibr 7 = 13.
+Example fibr7 : fibr 7 = 13.
 assert (fibr2 : fibr 2 = 1).
   replace 2 with (0 + 2) by ring.
   rewrite fibr_succ; auto with rnat; replace (0 + 1) with 1 by ring.
