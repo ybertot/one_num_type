@@ -1591,17 +1591,10 @@ assert (psi2q : Rpow psi 2 = psi + 1).
   replace (sqrt 5 * sqrt 5) with 5; cycle 1.
     now rewrite sqrt_def; lra.
   now field.
-assert (phi_n_q : forall x, Rnat x ->
-                  Rpow phi (x + 2) = Rpow phi (x + 1) + Rpow phi x).
-  intros x xnat.
-  replace (Rpow phi x) with (Rpow phi x * 1) by ring.
-  rewrite !Rpow_add_r, Rpow1; auto with rnat.
-  rewrite <- Rmult_plus_distr_l.
-  now apply Rmult_eq_compat_l.
-assert (psi_n_q : forall x, Rnat x ->
-                  Rpow psi (x + 2) = Rpow psi (x + 1) + Rpow psi x).
-  intros x xnat.
-  replace (Rpow psi x) with (Rpow psi x * 1) by ring.
+assert (root_n_q : forall r x, Rnat x -> Rpow r 2 = r + 1 ->
+          Rpow r (x + 2) = Rpow r (x + 1) + Rpow r x).
+  intros r x xnat rrroot.
+  replace (Rpow r x) with (Rpow r x * 1) by ring.
   rewrite !Rpow_add_r, Rpow1; auto with rnat.
   rewrite <- Rmult_plus_distr_l.
   now apply Rmult_eq_compat_l.
@@ -1624,8 +1617,8 @@ split.
 replace (x + 1 + 1) with (x + 2) by ring.
 rewrite fibr_succ; auto with rnat.
 rewrite Ih0, Ih1.
-rewrite phi_n_q; auto with rnat.
-rewrite psi_n_q; auto with rnat.
+rewrite (root_n_q phi); auto with rnat.
+rewrite (root_n_q psi); auto with rnat.
 field; auto.
 Qed.
 
