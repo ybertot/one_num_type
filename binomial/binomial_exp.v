@@ -653,14 +653,25 @@ rewrite test2.
 rewrite Nat2Z.inj_mul; lia.
 Qed.
 
+Lemma Zfactorial_succ' x : (1 <= x)%Z ->
+  Zfactorial x = (Zfactorial (x - 1) * x)%Z.
+Proof.
+intros xge1.
+replace x with ((x - 1) + 1)%Z at 1 3 by ring.
+apply Zfactorial_succ; lia.
+Qed.
+
+
 (* Thanks to the functions from R to Z and from Z to R, we can define
   a factorial function on real numbers. *)
 Definition Rfactorial (x : R) :=
   IZR (Zfactorial (IRZ x)).
 
+Notation "n `!" := (Rfactorial n) (at level 2, format "n `!") : nat_scope.
+
 (* The Rfactorial function does not compute in the sense of type theory,
   but computation by proof is still quite feasible. *)
-Lemma Rfactorial10 : Rfactorial 10 = 3628800.
+Lemma Rfactorial10 : 10`! = 3628800.
 Proof.
 unfold Rfactorial.
 (* This is the trick to leave the domain of numbers that do not compute
@@ -670,18 +681,17 @@ rewrite IRZ_IZR.
 (* easy would do it, but it goes through a natural number computation
   that takes a long time (more than 10 seconds) *)
 
-(* Instead, we make the recursive scheme appear by writing successive
-  additions, which are fortunately organized in the right shape, thanks
-  to the default associativity of the addition notation. *)
-replace 10%Z with (1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1)%Z by ring.
-(* We do one step by hand, to show the conditions that are generated. *)
-rewrite Zfactorial_succ.
-(* the second goal is 0 <= 9, a condition needed to express that we
-  actually dealing with a natural number. *)
-2: lia.
-repeat rewrite Zfactorial_succ; try lia.
-(* In the end, this is just a product of 10 terms, each of them smaller
-than 10. *)
+(* Fail Timeout 10 easy. *)
+
+(* Instead, we make the recursive scheme by a forcing successive
+  application of the behavior equation that relies on subtraction. 
+  We have to combine the rewrite rule with the check of the comparison,
+  otherwise it would loop indefinitely.
+  be used indefinitely.
+*)
+repeat (rewrite Zfactorial_succ';[ | lia]).
+
+(* We can now exploit the speed of this implementation of factorial. *)
 easy.
 Qed.
 
@@ -694,8 +704,8 @@ rewrite IRZ_IZR.
 easy.
 Qed.
 
-Lemma Rfactorial_succ x : 0 <= x -> Rint x -> Rfactorial (x + 1) =
-    Rfactorial x * (x + 1).
+Lemma Rfactorial_succ x : 0 <= x -> Rint x -> (x + 1)`! =
+    x`! * (x + 1).
 Proof.
 intros xge0 xint.
 destruct (Rint_exists_Z _ xint) as [z xz].
@@ -705,15 +715,14 @@ rewrite <- plus_IZR, !IRZ_IZR, Zfactorial_succ, mult_IZR; auto.
 now apply le_IZR; rewrite <- xz.
 Qed.
 
-Lemma Rfactorial_succ' x : 1 <= x -> Rint x -> Rfactorial x =
-    Rfactorial (x - 1) * x.
+Lemma Rfactorial_succ' x : 1 <= x -> Rint x -> x `! = (x - 1)`! * x.
 Proof.
 intros xge1 xint.
 replace x with ((x - 1) + 1) at 1 by ring.
 rewrite Rfactorial_succ; [ring | lra | auto with rnat].
 Qed.
 
-Lemma Rfactorial_gt_0 n : Rint n -> 0 < Rfactorial n.
+Lemma Rfactorial_gt_0 n : Rint n -> 0 < n `!.
 Proof.
 intros nint.
 destruct (Rint_exists_Z _ nint) as [z nz].
@@ -727,7 +736,7 @@ apply lt_O_fact.
 Qed.
 
 (* This is amazingly easy, maybe there should be a Rint precondition. *)
-Lemma Rint_factorial n : Rint (Rfactorial n).
+Lemma Rint_factorial n : Rint (n`!).
 Proof. apply Rint_Z. Qed.
 
 #[export]
@@ -736,8 +745,7 @@ Hint Resolve Rint_factorial : rnat.
 (* The factorial could also have been defined using a big operator. *)
 
 Lemma Rfactorial_iterated_product n :
-  Rnat n ->
-  Rfactorial n = \big[Rmult/1]_(1 <= i < n + 1) i.
+  Rnat n -> n`! = \big[Rmult/1]_(1 <= i < n + 1) i.
 Proof.
 induction 1 as [ | x xnat Ih].
   now rewrite Rfactorial0, Rplus_0_l, big0.
@@ -764,8 +772,7 @@ Qed.
 Definition binomial x y :=
   Rfactorial x / (Rfactorial y * Rfactorial (x - y)).
 
-Lemma binomial_eq x y :
-  binomial x y = Rfactorial x / (Rfactorial y * Rfactorial (x - y)).
+Lemma binomial_eq x y : binomial x y = x`! / (y`! * (x - y)`!).
 Proof. reflexivity. Qed.
 
 (* In a full presentation, one would need to show that the other approach
@@ -1173,7 +1180,7 @@ rewrite binomialr_left.
 lra.
 Qed.
 
-(* If we use Rnat_rect to define function, we need to evaluate how hard
+(* If we use Rnat_rect to define functions, we need to evaluate how hard
   it is to reason about these functions, using Rnat_ind.  This is an
   example where we show that the the binomial function, defined recursively
   coincides when 0 <= m <= n with the binomial function defined with
@@ -1355,7 +1362,7 @@ Ltac compute_factorial :=
 (* This would be unpractical if we had preserved the computation based on
   natural numbers. *)
 Compute Zfact 100.
-Lemma fact100 : Rfactorial 100 = 93326215443944152681699238856266700490715968264381621468592963895217599993229915608941463976156518286253697920827223758251185210916864000000000000000000000000.
+Lemma fact100 : 100`! = 93326215443944152681699238856266700490715968264381621468592963895217599993229915608941463976156518286253697920827223758251185210916864000000000000000000000000.
 Proof. compute_factorial. Qed.
 
 (* End of recreation. *)
@@ -1364,14 +1371,19 @@ Proof. compute_factorial. Qed.
 Definition Rpow (x n : R) :=
   Rnat_iter n (Rmult x) 1.
 
-Lemma Rpow0 (x : R) : Rpow x 0 = 1.
+(* Beware : overriding an existing notation. *)
+Print Notation "_ ^ _".
+
+Notation "x ** y" := (Rpow x y) (at level 30, right associativity).
+
+Lemma Rpow0 (x : R) : x ** 0 = 1.
 Proof. now unfold Rpow; rewrite Rnat_iter0. Qed.
 
-Lemma Rpow1 (x : R) : Rpow x 1 = x.
+Lemma Rpow1 (x : R) : x ** 1 = x.
 Proof. now unfold Rpow; rewrite Rnat_iter1, Rmult_1_r. Qed.
 
 Lemma Rpow_succ (x n : R) : Rnat n ->
-  Rpow x (n + 1) = x * Rpow x n.
+  x ** (n + 1) = x * x ** n.
 Proof.
 intros nnat.
 unfold Rpow; rewrite Rplus_comm, Rnat_iter_add; auto with rnat.
@@ -1379,7 +1391,7 @@ now rewrite Rnat_iter1.
 Qed.
 
 Lemma Rpow_succ' (x n : R) : Rnat (n - 1) ->
-  Rpow x n = x * Rpow x (n - 1).
+  x ** n = x * x ** (n - 1).
 Proof.
 intros nnat.
 rewrite <- Rpow_succ; auto.
@@ -1387,7 +1399,7 @@ now replace (n - 1 + 1) with n by ring.
 Qed.
 
 Lemma Rpow_add_r (x n m : R) : Rnat n -> Rnat m ->
-  Rpow x (n + m) = Rpow x n * Rpow x m.
+  x ** (n + m) = x ** n * x ** m.
 Proof.
 intros nnat mnat.
 induction nnat as [ | n nnat Ih].
@@ -1465,9 +1477,9 @@ Qed.
 
 (* This lemma is made approximately in a way that could be shown to students. *)
 (* Even for an expert, it is an exercise that requires more than an hour. *)
-Lemma binomial_poly (x y n : R) : Rnat n -> Rpow (x + y) n =
+Lemma binomial_poly (x y n : R) : Rnat n -> (x + y) ** n =
   \big[Rplus/0]_(0 <= i < n + 1) 
-       (binomial n i * Rpow x i * Rpow y (n - i)).
+       (binomial n i * x ** i * y ** (n - i)).
 Proof.
 induction 1 as [ | n nnat Ih].
   rewrite Rpow0.
@@ -1496,8 +1508,8 @@ set (w4 := fold_right _ _ _).
 replace (n - 0) with n by ring.
 replace (binomial n 0) with (binomial (n + 1) 0); cycle 1.
   rewrite !binomial_n_0; destruct (Rnat_Rint _ nnat); auto with rnat; lra.
-replace (y * (binomial (n + 1) 0 * Rpow x 0 * Rpow y n)) with
-  (binomial (n + 1) 0 * Rpow x 0 * Rpow y (n + 1 - 0)); cycle 1.
+replace (y * (binomial (n + 1) 0 * x ** 0 * y ** n)) with
+  (binomial (n + 1) 0 * x ** 0 * y ** (n + 1 - 0)); cycle 1.
   rewrite Rminus_0_r, Rpow_succ; auto with rnat; ring.
 unfold w1.
 rewrite big_recr; auto; cycle 1.
@@ -1505,8 +1517,8 @@ rewrite big_recr; auto; cycle 1.
   apply Rnat_ge0 in nnat; lra.
 replace (n + 1 - 1) with n by ring.
 set (w5 := fold_right _ _ _).
-replace (x * (binomial n n * Rpow x n * Rpow y (n - n))) with
-  (binomial (n + 1) (n + 1) * Rpow x (n + 1) * Rpow y ((n + 1) - (n + 1))); 
+replace (x * (binomial n n * x ** n * y ** (n - n))) with
+  (binomial (n + 1) (n + 1) * x ** (n + 1) * y ** ((n + 1) - (n + 1))); 
   cycle 1.
   replace (n - n) with 0 by ring; replace ((n + 1) - (n + 1)) with 0 by ring.
   rewrite Rpow_succ; auto.
@@ -1518,17 +1530,17 @@ set (t0 := _ * _ * _).
 replace (w5 + tmn + (t0 + w4)) with (t0 + (w5 + w4) + tmn) by ring.
 replace (w5 + w4) with
  (\big[Rplus/0]_((0 + 1) <= i < (n + 1))
-   (binomial (n + 1) i * Rpow x i * Rpow y ((n + 1) - i))).
+   (binomial (n + 1) i * x ** i * y ** ((n + 1) - i))).
   unfold t0.
   rewrite <-
-    (big_recl (fun i => binomial (n + 1) i * Rpow x i * Rpow y ((n + 1) - i)));
+    (big_recl (fun i => binomial (n + 1) i * x ** i * y ** ((n + 1) - i)));
   cycle 1.
       now rewrite Rminus_0_r; auto with rnat.
     apply Rnat_ge0 in nnat; lra.
   unfold tmn.
   replace (n + 1) with (n + 1 + 1 - 1) at 1 3 4 6 by ring.
   rewrite <-
-   (big_recr (fun i => binomial (n + 1) i * Rpow x i * Rpow y ((n + 1) - i)));
+   (big_recr (fun i => binomial (n + 1) i * x ** i * y ** ((n + 1) - i)));
     cycle 1.
         now auto.
       now rewrite Rminus_0_r; auto with rnat.
@@ -1544,11 +1556,11 @@ apply big_ext.
 intros i inat ibound.
 replace (0 + i + 1) with (i + 1) by ring.
 replace (0 + i) with i by ring.
-replace (x * (binomial n i * Rpow x i * Rpow y (n - i))) with
-  (binomial n i * Rpow x (i + 1) * Rpow y (n - i)); cycle 1.
+replace (x * (binomial n i * x ** i * y ** (n - i))) with
+  (binomial n i * x ** (i + 1) * y ** (n - i)); cycle 1.
   rewrite Rpow_succ; auto; ring.
-replace (y * (binomial n (i + 1) * Rpow x (i + 1) * Rpow y (n - (i + 1)))) with
-  (binomial n (i + 1) * Rpow x (i + 1) * Rpow y (n - i)); cycle 1.
+replace (y * (binomial n (i + 1) * x ** (i + 1) * y ** (n - (i + 1)))) with
+  (binomial n (i + 1) * x ** (i + 1) * y ** (n - i)); cycle 1.
   replace (n - i) with (n - (i + 1) + 1) by ring.
   rewrite (Rpow_succ y); cycle 1.
     apply Rnat_sub; auto with rnat.
@@ -1567,10 +1579,10 @@ Definition phi := (1 + sqrt 5) / 2.
 Definition psi := (1 - sqrt 5) / 2.
 
 Lemma golden_fib n : Rnat n -> fibr n = 
-  (Rpow phi n - Rpow psi n) / (phi - psi).
+  (phi ** n - psi ** n) / (phi - psi).
 Proof.
-assert (phi2q : Rpow phi 2 = phi + 1).
-  replace (Rpow phi 2) with (phi * phi); cycle 1.
+assert (phi2q : phi ** 2 = phi + 1).
+  replace (phi ** 2) with (phi * phi); cycle 1.
     rewrite Rpow_succ'; auto with rnat; cycle 1.
       now apply Rnat_sub; auto with rnat; lra.
     now replace (2 - 1) with 1 by ring; rewrite Rpow1.
@@ -1580,8 +1592,8 @@ assert (phi2q : Rpow phi 2 = phi + 1).
   replace (sqrt 5 * sqrt 5) with 5; cycle 1.
     now rewrite sqrt_def; lra.
   now field.
-assert (psi2q : Rpow psi 2 = psi + 1).
-  replace (Rpow psi 2) with (psi * psi); cycle 1.
+assert (psi2q : psi ** 2 = psi + 1).
+  replace (psi ** 2) with (psi * psi); cycle 1.
     rewrite Rpow_succ'; auto with rnat; cycle 1.
       now apply Rnat_sub; auto with rnat; lra.
     now replace (2 - 1) with 1 by ring; rewrite Rpow1.
@@ -1591,20 +1603,26 @@ assert (psi2q : Rpow psi 2 = psi + 1).
   replace (sqrt 5 * sqrt 5) with 5; cycle 1.
     now rewrite sqrt_def; lra.
   now field.
-assert (root_n_q : forall r x, Rnat x -> Rpow r 2 = r + 1 ->
-          Rpow r (x + 2) = Rpow r (x + 1) + Rpow r x).
+assert (root_n_q : forall r x, Rnat x -> r ** 2 = r + 1 ->
+          r ** (x + 2) = r ** (x + 1) + r ** x).
   intros r x xnat rrroot.
-  replace (Rpow r x) with (Rpow r x * 1) by ring.
+  replace (r ** x) with (r ** x * 1) by ring.
   rewrite !Rpow_add_r, Rpow1; auto with rnat.
   rewrite <- Rmult_plus_distr_l.
   now apply Rmult_eq_compat_l.
+assert (phi_n_q : forall x, Rnat x -> 
+          phi ** (x + 2) = phi ** (x + 1) + phi ** x).
+  now intros x xnat; apply root_n_q.
+assert (psi_n_q : forall x, Rnat x ->
+                  psi ** (x + 2) = psi ** (x + 1) + psi ** x).
+  now intros x xnat; apply root_n_q.
 intros nnat.
 assert (psidifphi : phi - psi <> 0).
   unfold phi, psi.
   enough (0 < sqrt 5) by lra.
   now apply sqrt_lt_R0; lra.
-enough (main : fibr n = (Rpow phi n - Rpow psi n) / (phi - psi) /\
-        fibr (n + 1) = (Rpow phi (n + 1) - Rpow psi (n + 1)) / (phi - psi)).
+enough (main : fibr n = (phi ** n - psi ** n) / (phi - psi) /\
+        fibr (n + 1) = (phi ** (n + 1) - psi ** (n + 1)) / (phi - psi)).
    now destruct main as [main _].  
 induction nnat as [ | x xnat Ih].
   split.
@@ -1648,33 +1666,33 @@ remember ?ex_n as n eqn:Heqn.
 rewrite !binomial_eq.
 (* The first step is to remove factorial 4 from both side.  On the left side,
  factorial 4 is found inside factorial 5. *)
-rewrite !Rdiv_def, !Rinv_mult, (Rmult_comm (/ Rfactorial 5)), <- Rmult_assoc.
-replace (Rfactorial 5) with (5 * Rfactorial 4); cycle 1.
+rewrite !Rdiv_def, !Rinv_mult, (Rmult_comm (/ 5`!)), <- Rmult_assoc.
+replace (5`!) with (5 * 4`!); cycle 1.
   rewrite (Rfactorial_succ' 5), Rmult_comm.
     replace (5 - 1) with 4 by ring.
     reflexivity.
   lra.
 now auto with rnat.
-rewrite (Rmult_comm (/ Rfactorial 4)), Rinv_mult, <- !Rmult_assoc.
+rewrite (Rmult_comm (/ 4`!)), Rinv_mult, <- !Rmult_assoc.
 (* This should be a differently worded tactic, to express explicitely the
-   removal of (/Rfactorial 4) *)
-apply (Rmult_eq_compat_r (/Rfactorial 4)).
+   removal of (/4`!) *)
+apply (Rmult_eq_compat_r (/4`!)).
 (* This is a dummy tactic to reassert what the goal has become. *)
-enough (it : Rfactorial n * / Rfactorial (n - 5) * / 5 =
-             17 * Rfactorial n * /Rfactorial (n - 4)) by exact it.
+enough (it : n`! * / (n - 5)`! * / 5 =
+             17 * n`! * /(n - 4)`!) by exact it.
 (* The next step is to remove factorial n *)
-rewrite <- (Rmult_comm (Rfactorial n)), !Rmult_assoc.
-apply (Rmult_eq_compat_l (Rfactorial n)).
-enough (it : / Rfactorial (n - 5) * / 5 = 17 * /Rfactorial (n - 4)) by exact it.
-replace (Rfactorial (n - 4)) with (Rfactorial (n - 5) * (n - 4)); cycle 1.
+rewrite <- (Rmult_comm (n`!)), !Rmult_assoc.
+apply (Rmult_eq_compat_l (n`!)).
+enough (it : / (n - 5)`! * / 5 = 17 * /(n - 4)`!) by exact it.
+replace ((n - 4)`!) with ((n - 5)`! * (n - 4)); cycle 1.
   rewrite (Rfactorial_succ' (n - 4)).
       replace (n - 4 - 1) with (n - 5) by ring.
       reflexivity.
     shelve.
   shelve.
 (* The next step is to remove factorial (n - 5) *)
-rewrite Rinv_mult, <- Rmult_assoc, <- (Rmult_comm (/ Rfactorial (n - 5))), Rmult_assoc.
-apply (Rmult_eq_compat_l (/ Rfactorial (n - 5))).
+rewrite Rinv_mult, <- Rmult_assoc, <- (Rmult_comm (/ (n - 5)`!)), Rmult_assoc.
+apply (Rmult_eq_compat_l (/ (n - 5)`!)).
 enough (it : / 5 = 17 * / (n - 4)) by exact it.
 apply (Rmult_eq_reg_l (5 * (n - 4))).
 field_simplify.
@@ -1706,34 +1724,34 @@ eexists ?[ex_n].
 (* The remember trick is used to make sure the existential variable will
   not be affected by uses of the ring tactic. *)
 remember ?ex_n as n eqn:Heqn.
-unfold binomial.
-(* Preparatory work to get rid of Rfactorial n *)
-replace (17 * (Rfactorial n / (Rfactorial 4 * Rfactorial (n - 4)))) with
-  (Rfactorial n * (17 / (Rfactorial 4 * Rfactorial (n - 4)))); cycle 1.
+rewrite !binomial_eq.
+(* Preparatory work to get rid of n`! *)
+replace (17 * (n`! / (4`! * (n - 4)`!))) with
+  (n`! * (17 / (4`! * (n - 4)`!))); cycle 1.
   field.
-    assert (0 < Rfactorial (n - 4) /\ (0 < Rfactorial 4)).
+    assert (0 < (n - 4)`! /\ (0 < 4`!)).
       split; apply Rfactorial_gt_0.
         (* we need to wait until n is known for this one. *)
         shelve.
       (* this one can be proved right away. *)
       auto with rnat.
     lra.
-(* Getting rind of Rfactorial n *)
+(* Getting rid of n`! *)
 apply Rmult_eq_compat_l.
 (* We now have to prove ... *)
-enough (it : / (Rfactorial 5 * Rfactorial (n - 5)) = 17 /
-            (Rfactorial 4 * (Rfactorial (n - 4)))) by exact it.
-(* Preparatory work to get rid of (Rfactorial (n - 5)) *)
-replace (/(Rfactorial 5 * Rfactorial (n - 5))) with
-  (/(Rfactorial 5) * /(Rfactorial (n - 5))); cycle 1.
+enough (it : / (5`! * (n - 5)`!) = 17 /
+            (4`! * ((n - 4)`!))) by exact it.
+(* Preparatory work to get rid of ((n - 5)`!) *)
+replace (/(5`! * (n - 5)`!)) with
+  (/(5`!) * /((n - 5)`!)); cycle 1.
   field.
-    assert (0 < Rfactorial (n - 5) /\ 0 < Rfactorial 5).
+    assert (0 < (n - 5)`! /\ 0 < 5`!).
        split; apply Rfactorial_gt_0.
           shelve.
        auto with rnat.
      lra.
-replace (17 / (Rfactorial 4 * Rfactorial (n - 4))) with
-   (17 / (Rfactorial 4 * (n - 4)) * /(Rfactorial (n - 5))); cycle 1.
+replace (17 / (4`! * (n - 4)`!)) with
+   (17 / (4`! * (n - 4)) * /((n - 5)`!)); cycle 1.
   rewrite (Rfactorial_succ' (n - 4)); cycle 1.
       shelve.
     shelve.
@@ -1741,16 +1759,16 @@ replace (17 / (Rfactorial 4 * Rfactorial (n - 4))) with
   field.
   split.
     shelve.
-    assert (0 < Rfactorial (n - 5) /\ 0 < Rfactorial 4).
+    assert (0 < (n - 5)`! /\ 0 < 4`!).
        split; apply Rfactorial_gt_0.
           shelve.
        auto with rnat.
      lra.
 apply Rmult_eq_compat_r.
 (* We now have to prove ... *)
-enough (it : / Rfactorial 5  = 17 / (Rfactorial 4 * (n - 4))) by exact it.
-(* We now want to isolate Rfactorial 4. *)
-replace (/ Rfactorial 5) with (/ Rfactorial 4 * / 5); cycle 1.
+enough (it : / 5`!  = 17 / (4`! * (n - 4))) by exact it.
+(* We now want to isolate 4`!. *)
+replace (/ 5`!) with (/ 4`! * / 5); cycle 1.
   rewrite (Rfactorial_succ' 5); cycle 1.
       lra.
     auto with rnat.
@@ -1759,17 +1777,17 @@ replace (/ Rfactorial 5) with (/ Rfactorial 4 * / 5); cycle 1.
   (* Here we could use the factorial computation tactic.
   compute_factorial; lra.
   *)
-  assert (0 < Rfactorial 4).
+  assert (0 < 4`!).
     now apply Rfactorial_gt_0; auto with rnat.
   lra.
-replace (17 / (Rfactorial 4 * (n - 4))) with
-     (/Rfactorial 4 * (17 / (n - 4))); cycle 1.
+replace (17 / (4`! * (n - 4))) with
+     (/4`! * (17 / (n - 4))); cycle 1.
   field.
   split.
     shelve.
     (* When discovering the duplication, users could go back and include
        the proof that 4! is non zero as an shared first proof. *)
-  assert (0 < Rfactorial 4).
+  assert (0 < 4`!).
     now apply Rfactorial_gt_0; auto with rnat.
   lra.
 apply Rmult_eq_compat_l.
