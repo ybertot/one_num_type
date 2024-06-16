@@ -1,5 +1,6 @@
 \documentclass[compress]{beamer}
 \usepackage[latin1]{inputenc}
+\usepackage{cancel}
 \usepackage{alltt}
 \newdimen\topcrop
 \topcrop=10cm  %alternatively 8cm if the pdf inclusions are in letter format
@@ -20,12 +21,14 @@
 \item Type theory base theorem provers are increasingly used for mathematics
 \item Mathematical Components, Mathlib, Isabelle's AFP, etc,
 are directed at experts
-\item Claim: these libraries are not adapted to provide help in teaching
+\item This talks concentrates on a different mathematical audience: early
+  learners of mathematics
 \begin{itemize}
 \item Strong inspiration: Waterproof (and similar experiments with controled natural language)
 \item The language is not the only problem, the material may also be an issue
-\item Strong contention again the natural numbers
+\item Strong contention against the natural numbers
 \end{itemize}
+\item Typing helps, but not the type of natural numbers
 \end{itemize}
 \end{frame}
 \begin{frame}
@@ -250,42 +253,91 @@ also be proved
 \begin{frame}
 \frametitle{Recursive functions}
 \begin{itemize}
-\item Mirror the recursor on \(\mathbb N\)\\ replacing values of
-type \(\mathbb N\) by values of type \(\mathbb R\) satisfying {\tt Rnat}
-\item Writing a recursive sequence departs from usual mathematical practice
+\item recursive sequences are also a typical introductory subject
+\item As an illustration, let us consider the {\em Fibonacci} sequence\\
+{\em The Fibonacci sequence is the function \(F\) such that \(F_0= 0\), \(F_1=1\), and \(F_{n+2} = F_{n} + F_{n + 1}\) for every natural number \(n\)}
+\item Here we will miss specific syntax for recursive definition
+\item Proof by induction and the defining equations are enough to
+{\em study} a sequence
+\item But {\em def{}ining} is still needed
+\end{itemize}
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{Definition of recursive functions}
 \begin{itemize}
-\item Using variables to refer to recursive calls
-\item Maybe fixable using ad-hoc syntax
+\item We can use a {\em recursor}, mirror of the recursor on natural numbers
+\item Provide different recursors for different recursion depths
 \end{itemize}
-\item Provide several recursors if multiple depth recursion is required
-\begin{itemize}
-\item For instance for the Fibonacci sequence
-\end{itemize}
-\item Only provide simply typed recursion at early stages of the course
-\end{itemize}
-\item At introductory level, do not mention the recursor
-\begin{itemize}
-\item Only provide base case and recursive equations for the studied sequences
-\end{itemize}
+\begin{small}
+\begin{alltt}
+Definition fibr := Rnat_rect_2 0 1
+   (fun n fibr_n fibr_n' => fibr_n + fibr_n').
+
+Lemma fibr0 : fibr 0 = 0.
+Proof. ... Qed.
+
+Lemma fibr1 : fibr 1 = 0.
+Proof. ... Qed.
+
+Lemma fibr_succ n : Rnat n -> fibr (n + 2) =
+   fibr n + fibr (n + 1).
+Proof. ... Qed.
+\end{alltt}
+\end{small}
 \end{frame}
 \begin{frame}
 \frametitle{Minimal set of tactics}
 \begin{itemize}
-\item {\tt replace} and {\tt ring} and {\tt field}
-to cover all algebraic computations
+\item {\tt replace}
 \begin{itemize}
+\item {\tt ring} and {\tt field} for justifications
 \item No need to massage formulas step by step through rewriting
 \end{itemize}
 \item {\tt intros}, {\tt exists}, {\tt split}, {\tt destruct} to handle
-  logical connectives
-\item {\tt rewrite} to handle the behavior of all provided functions
+  logical connectives (as usual)
+\item {\tt rewrite} to handle the behavior of all defined functions
+ (and recursors)
 \item {\tt unfold} for functions defined by students
 \item {\tt apply} and {\tt lra} to handle all side conditions related to bounds
 \item {\tt auto with rnat} to handle all subset conditions
+\begin{itemize}
+\item Explicit handling for subtraction and division
+\end{itemize}
 \item Possibility to add ad-hoc computing facilities for user-defined
 \begin{itemize}
 \item Relying on mirror functions computing on inductive {\tt nat} or {\tt Z}
 \end{itemize}
+\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{Demonstration time}
+\begin{itemize}
+\item A study of factorials and binomial numbers
+\begin{itemize}
+\item Efficient computation of factorial numbers
+\item Proofs relating the two points of view on binomial numbers,
+   ratios or recursive definition
+\item A proof of the expansion of \((x + y) ^ n\)
+\end{itemize}
+\item A study the fibonacci sequence
+\begin{itemize}
+\item \({\cal F}(i) = \frac{\phi ^ i - \psi ^ i}{\phi - \psi}\) (\(\phi\) golden ratio)
+\end{itemize}
+\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{The ``17'' exercise}
+\begin{itemize}
+\item Prove that there exists an \(n\) larger than 4 such that\\
+\[\left(\begin{array}{c}n\\5\end{array}\right) =
+  17 \left(\begin{array}{c}n\\4\end{array}\right)\]\\
+(suggested by S. Boldo, F. Clément, D. Hamelin, M. Mayero, P. Rousselin)
+\item Easy when using the ratio of factorials and eliminating common
+sub-expressions on both side of the equality\\
+\[\frac{\cancel{n!}}{\cancel{(n - 5)!}\cancel{5!}_5} = 17 \frac{\cancel{n!}}{\cancel{(n-4)!}_{(n-4)}\cancel{4!}}\]
+\item They use the type of natural numbers and equation\\
+\[\left(\begin{array}{c}n\\p + 1\end{array}\right) \times (p + 1) =
+  \left(\begin{array}{c}n\\p\end{array}\right) \times (n - p)\]\\
 \end{itemize}
 \end{frame}
 \end{document}
