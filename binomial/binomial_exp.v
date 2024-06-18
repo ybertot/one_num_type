@@ -15,63 +15,67 @@ Inductive Rint : R -> Prop :=
   Rint1 : Rint 1
 | Rint_sub : forall x y, Rint x -> Rint y -> Rint (x - y).
 
-#[export]
-Hint Resolve Rint1 Rint_sub : rnat.
+Existing Class Rint.
+
+Existing Instance Rint1.
+Existing Instance Rint_sub.
+(* #[export]
+Hint Resolve Rint1 Rint_sub : rnat. *)
 
 (* We then need to have all the stability statements for the ring
   operations (we already have subtraction. *)
-Lemma Rint0 : Rint 0.
-Proof. now replace 0 with (1 - 1) by ring; auto with rnat. Qed.
+Instance Rint0 : Rint 0.
+Proof. now replace 0 with (1 - 1) by ring; typeclasses eauto. Qed.
 
-#[export]
-Hint Resolve Rint0 : rnat.
+(* #[export]
+Hint Resolve Rint0 : rnat. *)
 
-Lemma Rint_add x y : Rint x -> Rint y -> Rint (x + y).
-Proof. now replace (x + y) with (x - (0 - y)) by ring; auto with rnat. Qed.
+Instance Rint_add x y  {xint : Rint x} {yint : Rint y} : Rint (x + y).
+Proof. now replace (x + y) with (x - (0 - y)) by ring; typeclasses eauto. Qed.
 
-Lemma Rint_mul x y : Rint x -> Rint y -> Rint (x * y).
+Instance Rint_mul x y {xint : Rint x} {yint : Rint y} : Rint (x * y).
 Proof.
-induction 1 as [ | u v Ru Ihu Rv Ihv].
+induction xint as [ | u v Ru Ihu Rv Ihv].
   now replace (1 * y) with y by ring; auto.
 replace ((u - v) * y) with ((u * y) - (v * y)) by ring.
-now auto with rnat.
+now typeclasses eauto.
 Qed.
 
-#[export]
-Hint Resolve Rint_add Rint_mul : rnat.
+(* #[export]
+Hint Resolve Rint_add Rint_mul : rnat. *)
 
-Lemma Rint_opp x : Rint x -> Rint (- x).
-Proof. intros xint; replace (-x) with (0 - x) by ring; auto with rnat. Qed.
+Instance Rint_opp x {xint : Rint x} : Rint (- x).
+Proof. replace (-x) with (0 - x) by ring; typeclasses eauto. Qed.
 
 (* 2 will later be covered by a more general theorem, but we need a
   special lemma to prove that general theorem. *)
-Lemma Rint2 : Rint 2.
-Proof.  now replace 2 with (1 + 1); auto with rnat. Qed.
+Instance Rint2 : Rint 2.
+Proof.  now replace 2 with (1 + 1) by ring; typeclasses eauto. Qed.
 
-#[export]
-Hint Resolve Rint2 : rnat.
+(* #[export]
+Hint Resolve Rint2 : rnat. *)
 
-Lemma Rint_pos p : Rint (IZR (Z.pos p)).
+Instance Rint_pos p : Rint (IZR (Z.pos p)).
 Proof.
 induction p as [ p' Ih | p' Ih | ].
-    now rewrite Pos2Z.inj_xI, plus_IZR, mult_IZR; auto with rnat.
-  now rewrite Pos2Z.inj_xO, mult_IZR; auto with rnat.
-auto with rnat.
+    now rewrite Pos2Z.inj_xI, plus_IZR, mult_IZR; typeclasses eauto.
+  now rewrite Pos2Z.inj_xO, mult_IZR; typeclasses eauto.
+now typeclasses eauto.
 Qed.
 
-#[export]
-Hint Resolve Rint_pos : rnat.
+(* #[export]
+Hint Resolve Rint_pos : rnat. *)
 
 Lemma Rint_neg p : Rint (IZR (Z.neg p)).
 Proof.
 replace (IZR (Z.neg p)) with (IZR (Z.opp (Z.pos p))) by easy.
 rewrite opp_IZR.
 replace (- IZR (Z.pos p)) with (0 - IZR (Z.pos p)) by ring.
-auto with rnat.
+typeclasses eauto.
 Qed.
 
-#[export]
-Hint Resolve Rint_neg : rnat.
+(* #[export]
+Hint Resolve Rint_neg : rnat. *)
 
 (* This is the general theorem that covers all numbers, even 0, 1, and 2
   which are already provided by more elementary proofs.
@@ -79,22 +83,22 @@ Hint Resolve Rint_neg : rnat.
   front of the eyes of beginners, but its specialization to ground
   constants like 1, 32, or 45 is useful (see the example below). *)
 
-Lemma Rint_Z x : Rint (IZR x).
+Instance Rint_Z x : Rint (IZR x).
 Proof.
-now destruct x as [ | p | p]; auto with rnat.
+now destruct x as [ | p | p]; typeclasses eauto.
 Qed.
 
-#[export]
-Hint Resolve Rint_Z : rnat.
+(* #[export]
+Hint Resolve Rint_Z : rnat. *)
 
 Example Rint_big : Rint 1043.
-Proof. now auto with rnat. Qed.
+Proof. now typeclasses eauto. Qed.
 
 (* This lemma is not for the beginners, because it mentions the type
   Z explicitely. *)
-Lemma Rint_exists_Z x : Rint x -> exists z, x = IZR z.
+Lemma Rint_exists_Z x  {xint : Rint x} : exists z, x = IZR z.
 Proof.
-induction 1 as [ | u v Ru Ihu Rv Ihv].
+induction xint as [ | u v Ru Ihu Rv Ihv].
   exists 1%Z; easy.
 destruct Ihu as [nu nuq]; destruct Ihv as [nv nvq].
 exists (nu - nv)%Z; rewrite nuq, nvq.
@@ -107,11 +111,10 @@ Qed.
   However, there is a subtlety due to the discrete nature of the set of
   integers.  This is a transposition of an existing theorem on integers,
   actually covered by lia. *)
-Lemma Rint_le_lt x y : Rint x -> Rint y -> x < y -> x + 1 <= y.
+Lemma Rint_le_lt x y {xint : Rint x}{yint : Rint y} :  x < y -> x + 1 <= y.
 Proof.
-intros xint yint.
-destruct (Rint_exists_Z _ xint) as [z xz].
-destruct (Rint_exists_Z _ yint) as [u yu].
+destruct (Rint_exists_Z x) as [z xz].
+destruct (Rint_exists_Z y) as [u yu].
 rewrite xz, yu.
 intros zu; apply lt_IZR in zu.
 rewrite <- plus_IZR; apply IZR_le; lia.
@@ -200,21 +203,21 @@ apply eq_sym, eq_IZR.
 now apply epsilon_spec.
 Qed.
 
-Lemma IRZ_add n m : Rint n -> Rint m -> IRZ (n + m) = (IRZ n + IRZ m)%Z.
+Lemma IRZ_add n m {nint : Rint n} {mint : Rint m} :
+   IRZ (n + m) = (IRZ n + IRZ m)%Z.
 Proof.
-intros nint mint.
-destruct (Rint_exists_Z n nint) as [n' nn'].
-destruct (Rint_exists_Z m mint) as [m' mm'].
+destruct (Rint_exists_Z n) as [n' nn'].
+destruct (Rint_exists_Z m) as [m' mm'].
 now rewrite nn', mm', <- plus_IZR, !IRZ_IZR.
 Qed.
 
 (* We should also have an induction principle for natural numbers. *)
 Lemma Rnat'_ind (P : R -> Prop) (v0 : P 0) 
-  (step : forall n, Rint n -> 0 <= n -> P n -> P (n + 1)) :
+  (step : forall n {nint :  Rint n}, 0 <= n -> P n -> P (n + 1)) :
   (forall n, Rint n -> 0 <= n -> P n). 
 Proof.
 intros n nint nge0.
-destruct (Rint_exists_Z n nint) as [nz Pnz].
+destruct (Rint_exists_Z n) as [nz Pnz].
 rewrite Pnz.
 assert (nge0' : (0 <= nz)%Z).
   now apply le_IZR; rewrite <- Pnz.
@@ -229,9 +232,9 @@ replace (IZR (Z.of_nat (S n'))) with (IZR (Z.of_nat n') + 1); cycle 1.
   replace 1%Z with (Z.of_nat 1) by easy.
   rewrite <- Nat2Z.inj_add.
   now rewrite Nat.add_1_r.
-apply step; auto with rnat.
+apply step; [typeclasses eauto | | auto].
 apply IZR_le.
-apply Zle_0_nat.
+now apply Zle_0_nat.
 Qed.
 
 (* It turns out Rnat'_ind is cumbersome to use, so we attempt another
@@ -240,18 +243,22 @@ Inductive Rnat : R -> Prop :=
   Rnat0 : Rnat 0
 | Rnat_succ : forall x, Rnat x -> Rnat (x + 1).
 
-Lemma Rnat_Rint x : Rnat x -> Rint x /\ 0 <= x.
+Existing Class Rnat.
+
+Lemma Rnat_Rint x {xint : Rnat x} : Rint x /\ 0 <= x.
 Proof.
-induction 1 as [ | y ynat [yint yge0]].
-  now split; auto with rnat.
-split; auto with rnat; lra.
+induction xint as [ | y ynat [yint yge0]].
+  now split; try typeclasses eauto.
+split; try typeclasses eauto; lra.
 Qed.
 
+Instance Rnat_Rintw x (xnat : Rnat x) : Rint x.
+Proof. now destruct (Rnat_Rint x). Qed.
 
-Lemma Rint_Rnat x : Rint x -> 0 <= x -> Rnat x.
+Lemma Rint_Rnat x {xint : Rint x} : 0 <= x -> Rnat x.
 Proof.
-intros xint xge0.
-destruct (Rint_exists_Z x xint) as [x' px].
+intros xge0.
+destruct (Rint_exists_Z x) as [x' px].
 assert (x'ge0 : (0 <= x')%Z).
   now apply le_IZR; rewrite <- px.
 assert (x'n : x' = Z.of_nat (Z.abs_nat x')).
@@ -282,66 +289,61 @@ Qed.
 
 End alternative_Rnat.
 
-Lemma Rnat_cst x : Rnat (IZR (Z.pos x)).
+Instance Rnat_cst x : Rnat (IZR (Z.pos x)).
 Proof. apply Rint_Rnat;[apply Rint_Z | apply IZR_le; lia]. Qed.
 
-Hint Resolve Rnat0 Rnat_succ Rnat_cst : rnat.
+Existing Instances Rnat0 Rnat_succ Rnat_cst.
 
-Lemma Rnat_add x y : Rnat x -> Rnat y -> Rnat (x + y).
+Instance Rnat_add x y {xnat : Rnat x} {ynat : Rnat y} : Rnat (x + y).
 Proof.
-induction 1 as [ | x xnat Ih].
+induction xnat as [ | x xnat Ih].
   now rewrite Rplus_0_l.
-intros ynat.
 replace (x + 1 + y) with (x + y + 1) by ring.
 apply Rnat_succ.
-apply Ih.
-assumption.
+now apply Ih.
 Qed.
 
-Lemma Rnat_mul x y : Rnat x -> Rnat y -> Rnat (x * y).
+Instance Rnat_mul x y {xnat : Rnat x} {ynat : Rnat y} : Rnat (x * y).
 Proof.
-induction 1 as [ | x xnat Ih].
+induction xnat as [ | x xnat Ih].
   now rewrite Rmult_0_l; intros; apply Rnat0.
-intros ynat; replace ((x + 1) * y) with (x * y + y) by ring.
-apply Rnat_add.
-  apply Ih.
-  assumption.
-assumption.
+replace ((x + 1) * y) with (x * y + y) by ring.
+typeclasses eauto.
 Qed.
 
-Lemma Rnat_sub x y : Rnat x -> Rnat y -> y <= x -> Rnat (x - y).
+Lemma Rnat_sub x y {xnat : Rnat x} {ynat : Rnat y} : y <= x -> Rnat (x - y).
 Proof.
-intros xnat ynat ylex.
-destruct (Rnat_Rint _ xnat) as [xint xge0].
-destruct (Rnat_Rint _ ynat) as [yint yge0].
-apply Rint_Rnat; auto with rnat.
-lra.
+intros ylex.
+destruct (Rnat_Rint x) as [xint xge0].
+destruct (Rnat_Rint y) as [yint yge0].
+apply Rint_Rnat; [ typeclasses eauto | lra].
 Qed.
 
-Hint Resolve Rnat_add Rnat_mul : rnat.
+(*
+Hint Resolve Rnat_add Rnat_mul : rnat. *)
 
 (* Order properties for natural numbers. *)
 
-Lemma Rnat_le_lt x y : Rnat x -> Rnat y -> x < y -> x + 1 <= y.
+Lemma Rnat_le_lt x y {xnat : Rnat x}{ynat : Rnat y} : x < y -> x + 1 <= y.
 Proof.
-intros xnat ynat xlty; apply Rint_le_lt; auto.
-  now destruct (Rnat_Rint _ xnat).
-now destruct (Rnat_Rint _ ynat).
+intros xlty; apply Rint_le_lt; auto.
+  now destruct (Rnat_Rint x).
+now destruct (Rnat_Rint y).
 Qed.
 
-Lemma Rnat_gt_pred (x y : R) : Rnat x -> Rnat y ->
+Lemma Rnat_gt_pred (x y : R) {xnat : Rnat x}{ynat : Rnat y} :
   x - 1 < y -> x <= y.
 Proof.
-intros xnat ynat xlty.
+intros xlty.
 induction xnat as [ | x' x'nat _].
   now apply Rnat_ge0.
-apply Rnat_le_lt; auto with rnat.
+apply Rnat_le_lt; try typeclasses eauto.
 lra.
 Qed.
 
-Lemma Rnat_exists_nat x : Rnat x -> exists n, x = IZR (Z.of_nat n).
+Lemma Rnat_exists_nat x {xnat : Rnat x} : exists n, x = IZR (Z.of_nat n).
 Proof.
-induction 1 as [ | x xnat [n xn]].
+induction xnat as [ | x xnat [n xn]].
   exists 0%nat; easy.
 exists (S n).
 now rewrite Nat2Z.inj_succ, <- Z.add_1_r, plus_IZR, xn.
@@ -351,9 +353,9 @@ Qed.
   by students. *)
 Definition IRN (x : R) := Z.abs_nat (IRZ x).
 
-Lemma INR_IRN x : Rnat x -> INR (IRN x) = x.
+Lemma INR_IRN x {xnat : Rnat x} : INR (IRN x) = x.
 Proof.
-intros xnat; destruct (Rnat_exists_nat _ xnat) as [x' xx'].
+destruct (Rnat_exists_nat x) as [x' xx'].
 rewrite xx'.
 unfold IRN.
 rewrite IRZ_IZR.
@@ -386,19 +388,20 @@ Lemma IRN_add n m :
 Rnat n -> Rnat m -> IRN (n + m) = (IRN n + IRN m)%nat.
 Proof.
 intros nnat mnat.
-destruct (Rnat_Rint _ nnat) as [nint nge0].
-destruct (Rnat_Rint _ mnat) as [mint mge0].
+destruct (Rnat_Rint n) as [nint nge0].
+destruct (Rnat_Rint m) as [mint mge0].
 unfold IRN; rewrite IRZ_add; auto.
 rewrite Zabs2Nat.inj_add; auto; apply le_IZR.
-  destruct (Rint_exists_Z _ nint) as [n' nn'].
+  destruct (Rint_exists_Z n) as [n' nn'].
   now rewrite nn' in nge0 |- *; rewrite IRZ_IZR.
-destruct (Rint_exists_Z _ mint) as [m' mm'].
+destruct (Rint_exists_Z m) as [m' mm'].
 now rewrite mm' in mge0 |- *; rewrite IRZ_IZR.
 Qed.
 
+(* I don't know if this is important. *)
 Lemma IRN_succ n : Rnat n -> IRN (n + 1) = S (IRN n).
 Proof.
-now intros nnat; rewrite IRN_add, IRN1, Nat.add_1_r; auto with rnat.
+now intros nnat; rewrite IRN_add, IRN1, Nat.add_1_r; try typeclasses eauto.
 Qed.
 
 (* Iteration: a first way to use natural numbers to compute. This function
@@ -416,11 +419,10 @@ Lemma Rnat_iter1 {A : Type} (f : A -> A) (e : A) :
   Rnat_iter 1 f e = f e.
 Proof. now unfold Rnat_iter; rewrite IRN1. Qed.
 
-Lemma Rnat_iter_add {A : Type} (f : A -> A) (e : A) n m :
-  Rnat n -> Rnat m ->
+Lemma Rnat_iter_add {A : Type} (f : A -> A) (e : A) n m
+  {nnat : Rnat n} {mnat : Rnat m} :
   Rnat_iter (n + m) f e = Rnat_iter n f (Rnat_iter m f e).
 Proof.
-intros nnat mnat.
 unfold Rnat_iter.
 rewrite IRN_add; auto.
 now rewrite Nat.iter_add.
@@ -439,13 +441,12 @@ Proof.
 now unfold rnth; rewrite Rnat_iter0.
 Qed.
 
-Lemma rnthS {A : Type} (e : A) a l n :
-  Rnat n ->
+Lemma rnthS {A : Type} (e : A) a l n 
+  {nnat : Rnat n} :
   rnth e (a :: l) (n + 1) = rnth e l n.
 Proof.
-intros nnat.
 unfold rnth.
-rewrite Rnat_iter_add, Rnat_iter1; auto with rnat.
+now rewrite Rnat_iter_add, Rnat_iter1; try typeclasses eauto.
 Qed.
 
 (* It is sensible that students see the primitives used to program
@@ -518,17 +519,17 @@ apply map_ext.
 intros a; rewrite plus_INR, INR_IRN; auto; ring.
 Qed.
 
-Lemma Rseq_S (n m : R) : Rnat m ->
+Lemma Rseq_S (n m : R) {mnat : Rnat m} :
   Rseq n (m + 1) = n :: (Rseq (n + 1) m).
 Proof.
-now intros mnat; rewrite Rplus_comm; rewrite Rseq_add, Rseq1; auto with rnat.
+now rewrite Rplus_comm; rewrite Rseq_add, Rseq1; try typeclasses eauto.
 Qed.
 
-Lemma Rseq_S' (n m : R) : Rnat (m - 1) ->
+Lemma Rseq_S' (n m : R) {m'nat : Rnat (m - 1)} :
   Rseq n m = n :: Rseq (n + 1) (m - 1).
 Proof.
-intros mn; replace m with (1 + (m - 1)) at 1 by ring.
-rewrite Rseq_add; auto with rnat.
+replace m with (1 + (m - 1)) at 1 by ring.
+rewrite Rseq_add; try typeclasses eauto.
 now rewrite Rseq1.
 Qed.
 
@@ -553,19 +554,19 @@ Notation "'\big[' f / idf ]_( a <= i < b ) E" :=
 Lemma big0 {A : Type}(E : R -> A) (f : A -> A -> A) (idx : A) (a : R) :
   \big[f / idx]_(a <= i < a) E i = idx.
 Proof.
-now rewrite Rminus_eq_0, Rseq0.
+now rewrite Rminus_diag, Rseq0.
 Qed.
 
-Lemma big_recl {A : Type}(E : R -> A) (f : A -> A -> A) (idx : A) (a b : R) :
-  Rnat (b - a) -> a < b ->
+Lemma big_recl {A : Type}(E : R -> A) (f : A -> A -> A) (idx : A) (a b : R)
+  {hnat : Rnat (b - a)} : a < b ->
   \big[f / idx]_(a <= i < b) E i =
    f (E a) (\big[f / idx]_((a + 1) <= i < b) E i).
 Proof.
-intros hnat altb.
-rewrite Rseq_S'; [ | apply Rnat_sub; auto with rnat]; simpl.
+intros altb.
+rewrite Rseq_S'; [ | apply Rnat_sub; try typeclasses eauto]; simpl.
   replace (b - a - 1) with (b - (a + 1)) by ring.
   easy.
-replace 1 with (0 + 1) by ring; apply Rnat_le_lt; auto with rnat.
+replace 1 with (0 + 1) by ring; apply Rnat_le_lt; try typeclasses eauto.
 lra.
 Qed.
 
@@ -583,7 +584,8 @@ Lemma big_recr {A : Type}(E : R -> A) (f : A -> A -> A) (idx : A) (a b : R) :
 Proof.
 intros amf hnat altb.
 assert (induct_arg : Rnat (b - a  - 1)).
-  apply Rnat_sub; auto with rnat; apply Rnat_gt_pred; auto with rnat; lra.
+  apply Rnat_sub; try typeclasses eauto;
+      apply Rnat_gt_pred; try typeclasses eauto; lra.
 enough (main : forall p, Rnat p ->
   forall a, fold_right f idx (map (fun i => E i) (Rseq a (p + 1))) =
    f (fold_right f idx (map (fun i => E i) (Rseq a p))) (E (a + p))).
@@ -595,7 +597,7 @@ clear hnat altb induct_arg a.
 intros p'; induction 1 as [ | p pnat Ih] using Rnat_ind.
   intros a; rewrite Rplus_0_l, Rplus_0_r, Rseq0, Rseq1; simpl.
   now destruct amf as [_ [P1 P2]]; rewrite P1, P2.
-intros a; rewrite Rseq_S; auto with rnat; simpl.
+intros a; rewrite Rseq_S; try typeclasses eauto; simpl.
 rewrite (Rseq_S a); auto; simpl.
 destruct amf as [Pa [P1 P2]].
 now rewrite Ih, Pa; replace (a + (p + 1)) with (a + 1 + p) by ring.
@@ -704,28 +706,28 @@ rewrite IRZ_IZR.
 easy.
 Qed.
 
-Lemma Rfactorial_succ x : 0 <= x -> Rint x -> (x + 1)`! =
-    x`! * (x + 1).
+Lemma Rfactorial_succ x {xint : Rint x} : 0 <= x ->
+  (x + 1)`! = x`! * (x + 1).
 Proof.
-intros xge0 xint.
-destruct (Rint_exists_Z _ xint) as [z xz].
+intros xge0.
+destruct (Rint_exists_Z x) as [z xz].
 unfold Rfactorial.
 rewrite xz.
 rewrite <- plus_IZR, !IRZ_IZR, Zfactorial_succ, mult_IZR; auto.
 now apply le_IZR; rewrite <- xz.
 Qed.
 
-Lemma Rfactorial_succ' x : 1 <= x -> Rint x -> x `! = (x - 1)`! * x.
+Lemma Rfactorial_succ' x {xint : Rint x} : 1 <= x -> x `! = (x - 1)`! * x.
 Proof.
-intros xge1 xint.
+intros xge1.
 replace x with ((x - 1) + 1) at 1 by ring.
-rewrite Rfactorial_succ; [ring | lra | auto with rnat].
+rewrite Rfactorial_succ; [ring | typeclasses eauto | lra].
 Qed.
 
 Lemma Rfactorial_gt_0 n : Rint n -> 0 < n `!.
 Proof.
 intros nint.
-destruct (Rint_exists_Z _ nint) as [z nz].
+destruct (Rint_exists_Z n) as [z nz].
 unfold Rfactorial; rewrite nz, IRZ_IZR.
 unfold Zfactorial.
 destruct (0 <? z)%Z eqn:z0; [ | lra].
@@ -736,11 +738,11 @@ apply lt_O_fact.
 Qed.
 
 (* This is amazingly easy, maybe there should be a Rint precondition. *)
-Lemma Rint_factorial n : Rint (n`!).
+Instance Rint_factorial n : Rint (n`!).
 Proof. apply Rint_Z. Qed.
 
-#[export]
-Hint Resolve Rint_factorial : rnat.
+(* #[export]
+Hint Resolve Rint_factorial : rnat. *)
 
 (* The factorial could also have been defined using a big operator. *)
 
@@ -750,11 +752,11 @@ Proof.
 induction 1 as [ | x xnat Ih].
   now rewrite Rfactorial0, Rplus_0_l, big0.
 rewrite Rfactorial_succ; cycle 1.
-    now apply Rnat_ge0.
-  now destruct (Rnat_Rint _ xnat).
+    now destruct (Rnat_Rint x).
+  now apply Rnat_ge0.
 rewrite big_recr; auto; cycle 1.
     replace (x + 1 + 1 - 1) with (x + 1) by ring.
-    now auto with rnat.
+    now typeclasses eauto.
   apply Rnat_ge0 in xnat.
   lra.
 replace (x + 1 + 1 - 1) with (x + 1) by ring.
@@ -791,23 +793,23 @@ rewrite Rfactorial_succ; auto.
 replace (n - m) with (n - (m + 1) + 1) by ring.
 assert (mlen' : m + 1 <= n).
   apply Rint_le_lt; auto.
-rewrite Rfactorial_succ; try lra; auto with rnat.
+rewrite Rfactorial_succ; try lra; try typeclasses eauto.
 replace (n - (m + 1) + 1) with (n - m) by ring.
 field.
 assert (0 < Rfactorial (n - (m + 1))).
-  apply Rfactorial_gt_0; auto with rnat.
+  apply Rfactorial_gt_0; try typeclasses eauto.
 assert (0 < Rfactorial m).
-  apply Rfactorial_gt_0; auto with rnat.
+  apply Rfactorial_gt_0; typeclasses eauto.
 lra.
 Qed.
 
-Lemma binomial_n_0 n : Rint n -> 0 <= n -> binomial n 0 = 1.
+Lemma binomial_n_0 n {nint : Rint n} : 0 <= n -> binomial n 0 = 1.
 Proof.
-intros nint nge0.
+intros nge0.
 unfold binomial.
 rewrite Rfactorial0, Rmult_1_l, Rminus_0_r.
 rewrite Rdiv_diag; [easy | ].
-apply not_eq_sym, Rlt_not_eq, Rfactorial_gt_0; auto with rnat.
+now apply not_eq_sym, Rlt_not_eq, Rfactorial_gt_0; typeclasses eauto.
 Qed.
 
 (* This is awkward, but given by the way binomial was defined.  It might
@@ -840,7 +842,7 @@ assert (base : forall m, Rint m -> 0 <= m <= 0 -> Rint (binomial 0 m)).
   clear n.
   intros m mint m00.
   assert (m0 : m = 0) by lra.
-  rewrite m0, binomial_n_0; auto with rnat.
+  rewrite m0, binomial_n_0; try typeclasses eauto.
   lra.
 assert (step : forall n, Rint n -> 0 <= n ->
            (forall m, Rint m -> 0 <= m <= n -> Rint (binomial n m))
@@ -851,40 +853,38 @@ assert (step : forall n, Rint n -> 0 <= n ->
   intros mint [mge0 mlenp1].
   assert (cases_on_m : m = 0 \/ exists m', Rint m' /\ 0 <= m' /\ m = m' + 1).
     destruct (Rle_lt_dec 1 m) as [ mge1| mlt1].
-      right; exists (m - 1); split;[auto with rnat | split;[lra | ring]].
-    assert (tmp:= Rint_le_lt m 1 mint Rint1 mlt1); lra.
+      right; exists (m - 1); split;[typeclasses eauto | split;[lra | ring]].
+    assert (tmp:= Rint_le_lt m 1 mlt1); lra.
   destruct cases_on_m as [m0 | [m' [m'int [m'ge0 msucc]]]].
-    rewrite m0, binomial_n_0; auto with rnat; lra.
+    rewrite m0, binomial_n_0; try typeclasses eauto; lra.
   rewrite msucc.
   destruct (Rle_lt_dec m n) as [mlen | mgtn].
-    rewrite binomial_rec; auto with rnat; try lra.
+    rewrite binomial_rec; try typeclasses eauto; try lra.
     apply Rint_add.
-      apply Ihn; auto with rnat; lra.
-    apply Ihn; auto with rnat; lra.
+      apply Ihn; try typeclasses eauto; lra.
+    apply Ihn; try typeclasses eauto; lra.
   assert (n + 1 <= m) by now apply Rint_le_lt.
   replace (m' + 1) with (n + 1) by lra.
-  rewrite binomial_n_n; auto with rnat; lra.
-intros nint nge0.
-revert nint nge0.
-apply (Rnat'_ind _ base step).
+  rewrite binomial_n_n; try typeclasses eauto; lra.
+now apply (Rnat'_ind _ base step).
 Qed.
 
 (* Transfering the binomial recursive properties to the natural number
   interface. *)
 Lemma binomial_n_0_nat n : Rnat n -> binomial n 0 = 1.
 Proof.
-now intros nnat; destruct (Rnat_Rint _ nnat); apply binomial_n_0.
+now intros nnat; destruct (Rnat_Rint n); apply binomial_n_0.
 Qed.
 
 Lemma binomial_n_n_nat n : Rnat n -> binomial n n = 1.
 Proof.
-now intros nnat; destruct (Rnat_Rint _ nnat); apply binomial_n_n.
+now intros nnat; destruct (Rnat_Rint n); apply binomial_n_n.
 Qed.
 
 Lemma binomial_rec_nat n m : Rnat n -> Rnat m -> m < n ->
   binomial (n + 1) (m + 1) = binomial n m + binomial n (m + 1).
 Proof.
-intros nnat mnat mbound; apply binomial_rec; auto with rnat;
+intros nnat mnat mbound; apply binomial_rec; auto; try typeclasses eauto;
    try now apply Rnat_ge0.
 all: now apply Rnat_Rint.
 Qed.
@@ -894,32 +894,27 @@ Qed.
   theorems natively use the Rnat interface. *)
 Lemma Rnat_binomial n m : Rnat n -> Rnat m -> m <= n ->
   Rnat (binomial n m).
-Proof.
+Proof with (auto; try typeclasses eauto).
 intros nnat; revert nnat m; induction 1 as [ | n nnat Ih].
   intros m mnat mle0.
   assert (m0 : m = 0).
     assert (0 <= m) by now apply Rnat_ge0.
     lra.
-  rewrite m0, binomial_n_0_nat.
-    now auto with rnat.
-  now auto with rnat.
+  rewrite m0, binomial_n_0_nat...
 intros m mnat mbound.
 induction mnat as [ | m' m'nat _].  (*case analysis on m *)
-  destruct (Rnat_Rint _ nnat) as [nint nge0].
-  rewrite binomial_n_0_nat.
-    now auto with rnat.
-  now auto with rnat.
+  destruct (Rnat_Rint n) as [nint nge0].
+  rewrite binomial_n_0_nat...
 destruct (Rle_lt_dec n m') as [nlem' | m'ltn].
   assert (nm' : n = m') by lra.
-  now rewrite <- nm', binomial_n_n_nat; auto with rnat.
-rewrite binomial_rec_nat; try auto with rnat.
+  now rewrite <- nm', binomial_n_n_nat; try typeclasses eauto.
+rewrite binomial_rec_nat...
 apply Rnat_add.
-  apply Ih.
-    now auto with rnat.
+  apply Ih...
   lra.
-apply Ih.
-  now auto with rnat.
-now apply Rnat_le_lt.
+apply Ih...
+assert (tmp := Rnat_le_lt m' n m'ltn).
+lra.
 Qed.
 
 (* This proof could be given as an exercise.  It shows how much of the
@@ -935,7 +930,7 @@ replace (Rfactorial n / (Rfactorial m * Rfactorial (n - m))) with
   ((Rfactorial n * (m + 1)) / ((Rfactorial m * (m + 1)) * Rfactorial (n - m)));
   cycle 1.
   field; repeat split; try lra.
-    assert (tmp1 : Rint (n - m)) by auto with rnat.
+    assert (tmp1 : Rint (n - m)) by typeclasses eauto.
     assert (tmp2 : 0 < Rfactorial (n - m)) by now apply Rfactorial_gt_0.
     lra.
   assert (tmp3 : 0 < Rfactorial m) by now apply Rfactorial_gt_0.
@@ -946,28 +941,25 @@ replace (Rfactorial n / (Rfactorial (m + 1) * Rfactorial (n - (m + 1)))) with
     (Rfactorial (m + 1) * (Rfactorial (n - (m + 1)) * ((n + 1) - (m + 1)))));
   cycle 1.
   field.
-  assert (tmp1 : Rint (n - (m + 1))) by auto with rnat.
-  assert (tmp2 : Rint (m + 1)) by auto with rnat.
-  assert (tmp3 : 0 < Rfactorial (n - (m + 1))) by now apply Rfactorial_gt_0.
-  assert (tmp4 : 0 < Rfactorial (m + 1)) by now apply Rfactorial_gt_0.
+  assert (tmp3 : 0 < Rfactorial (n - (m + 1))) by now apply Rfactorial_gt_0; typeclasses eauto.
+  assert (tmp4 : 0 < Rfactorial (m + 1)) by now apply Rfactorial_gt_0; typeclasses eauto.
   lra.
 replace (Rfactorial m * (m + 1)) with (Rfactorial (m + 1)); cycle 1.
-  apply Rfactorial_succ; auto with rnat; lra.
+  apply Rfactorial_succ; try typeclasses eauto; lra.
 replace (Rfactorial (n - (m + 1)) * (n + 1 - (m + 1))) with
   (Rfactorial ((n + 1) - (m + 1))); cycle 1.
   rewrite (Rfactorial_succ' (n + 1 - (m + 1))); cycle 1.
     enough (m + 1 <= n) by lra.
     apply Rint_le_lt; auto; lra.
-    now auto with rnat.
   now replace (n + 1 - (m + 1) - 1) with (n - (m + 1)) by ring.
 assert (tech : forall a b c, c <> 0 -> a / c + b / c = (a + b) / c).
   now intros a b c cn0; field.
 rewrite tech; cycle 1.
   apply Rmult_integral_contrapositive.
-  assert (tmp1 : Rint (n + 1 - (m + 1))) by auto with rnat.
-  assert (tmp2 : Rint (m + 1)) by auto with rnat.
-  assert (tmp3 : 0 < Rfactorial (n + 1 - (m + 1))) by now apply Rfactorial_gt_0.
-  assert (tmp4 : 0 < Rfactorial (m + 1)) by now apply Rfactorial_gt_0.
+  assert (tmp3 : 0 < Rfactorial (n + 1 - (m + 1))) 
+       by now apply Rfactorial_gt_0; typeclasses eauto.
+  assert (tmp4 : 0 < Rfactorial (m + 1))
+       by now apply Rfactorial_gt_0; typeclasses eauto.
   lra.
 replace (Rfactorial n * (m + 1) + Rfactorial n * (n + 1 - (m + 1))) with
   (Rfactorial n * (n + 1)) by ring.
@@ -989,7 +981,7 @@ Lemma Rnat_rect_succ {A : Type} (v0 : A) stf (x : R) :
   Rnat_rect v0 stf (x + 1) = stf x (Rnat_rect v0 stf x).
 Proof.
 intros xnat.
-destruct (Rnat_exists_nat _ xnat) as [x' xx'].
+destruct (Rnat_exists_nat x) as [x' xx'].
 unfold Rnat_rect.
 replace (IRN (x + 1)) with (S (IRN x)).
   now simpl; rewrite INR_IRN.
@@ -1014,7 +1006,7 @@ Lemma factr_correct x : Rnat x -> factr x = Rfactorial x.
 Proof.
 induction 1 as [ | x xnat Ih].
   now unfold factr; rewrite Rnat_rect0, Rfactorial0.
-destruct (Rnat_Rint _ xnat) as [xint xge0].
+destruct (Rnat_Rint x) as [xint xge0].
 unfold factr; rewrite Rnat_rect_succ; auto.
 fold (factr x).
 rewrite Rfactorial_succ; auto.
@@ -1035,7 +1027,7 @@ Lemma Rnat_rect_2_1 {A : Type} (v0 v1 : A) stf :
 Proof.
 unfold Rnat_rect_2.
 replace 1 with (0 + 1) by ring.
-rewrite Rnat_rect_succ; auto with rnat.
+rewrite Rnat_rect_succ; try typeclasses eauto.
 now rewrite Rnat_rect0.
 Qed.
 
@@ -1047,7 +1039,7 @@ Proof.
 intros xnat.
 unfold Rnat_rect_2.
 replace (x + 2) with (x + 1 + 1) by ring.
-now rewrite !Rnat_rect_succ; auto with rnat.
+now rewrite !Rnat_rect_succ; try typeclasses eauto.
 Qed.
 
 (* It may not be necessary to expose the definition of the fibonacci
@@ -1067,26 +1059,26 @@ Proof.  now intros nnat; unfold fibr; rewrite Rnat_rect_2_succ. Qed.
 Example fibr7 : fibr 7 = 13.
 assert (fibr2 : fibr 2 = 1).
   replace 2 with (0 + 2) by ring.
-  rewrite fibr_succ; auto with rnat; replace (0 + 1) with 1 by ring.
+  rewrite fibr_succ; try typeclasses eauto; replace (0 + 1) with 1 by ring.
   now rewrite fibr0, fibr1; ring.
 assert (fibr3 : fibr 3 = 2).
   replace 3 with (1 + 2) at 1 by ring.
-  rewrite fibr_succ; auto with rnat; replace (1 + 1) with 2 by ring.
+  rewrite fibr_succ; try typeclasses eauto; replace (1 + 1) with 2 by ring.
   now rewrite fibr1, fibr2.
 assert (fibr4 : fibr 4 = 3).
   replace 4 with (2 + 2) by ring.
-  rewrite fibr_succ; auto with rnat; replace (2 + 1) with 3 by ring.
+  rewrite fibr_succ; try typeclasses eauto; replace (2 + 1) with 3 by ring.
   now rewrite fibr2, fibr3; ring.
 assert (fibr5 : fibr 5 = 5).
   replace 5 with (3 + 2) by ring.
-  rewrite fibr_succ; auto with rnat; replace (3 + 1) with 4 by ring.
+  rewrite fibr_succ; try typeclasses eauto; replace (3 + 1) with 4 by ring.
   now rewrite fibr3, fibr4; ring.
 assert (fibr6 : fibr 6 = 8).
   replace 6 with (4 + 2) by ring.
-  rewrite fibr_succ; auto with rnat; replace (4 + 1) with 5 by ring.
+  rewrite fibr_succ; try typeclasses eauto; replace (4 + 1) with 5 by ring.
   now rewrite fibr4, fibr5; ring.
 replace 7 with (5 + 2) by ring.
-rewrite fibr_succ; auto with rnat; replace (5 + 1) with 6 by ring.
+rewrite fibr_succ; try typeclasses eauto; replace (5 + 1) with 6 by ring.
 rewrite fibr5, fibr6; ring.
 Qed.
 
@@ -1109,7 +1101,7 @@ Lemma binomialr_succ (n m : R) : Rnat n ->
 Proof.
 intros nnat.
 unfold binomialr.
-now rewrite Rnat_rect_succ; auto with rnat.
+now rewrite Rnat_rect_succ; try typeclasses eauto.
 Qed.
 
 (* This new definition of binomial is slightly different.  We check
@@ -1119,14 +1111,14 @@ Lemma binomialr_right (n m : R) : Rnat n -> Rnat m -> n < m ->
   binomialr n m = 0.
 Proof.
 intros nnat; revert m; induction nnat as [ | x xnat Ih].
-intros m mnat mbound; rewrite binomialr_0_n; auto with rnat.
+intros m mnat mbound; rewrite binomialr_0_n; try typeclasses eauto.
   destruct (Req_dec_T m 0) as [m0 | mn0].
     lra.
   easy.
 intros m mnat mgtx2.
-rewrite binomialr_succ; auto with rnat.
+rewrite binomialr_succ; try typeclasses eauto.
 rewrite Ih; cycle 1.
-    apply Rnat_sub; auto with rnat.
+    apply Rnat_sub; try typeclasses eauto.
     assert (0 <= x) by now apply Rnat_ge0.
     lra.
   lra.
@@ -1139,13 +1131,13 @@ Qed.
 Lemma binomialr_n_n (n : R) : Rnat n -> binomialr n n = 1.
 Proof.
 induction 1 as [ | x xnat Ih].
-  rewrite binomialr_0_n; auto with rnat.
+  rewrite binomialr_0_n; try typeclasses eauto.
   destruct (Req_dec_T 0 0) as [zz | abs]; [ | lra].
   easy.
-rewrite binomialr_succ; auto with rnat.
+rewrite binomialr_succ; try typeclasses eauto.
 replace (x + 1 - 1) with x by ring.
 rewrite Ih.
-rewrite binomialr_right; auto with rnat.
+rewrite binomialr_right; try typeclasses eauto.
   ring.
 lra.
 Qed.
@@ -1171,12 +1163,12 @@ Qed.
 Lemma binomialr_n_0 n : Rnat n -> binomialr n 0 = 1.
 Proof.
 induction 1 as [ | x xnat Ih].
-  now rewrite binomialr_n_n; auto with rnat.
-rewrite binomialr_succ; auto with rnat.
+  now rewrite binomialr_n_n; try typeclasses eauto.
+rewrite binomialr_succ; try typeclasses eauto.
 rewrite Ih.
 rewrite binomialr_left.
     ring.
-  auto with rnat.
+  try typeclasses eauto.
 lra.
 Qed.
 
@@ -1197,27 +1189,27 @@ induction nnat as [ | x xnat Ih].
   rewrite m0.
   replace (0 - 0) with 0 by ring.
   rewrite Rfactorial0.
-  rewrite binomialr_n_n; auto with rnat.
+  rewrite binomialr_n_n; try typeclasses eauto.
   now field.
 intros m mnat mlex1.
-rewrite binomialr_succ; auto with rnat.
+rewrite binomialr_succ; try typeclasses eauto.
 destruct (Req_dec_T m 0) as [m0 | mn0].
   rewrite m0.
   replace (0 - 1) with (-1) by ring.
-  rewrite binomialr_left; auto with rnat; cycle 1.
+  rewrite binomialr_left; try typeclasses eauto; cycle 1.
     lra.
-  rewrite binomialr_n_0; auto with rnat.
+  rewrite binomialr_n_0; try typeclasses eauto.
   replace (x + 1 - 0) with (x + 1) by ring.
   rewrite Rfactorial0, Rmult_1_r, Rdiv_diag; cycle 1.
     enough (0 <> Rfactorial (x + 1)) by lra.
     apply Rlt_not_eq.
     apply Rfactorial_gt_0.
-    now apply Rnat_Rint; auto with rnat.
+    now apply Rnat_Rint; try typeclasses eauto.
   ring.
 rewrite Ih; cycle 1.
-    apply Rnat_sub; auto with rnat.
+    apply Rnat_sub; try typeclasses eauto.
     replace 1 with (0 + 1) by ring.
-    apply Rnat_le_lt; auto with rnat.
+    apply Rnat_le_lt; try typeclasses eauto.
     assert (0 <= m) by now apply Rnat_ge0.
     lra.
   lra.
@@ -1226,7 +1218,7 @@ destruct (Req_dec_T m (x + 1)) as [mx1 | mnx1].
   replace (x - (x + 1 - 1)) with 0 by ring.
   replace (x + 1 - 1) with x by ring.
   replace (x + 1 - (x + 1)) with 0 by ring.
-  rewrite binomialr_right; auto with rnat; cycle 1.
+  rewrite binomialr_right; try typeclasses eauto; cycle 1.
     lra.
   rewrite Rplus_0_r.
   rewrite Rfactorial0, Rmult_1_l.
@@ -1236,40 +1228,38 @@ destruct (Req_dec_T m (x + 1)) as [mx1 | mnx1].
     lra.
   rewrite Rmult_1_l.
   rewrite Rdiv_diag; cycle 1.
-    assert (xint1 : Rint (x + 1)) by auto with rnat.
+    assert (xint1 : Rint (x + 1)) by try typeclasses eauto.
     assert (tmp := Rfactorial_gt_0 _ xint1).
     lra.
   ring.
-rewrite Ih; auto with rnat; cycle 1.
+rewrite Ih; try typeclasses eauto; cycle 1.
   enough (m + 1 <= x + 1) by lra.
   assert (m < x + 1) by lra.
-  now apply Rnat_le_lt; auto with rnat.
+  now apply Rnat_le_lt; try typeclasses eauto.
 replace (Rfactorial (x + 1)) with (Rfactorial x * ((x + 1 - m) + m)); cycle 1.
   rewrite Rfactorial_succ; cycle 1.
-      now apply Rnat_ge0.
-    now apply Rnat_Rint.
+      now apply Rnat_Rint.
+    now apply Rnat_ge0.
   ring.
 replace (x - (m - 1)) with (x + 1 - m) by ring.
 replace (Rfactorial (x + 1 - m)) with 
    ((x + 1 - m) * Rfactorial (x - m)); cycle 1.
   replace (x + 1 - m) with (x - m + 1) by ring.
   rewrite Rfactorial_succ; cycle 1.
-      enough (m + 1 <= x + 1) by lra.
-      apply Rnat_le_lt; auto with rnat; lra.
-    now apply Rint_sub; apply Rnat_Rint.
+      now apply Rint_sub; apply Rnat_Rint.
+    enough (m + 1 <= x + 1) by lra.
+    apply Rnat_le_lt; try typeclasses eauto; lra.
   ring.
 replace (Rfactorial m) with (Rfactorial (m - 1) * m); cycle 1.
   assert (1 <= m).
     replace 1 with (0 + 1) by ring.
-    apply Rnat_le_lt; auto with rnat.
+    apply Rnat_le_lt; try typeclasses eauto.
     assert (0 <= m) by now apply Rnat_ge0.
     lra.
-  rewrite (Rfactorial_succ' m); auto with rnat.
-  now apply Rnat_Rint.
+  rewrite (Rfactorial_succ' m); auto.
 field.
 assert (0 < Rfactorial (m - 1)).
-  apply Rfactorial_gt_0; apply Rint_sub; auto with rnat.
-  now apply Rnat_Rint.
+  now apply Rfactorial_gt_0; apply Rint_sub; try typeclasses eauto.
 assert (0 < Rfactorial (x - m)).
   now apply Rfactorial_gt_0; apply Rint_sub; apply Rnat_Rint.
 assert (x + 1 - m <> 0) by lra.
@@ -1386,7 +1376,7 @@ Lemma Rpow_succ (x n : R) : Rnat n ->
   x ** (n + 1) = x * x ** n.
 Proof.
 intros nnat.
-unfold Rpow; rewrite Rplus_comm, Rnat_iter_add; auto with rnat.
+unfold Rpow; rewrite Rplus_comm, Rnat_iter_add; try typeclasses eauto.
 now rewrite Rnat_iter1.
 Qed.
 
@@ -1404,9 +1394,9 @@ Proof.
 intros nnat mnat.
 induction nnat as [ | n nnat Ih].
   now rewrite Rplus_0_l, Rpow0, Rmult_1_l.
-rewrite Rpow_succ; auto with rnat.
+rewrite Rpow_succ; try typeclasses eauto.
 replace (n + 1 + m) with (n + m + 1) by ring.
-now rewrite Rpow_succ, Ih, Rmult_assoc; auto with rnat.
+now rewrite Rpow_succ, Ih, Rmult_assoc; try typeclasses eauto.
 Qed.
 
 (* TODO : generalize to an arbitrary associative-commutative monoid. *)
@@ -1465,13 +1455,13 @@ induction lnat as [ | l lnat Ih]; intros b eq_cnd.
 rewrite Rseq_S; auto; simpl.
 replace b with (b + 0) at 1 3 by ring.
 rewrite eq_cnd; cycle 1.
-    auto with rnat.
+    try typeclasses eauto.
   apply Rnat_ge0 in lnat; lra.
 apply f_equal, Ih.
 intros x xnat xint.
 replace (b + 1 + x) with (b + (1 + x)) by ring.
 apply eq_cnd.
-  auto with rnat.
+  try typeclasses eauto.
 lra.
 Qed.
 
@@ -1484,36 +1474,36 @@ Proof.
 induction 1 as [ | n nnat Ih].
   rewrite Rpow0.
   rewrite big_recl; cycle 1.
-      now replace (0 + 1 - 0) with 1 by ring; auto with rnat.
+      now replace (0 + 1 - 0) with 1 by ring; try typeclasses eauto.
     lra.
-  rewrite binomial_n_n; auto with rnat; cycle 1.
+  rewrite binomial_n_n; try typeclasses eauto; cycle 1.
     lra.
   replace (0 - 0) with 0 by ring.
   rewrite !Rpow0; cycle 1.
   rewrite big0.
   ring.
-rewrite Rpow_succ, Ih; auto with rnat.
+rewrite Rpow_succ, Ih; try typeclasses eauto.
 rewrite Rmult_plus_distr_r.
-rewrite !big_distr;[ |  rewrite Rminus_0_r | rewrite Rminus_0_r]; auto with rnat.
+rewrite !big_distr;[ |  rewrite Rminus_0_r | rewrite Rminus_0_r]; try typeclasses eauto.
 set (w1 := fold_right _ _ _).
 set (w2 := fold_right _ _ _).
 set (w3 := fold_right _ _ _).
 unfold w2.
 rewrite big_recl; auto; cycle 1.
-    now replace (n + 1 - 0) with (n + 1) by ring; auto with rnat.
+    now replace (n + 1 - 0) with (n + 1) by ring; try typeclasses eauto.
   apply Rnat_ge0 in nnat; lra.
 rewrite <- big_shift; cycle 1.
   now replace (n - 0) with n by ring.
 set (w4 := fold_right _ _ _).
 replace (n - 0) with n by ring.
 replace (binomial n 0) with (binomial (n + 1) 0); cycle 1.
-  rewrite !binomial_n_0; destruct (Rnat_Rint _ nnat); auto with rnat; lra.
+  rewrite !binomial_n_0; destruct (Rnat_Rint n); try typeclasses eauto; lra.
 replace (y * (binomial (n + 1) 0 * x ** 0 * y ** n)) with
   (binomial (n + 1) 0 * x ** 0 * y ** (n + 1 - 0)); cycle 1.
-  rewrite Rminus_0_r, Rpow_succ; auto with rnat; ring.
+  rewrite Rminus_0_r, Rpow_succ; try typeclasses eauto; ring.
 unfold w1.
 rewrite big_recr; auto; cycle 1.
-    now replace (n + 1 - 0) with (n + 1) by ring; auto with rnat.
+    now replace (n + 1 - 0) with (n + 1) by ring; try typeclasses eauto.
   apply Rnat_ge0 in nnat; lra.
 replace (n + 1 - 1) with n by ring.
 set (w5 := fold_right _ _ _).
@@ -1522,7 +1512,7 @@ replace (x * (binomial n n * x ** n * y ** (n - n))) with
   cycle 1.
   replace (n - n) with 0 by ring; replace ((n + 1) - (n + 1)) with 0 by ring.
   rewrite Rpow_succ; auto.
-  rewrite !binomial_n_n; destruct (Rnat_Rint _ nnat); auto with rnat.
+  rewrite !binomial_n_n; destruct (Rnat_Rint n); try typeclasses eauto; auto.
     ring.
   lra.
 set (tmn := _ * _ * _).
@@ -1535,7 +1525,7 @@ replace (w5 + w4) with
   rewrite <-
     (big_recl (fun i => binomial (n + 1) i * x ** i * y ** ((n + 1) - i)));
   cycle 1.
-      now rewrite Rminus_0_r; auto with rnat.
+      now rewrite Rminus_0_r; try typeclasses eauto.
     apply Rnat_ge0 in nnat; lra.
   unfold tmn.
   replace (n + 1) with (n + 1 + 1 - 1) at 1 3 4 6 by ring.
@@ -1543,16 +1533,16 @@ replace (w5 + w4) with
    (big_recr (fun i => binomial (n + 1) i * x ** i * y ** ((n + 1) - i)));
     cycle 1.
         now auto.
-      now rewrite Rminus_0_r; auto with rnat.
+      now rewrite Rminus_0_r; try typeclasses eauto.
     apply Rnat_ge0 in nnat; lra.  
   easy.
 unfold w5, w4.
 rewrite big_add; cycle 1.
-  now rewrite Rminus_0_r; auto with rnat.
+  now rewrite Rminus_0_r; try typeclasses eauto.
 rewrite <- big_shift; cycle 1.
-  now rewrite Rminus_0_r; auto with rnat.
+  now rewrite Rminus_0_r; try typeclasses eauto.
 apply big_ext.
-  now rewrite Rminus_0_r; auto with rnat.
+  now rewrite Rminus_0_r; try typeclasses eauto.
 intros i inat ibound.
 replace (0 + i + 1) with (i + 1) by ring.
 replace (0 + i) with i by ring.
@@ -1563,12 +1553,12 @@ replace (y * (binomial n (i + 1) * x ** (i + 1) * y ** (n - (i + 1)))) with
   (binomial n (i + 1) * x ** (i + 1) * y ** (n - i)); cycle 1.
   replace (n - i) with (n - (i + 1) + 1) by ring.
   rewrite (Rpow_succ y); cycle 1.
-    apply Rnat_sub; auto with rnat.
+    apply Rnat_sub; try typeclasses eauto.
   assert (iltn : i < n) by lra.
   now apply Rnat_le_lt; auto.
   ring.
-rewrite binomial_rec; destruct (Rnat_Rint _ nnat);
-  destruct (Rnat_Rint _ inat); auto with rnat; try lra.
+rewrite binomial_rec; destruct (Rnat_Rint n);
+  destruct (Rnat_Rint n); try typeclasses eauto; try lra.
 replace (n + 1 - (i + 1)) with (n - i) by ring.
 ring.
 Qed.
@@ -1583,8 +1573,8 @@ Lemma golden_fib n : Rnat n -> fibr n =
 Proof.
 assert (phi2q : phi ** 2 = phi + 1).
   replace (phi ** 2) with (phi * phi); cycle 1.
-    rewrite Rpow_succ'; auto with rnat; cycle 1.
-      now apply Rnat_sub; auto with rnat; lra.
+    rewrite Rpow_succ'; try typeclasses eauto; cycle 1.
+      now apply Rnat_sub; try typeclasses eauto; lra.
     now replace (2 - 1) with 1 by ring; rewrite Rpow1.
   unfold phi.
   replace ((1 + sqrt 5) / 2 * ((1 + sqrt 5) / 2)) with
@@ -1594,8 +1584,8 @@ assert (phi2q : phi ** 2 = phi + 1).
   now field.
 assert (psi2q : psi ** 2 = psi + 1).
   replace (psi ** 2) with (psi * psi); cycle 1.
-    rewrite Rpow_succ'; auto with rnat; cycle 1.
-      now apply Rnat_sub; auto with rnat; lra.
+    rewrite Rpow_succ'; try typeclasses eauto; cycle 1.
+      now apply Rnat_sub; try typeclasses eauto; lra.
     now replace (2 - 1) with 1 by ring; rewrite Rpow1.
   unfold psi.
   replace ((1 - sqrt 5) / 2 * ((1 - sqrt 5) / 2)) with
@@ -1607,7 +1597,7 @@ assert (root_n_q : forall r x, Rnat x -> r ** 2 = r + 1 ->
           r ** (x + 2) = r ** (x + 1) + r ** x).
   intros r x xnat rrroot.
   replace (r ** x) with (r ** x * 1) by ring.
-  rewrite !Rpow_add_r, Rpow1; auto with rnat.
+  rewrite !Rpow_add_r, Rpow1; try typeclasses eauto.
   rewrite <- Rmult_plus_distr_l.
   now apply Rmult_eq_compat_l.
 assert (phi_n_q : forall x, Rnat x -> 
@@ -1633,10 +1623,10 @@ destruct Ih as [Ih0 Ih1].
 split.
   easy.
 replace (x + 1 + 1) with (x + 2) by ring.
-rewrite fibr_succ; auto with rnat.
+rewrite fibr_succ; try typeclasses eauto.
 rewrite Ih0, Ih1.
-rewrite (root_n_q phi); auto with rnat.
-rewrite (root_n_q psi); auto with rnat.
+rewrite (root_n_q phi); try typeclasses eauto; auto.
+rewrite (root_n_q psi); try typeclasses eauto; auto.
 field; auto.
 Qed.
 
@@ -1672,7 +1662,6 @@ replace (5`!) with (5 * 4`!); cycle 1.
     replace (5 - 1) with 4 by ring.
     reflexivity.
   lra.
-now auto with rnat.
 rewrite (Rmult_comm (/ 4`!)), Rinv_mult, <- !Rmult_assoc.
 (* This should be a differently worded tactic, to express explicitely the
    removal of (/4`!) *)
@@ -1685,7 +1674,7 @@ rewrite <- (Rmult_comm (n`!)), !Rmult_assoc.
 apply (Rmult_eq_compat_l (n`!)).
 enough (it : / (n - 5)`! * / 5 = 17 * /(n - 4)`!) by exact it.
 replace ((n - 4)`!) with ((n - 5)`! * (n - 4)); cycle 1.
-  rewrite (Rfactorial_succ' (n - 4)).
+  rewrite (@Rfactorial_succ' (n - 4)).
       replace (n - 4 - 1) with (n - 5) by ring.
       reflexivity.
     shelve.
@@ -1708,9 +1697,8 @@ lra.
 lra.
 (* This one was created by the expansion of the factorial function. *)
 Unshelve.
-  lra.
-rewrite Heqn.
-auto with rnat.
+  now rewrite Heqn; typeclasses eauto.
+lra.
 Qed.
 
 (* This second version only uses Field for algebraic computation and lra
@@ -1734,7 +1722,7 @@ replace (17 * (n`! / (4`! * (n - 4)`!))) with
         (* we need to wait until n is known for this one. *)
         shelve.
       (* this one can be proved right away. *)
-      auto with rnat.
+      try typeclasses eauto.
     lra.
 (* Getting rid of n`! *)
 apply Rmult_eq_compat_l.
@@ -1748,11 +1736,11 @@ replace (/(5`! * (n - 5)`!)) with
     assert (0 < (n - 5)`! /\ 0 < 5`!).
        split; apply Rfactorial_gt_0.
           shelve.
-       auto with rnat.
+       try typeclasses eauto.
      lra.
 replace (17 / (4`! * (n - 4)`!)) with
    (17 / (4`! * (n - 4)) * /((n - 5)`!)); cycle 1.
-  rewrite (Rfactorial_succ' (n - 4)); cycle 1.
+  rewrite (@Rfactorial_succ' (n - 4)); cycle 1.
       shelve.
     shelve.
   replace (n - 4 - 1) with (n - 5) by field.
@@ -1762,7 +1750,7 @@ replace (17 / (4`! * (n - 4)`!)) with
     assert (0 < (n - 5)`! /\ 0 < 4`!).
        split; apply Rfactorial_gt_0.
           shelve.
-       auto with rnat.
+       try typeclasses eauto.
      lra.
 apply Rmult_eq_compat_r.
 (* We now have to prove ... *)
@@ -1771,14 +1759,14 @@ enough (it : / 5`!  = 17 / (4`! * (n - 4))) by exact it.
 replace (/ 5`!) with (/ 4`! * / 5); cycle 1.
   rewrite (Rfactorial_succ' 5); cycle 1.
       lra.
-    auto with rnat.
+    try typeclasses eauto.
   replace (5 - 1) with 4 by field.
   field.
   (* Here we could use the factorial computation tactic.
   compute_factorial; lra.
   *)
   assert (0 < 4`!).
-    now apply Rfactorial_gt_0; auto with rnat.
+    now apply Rfactorial_gt_0; try typeclasses eauto.
   lra.
 replace (17 / (4`! * (n - 4))) with
      (/4`! * (17 / (n - 4))); cycle 1.
@@ -1788,7 +1776,7 @@ replace (17 / (4`! * (n - 4))) with
     (* When discovering the duplication, users could go back and include
        the proof that 4! is non zero as an shared first proof. *)
   assert (0 < 4`!).
-    now apply Rfactorial_gt_0; auto with rnat.
+    now apply Rfactorial_gt_0; try typeclasses eauto.
   lra.
 apply Rmult_eq_compat_l.
 (* We need a better tool to move multiplication and division on both sides of
@@ -1811,9 +1799,9 @@ Unshelve.
 (* There are two kinds of postponed goals.  The first kind is about showing that
    n - 4 or n - 5 is an integer. Here is a way to prove it. *)
 rewrite Heqn.
-auto with rnat.
+try typeclasses eauto.
 (* Let solve all the goals where the same tactic works. *)
-all : try solve [rewrite Heqn; auto with rnat].
+all : try solve [rewrite Heqn; try typeclasses eauto].
 (* All the remaining goal are about showing that n - 4 is positive, when
   one knows that n = 89.  lra uses the context and will solve that. *)
 all : lra.
