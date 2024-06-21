@@ -250,3 +250,33 @@ This tactic should be made more generic, so that it can easily be
 extended to compute the value of any real number function, as soon as
 an executable representant is provided by the library developer as
 function from Z to Z.
+
+# Definition of recursive functions
+
+It is quite easy to define a recursor of type:
+
+```
+nat_rect : A -> (R -> A -> A) -> R -> A
+```
+where the argument is the value in 0, the second argument tells how
+to compute the value in n+1, given the value n and the value in n.
+
+However, a definition given using this way is not as readable as desired.
+Instead, we propose to write a piece of code that takes as input, the
+expected theorem explaining the behavior of the function, in this form:
+
+```
+fun f => (f 0 = v0 /\ (forall n, 0 < n -> f n = B n (f (n - 1))
+```
+From this expression, the command would generate the value:
+```
+nat_rect v0 B
+```
+This is more readable because it shows exactly that one is using the
+recursive call `(f (n - 1))`, instead of a bound variable in the lambda
+expression that describes `B`.
+
+This command should be made adaptable to the case, where several initial
+values are provided for base cases (for inputs 0, 1, and maybe more)
+and the expression B make take more recursive calls (to (n - 1), (n -2), and
+maybe more).

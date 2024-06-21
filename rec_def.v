@@ -12,12 +12,16 @@ Elpi Accumulate lp:{{
 
 pred find_uses i:term o:list term.
 
+% I was hoping the first clause would discover instances of f (n - k), where
+%  k is a free constant.
 find_uses Abs_eqn Uses:-
-  std.do! [
     Abs_eqn = fun _Name1 T F,
-    pi x\ fold-map (app [x, E]) A (app [x, E]) [E | A] =>
-      fold-map (F x) [] _ Uses
-  ].
+    pi f\
+      % This should recognize (f (n - k)) and store k in the list
+%      fold-map (app [f, app[M, N, E]]) A (app [f, app[M, N, E]]) [E | A],
+      % This should recognize (f k) and store k in the list
+      fold-map (app [f, E]) A (app [f, E]) [E | A] =>
+      fold-map (F f) [] _ Uses.
 
 main [str Name, trm Abs_eqn] :- 
   coq.say "Hello" Name,
@@ -31,9 +35,11 @@ main _ :-
 
 Elpi Typecheck.
 
+Elpi Recursive ex1 (fun ex1 => ex1 0 = 0).
+
 Elpi Recursive fib
   (fun fib =>
     forall n : R, Rnat n -> n < 2 -> fib n = fib (n - 1) + fib (n - 2)).
 
-(* I was exoectubg tge cinnabd to print a list containing representations
-  of (n - 1) and (n - 2) *)
+(* I was exoecting the command to print a list containing representations
+  of 1 and 2 *)
