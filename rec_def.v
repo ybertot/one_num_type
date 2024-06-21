@@ -6,6 +6,25 @@ Inductive Rnat : R -> Prop :=
   Rnat0 : Rnat 0
 | Rnat_succ : forall n, Rnat n -> Rnat (n + 1).
 
+Elpi Command sandbox.
+
+Elpi Accumulate lp:{{
+
+main [trm T] :- 
+  T = fun _ _  F,
+  pi x \
+   F x = app[{{:coq Rminus}}, _, E],
+  coq.say "sandbox" E.
+
+main _ :-
+  coq.error "Usage: sandbox expects a specific term structure".
+
+}}.
+Elpi Typecheck.
+
+(* Elpi sandbox (fun x : R => (x - 0)). *)
+
+
 Elpi Command Recursive.
 
 Elpi Accumulate lp:{{
@@ -16,11 +35,16 @@ pred find_uses i:term o:list term.
 %  k is a free constant.
 find_uses Abs_eqn Uses:-
     Abs_eqn = fun _Name1 T F,
+    coq.say "work til here",
     pi f\
       % This should recognize (f (n - k)) and store k in the list
-%      fold-map (app [f, app[M, N, E]]) A (app [f, app[M, N, E]]) [E | A],
+      ((pi A E Op V\
+         fold-map (app [f, app[Op, V, E]]) A
+                  (app [f, app[Op, V, E]]) [E | A]),
       % This should recognize (f k) and store k in the list
-      fold-map (app [f, E]) A (app [f, E]) [E | A] =>
+       (pi E A \ fold-map (app [f, E]) A (app[f, E]) [E | A]))
+ =>
+%      coq.say "show instantiated" (F f),
       fold-map (F f) [] _ Uses.
 
 main [str Name, trm Abs_eqn] :- 
