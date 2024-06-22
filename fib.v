@@ -1,4 +1,5 @@
-Require Import Reals.
+Require Import List Reals.
+Open Scope R_scope.
 
 (* Experimenting with Rnat as a subset of R, equiped with a recursive
   function definition that has a rewrite rule for its behavior.  *)
