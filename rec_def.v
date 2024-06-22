@@ -2,18 +2,40 @@ From elpi Require Import elpi.
 Require Import List Reals.
 Open Scope R_scope.
 
+Inductive Rnat : R -> Prop :=
+  Rnat0 : Rnat 0
+| Rnat_succ : forall n, Rnat n -> Rnat (n + 1).
+
+Parameter Rnat_rec :
+  forall {A : Type} (v0 : A) (step : R -> A -> A) (n : R)
+    (h : Rnat n), A.
+
+Parameter Rnat_rec0 : forall {A : Type} (v0 : A) (step : R -> A -> A),
+  Rnat_rec v0 step 0 Rnat0 = v0.
+
+Parameter Rnat_rec_succ : forall {A : Type} (v0 : A) (step : R -> A -> A)
+  n (h : Rnat n) (h' : Rnat (n + 1)),
+  Rnat_rec v0 step (n + 1) h' = step n (Rnat_rec v0 step n h).
+
+Elpi Command Recursive.
+
 Elpi Accumulate lp:{{
 
-% sorting a list of integers
+kind pair_int_term type.
+type p int -> term -> pair_int_term.
+
+% sorting a list of integers removing duplicates
 pred list_insert i:int i:list int o:list int.
 
 list_insert I [] [I].
+
+list_insert A [A | L] [A | L] :- !.
 
 list_insert I [A | L] [I, A | L] :-
   I < A, !.
 
 list_insert I [A | L] [A | L1] :-
-  list_insert I L L1.
+  list_insert I L L1, !.
   
 % sorting a list of integers: the main predicate
 
@@ -23,6 +45,35 @@ list_sort [] [].
 list_sort [A | L] L1 :-
   list_sort L L2, !,
   list_insert A L2 L1.
+
+pred list_max i:list int o:int.
+list_max [A] A.
+
+list_max [A, B | L]  V:-
+  A < B, !, list_max [B | L] V.
+
+list_max [A, _B | L] V :-
+  list_max [A | L] V.
+
+% sorting an association list for values associated to integers
+
+pred alist_insert i:pair_int_term i:list pair_int_term o:list pair_int_term.
+
+alist_insert (p I _) [p I _ | _] _ :- !,
+  coq.error "There are two declarations for the same integer"  I.
+
+alist_insert (p I V) [p I2 V2 | L] [p I V, p I2 V2 | L] :-
+  I < I2, !.
+
+alist_insert (p I V) [p I2 V2 | L] [p I2 V2 | L2] :-
+  alist_insert (p I V) L L2.
+
+pred alist_sort i:list pair_int_term o:list pair_int_term.
+
+alist_sort [] [].
+
+alist_sort [A | L] L2 :-
+  alist_insert A L L2.
 
 % converting a coq object of type positive to a builtin int
 pred positive_to_int i:term o:int.
@@ -82,10 +133,10 @@ int_to_positive N (app[C, Td]) :-
   int_to_positive Nd Td.
 
 pred int_to_nat i:int o:term.
-int_to_positive 0 (global Oref) :-
+int_to_nat 0 (global Oref) :-
   coq.locate "O" Oref.
 
-int_to_positive N (app [global Sref, N']) :-
+int_to_nat N (app [global Sref, N']) :-
   std.do! [
     0 < N,
     coq.locate "S" Sref,
@@ -103,6 +154,9 @@ choose_pos_constructor.aux 0 T :-
   coq.locate "xO" XI_gref,
   T = global XI_gref.
 
+choose_pos_constructor.aux _ _ :-
+  coq.error "choose_pos_constructor.aux only accepts 0 or 1 as input".
+
 pred replace_rec_call_by_seq_nth i:int i:term i:term i:term i:term o:term.
 
 % replace (F (N - k)) by (nth (L - k) V 0) everywhere in term A
@@ -119,50 +173,118 @@ replace_rec_call_by_seq_nth L F N V A B :-
     int_to_nat In I,
     coq.locate "nth" Nth,
     coq.locate "R" Rtype,
-    Zero = {{:coq 0:R}},
-    B = app[global Nth, global Rtype, N, V, Zero]
+    Zero = {{:coq 0}},
+    B = app[global Nth, global Rtype, I, V, Zero]
   ].
 
-choose_pos_constructor.aux _ _ :-
-  coq.error "choose_pos_constructor.auxs only accepts 0 or 1 as input".
+pred make_one_spec i:term i:term o:pair_int_term.
+make_one_spec V1 V2 (p I1 V2) :-
+  real_to_int V1 I1,!.
 
+pred list_app i:list pair_int_term i:list pair_int_term o:list pair_int_term.
+
+list_app [] L2 L2.
+
+list_app [A | L1] L2 [A | L3] :-
+  list_app L1 L2 L3.
+
+pred fetch_recursive_equation i:term o:list term.
+
+fetch_recursive_equation X [X] :-
+  X = (prod _ _ _), !.
+
+fetch_recursive_equation (app [And, Specs_head, Spec_tail]) R_eqs :-
+  std.do! [
+    coq.locate "and" Andgref,
+    And = global Andgref,
+    fetch_recursive_equation Specs_head L1,
+    fetch_recursive_equation Specs_tail L2,
+    std.append L1 L2 R_eqs
+  ].
+
+fetch_recursive_equation (app [Eq , _, _, _]) [] :-
+  coq.locate "eq" Eqgref, Eq = global Eqgref, !.
+
+fetch_recursive_equation A _ :-
+  coq.say "wrong term" A,
+  coq.error "expecting function specification to be either of the form"
+   "f 0 = v1 /\ f 1 = v2  or of the form forall n, .. -> f n = V2"
+   "but found expressions of another form".
+
+pred collect_specs i:term i:term o:list pair_int_term.
+
+collect_specs F (app [Eq, _, app [F, V1], V2]) [S] :-
+% TODO: ask about placing directly {{:coq eq}} above.
+  std.do! [
+    coq.locate "eq" Eqgref,
+    Eq = global Eqgref,
+    make_one_spec V1 V2 S,
+    coq.say "make_one_spec produce" S
+  ].
+
+collect_specs _F (prod _ _ _) [].
+
+collect_specs F (app [And, Specs_head, Spec_tail]) Specs :-
+% TODO: same as Eq above
+  std.do! [
+    coq.locate "and" Andgref,
+    And = global Andgref,
+    collect_specs F Spec_head Specs1,
+    collect_specs F Spec_tail Specs2,
+    std.append Specs1 Specs2 Specs
+  ].
 
 % QUIRKY: performs part of the jobs of finding the uses of the function
 % given as first argument inside the second argument.
 % The second argument has to be a sequence of nested implications whose
 % conclusion is an equality.  The instances we are looking for have to be
 % of the form (F (n - k)).  The k values must be real-positive numbers.
-pred eat_implications i:term i:term.
+pred eat_implications i:term i:term i:term.
 
-eat_implications F (prod _ _ G) :- !,
+eat_implications F N (prod _ _ G) :- !,
   pi h \ 
-   eat_implications F (G h).
+   eat_implications F N (G h).
 
-eat_implications F G :-
+eat_implications F N G :-
    std.do! [
       G = app [_, _, _, RHS],
       % This should recognize (f (n - k)) and store k in the list
       (pi A E Op V\
          fold-map (app [F, app[Op, V, E]]) A
                   (app [F, app[Op, V, E]]) [E | A])
- =>
+        =>
       fold-map RHS [] _ Uses,
       std.map Uses (real_to_int) Uses_int,
       list_sort Uses_int Srt_uses,
-      coq.say "final list" Srt_uses].
+% TODO: just take the last element
+      list_max Srt_uses L,
+% Need to generate an abstraction that gives the name V to
+% the result of the recursive call
+      pi V \
+      ((pi A B \ copy A B :-
+         replace_rec_call_by_seq_nth L F N V A B) =>
+         copy RHS (RHS' V)),
+      coq.say "final list" RHS'].
 
 % The input must have the form:
-%  fun f => forall n, ... -> ... -> f n = E
+%  fun f => f 0 = V1 /\ ... f k = Vk /\ forall n, ... -> ... -> f n = E
 % Displays the ordered sequence of k integers (in builtin type int), such
 % that (f (n - k)) appears in E.
 pred find_uses i:term.
 
 find_uses Abs_eqn :-
+  std.do! [
     Abs_eqn = fun _Name1 _T F,
-    pi f\ sigma F1 \
-    (F f) = prod _ _ F1,
-    pi n G\
-      eat_implications f (F1 n).
+    pi f \ sigma F1 \
+    coq.say "before collect_specs",
+    collect_specs f (F f) (Sps f),
+    coq.say Sps,
+    fetch_recursive_equation (F f) (Ts f),
+% TODO : error reporting is not satisfactory here
+    (Ts f = [prod _ _ F1]),
+    pi n\
+      eat_implications f n (F1 n)
+  ].
 
 main [str Name, trm Abs_eqn] :- 
   coq.say "Hello" Name,
@@ -175,16 +297,28 @@ main _ :-
 
 Elpi Typecheck.
 
+(*
+Elpi Query lp:{{ int_to_nat 3 V }}.
+*)
+
+Elpi Query lp:{{
+  sigma F \
+  {{:coq sin 0 = 0}} = F,
+  {{:coq sin}} = G,
+  coq.say F "function" G,
+  collect_specs {{:coq sin}} F F1
+  }}.
+
 (* Elpi Recursive ex1 (fun ex1 => ex1 0 = 0). *)
 
-Elpi Recursive fib
-  (fun fib =>
-    forall n : R, Rnat n -> n < 2 -> fib n = fib (n - 1) + fib (n - 2)).
+(* Elpi Recursive fib
+  (fun fib => fib 0 = 0 /\
+    forall n : R, Rnat n -> n < 2 -> fib n = fib (n - 2) + fib (n - 1)). *)
 
-Check fun fib =>
+(* Check fun fib =>
         fib 0 = 0 /\
         fib 1 = 1 /\
-        (forall n, Rnat n -> n < 2 -> fib n = fib (n - 1) + fib (n - 2)).
+        (forall n, Rnat n -> n < 2 -> fib n = fib (n - 1) + fib (n - 2)). *)
 
 (* From this input, we should produce the function definition of fib' in
   file fib.v *)
