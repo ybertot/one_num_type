@@ -21,9 +21,6 @@ Elpi Command Recursive.
 
 Elpi Accumulate lp:{{
 
-kind pair_int_term type.
-type p int -> term -> pair_int_term.
-
 % sorting a list of integers removing duplicates
 pred list_insert i:int i:list int o:list int.
 
@@ -57,18 +54,18 @@ list_max [A, _B | L] V :-
 
 % sorting an association list for values associated to integers
 
-pred alist_insert i:pair_int_term i:list pair_int_term o:list pair_int_term.
+pred alist_insert i:pair int term i:list (pair int term) o:list (pair int term).
 
-alist_insert (p I _) [p I _ | _] _ :- !,
+alist_insert (pr I _) [pr I _ | _] _ :- !,
   coq.error "There are two declarations for the same integer"  I.
 
-alist_insert (p I V) [p I2 V2 | L] [p I V, p I2 V2 | L] :-
+alist_insert (pr I V) [pr I2 V2 | L] [pr I V, pr I2 V2 | L] :-
   I < I2, !.
 
-alist_insert (p I V) [p I2 V2 | L] [p I2 V2 | L2] :-
-  alist_insert (p I V) L L2.
+alist_insert (pr I V) [pr I2 V2 | L] [pr I2 V2 | L2] :-
+  alist_insert (pr I V) L L2.
 
-pred alist_sort i:list pair_int_term o:list pair_int_term.
+pred alist_sort i:list (pair int term) o:list (pair int term).
 
 alist_sort [] [].
 
@@ -100,12 +97,12 @@ pred real_to_int i:term o:int.
 % actually, this works for any positive number encapsulated in two unary
 % functions
 real_to_int (app [Izr, app [Zpos, P]]) I :-
-  Izr = {{:coq IZR}},
-  Zpos = {{:coq Z.pos}},
+  Izr = {{ IZR}},
+  Zpos = {{ Z.pos}},
   positive_to_int P I.
 
 real_to_int Zero 0 :-
-  Zero = {{:coq 0}}.
+  Zero = {{ 0}}.
 
 % the inverse predicate, int_to_real, produces a real number that is
 % the representation of the integer.
@@ -178,15 +175,15 @@ replace_rec_call_by_seq_nth L F N V A B :-
     int_to_nat In I,
     coq.locate "nth" Nth,
     coq.locate "R" Rtype,
-    Zero = {{:coq 0}},
+    Zero = {{ 0}},
     B = app[global Nth, global Rtype, I, V, Zero]
   ].
 
-pred make_one_spec i:term i:term o:pair_int_term.
-make_one_spec V1 V2 (p I1 V2) :-
+pred make_one_spec i:term i:term o:pair int term.
+make_one_spec V1 V2 (pr I1 V2) :-
   real_to_int V1 I1,!.
 
-pred list_app i:list pair_int_term i:list pair_int_term o:list pair_int_term.
+pred list_app i:list (pair int term) i:list (pair int term) o:list (pair int term).
 
 list_app [] L2 L2.
 
@@ -216,10 +213,10 @@ fetch_recursive_equation A _ :-
    "f 0 = v1 /\ f 1 = v2  or of the form forall n, .. -> f n = V2"
    "but found expressions of another form".
 
-pred collect_specs i:term i:term o:list pair_int_term.
+pred collect_specs i:term i:term o:list (pair int term).
 
 collect_specs F (app [Eq, _, app [F, V1], V2]) [S] :-
-% TODO: ask about placing directly {{:coq eq}} above.
+% TODO: ask about placing directly {{ eq}} above.
   std.do! [
     coq.locate "eq" Eqgref,
     Eq = global Eqgref,
@@ -238,30 +235,30 @@ collect_specs F (app [And, Code1, Code2]) Specs :-
     std.append Specs1 Specs2 Specs
   ].
 
-pred check_all_present i:int i:list pair_int_term o:int.
+pred check_all_present i:int i:list (pair int term) o:int.
 
 check_all_present N [] N.
 
-check_all_present N [p N _ | L] N2 :-
+check_all_present N [pr N _ | L] N2 :-
   !,
   N1 is N + 1,
   check_all_present N1 L N2.
 
-check_all_present N [p _ _ | _] _ :-
+check_all_present N [pr _ _ | _] _ :-
   coq.error "missing value for" N.
 
-pred make_initial_list i:list pair_int_term o:term.
+pred make_initial_list i:list (pair int term) o:term.
 
-make_initial_list [] {{:coq nil}}.
+make_initial_list [] {{ nil}}.
 
-make_initial_list [p _ V | L] (app [{{:coq cons}}, V, Tl]) :-
+make_initial_list [pr _ V | L] (app [{{ cons}}, V, Tl]) :-
   make_initial_list L Tl.
 
 pred make_recursive_step_list i:(term -> term) i:int i:int o:(term -> term).
 
 make_recursive_step_list Func 0 Rank R :-
   pi V\
-   app [{{:coq cons}}, (Func V), {{:nil}}] = R V.
+   app [{{ cons}}, (Func V), {{ nil }}] = R V.
 
 make_recursive_step_list Func N Rank R :-
   std.do! [
@@ -271,7 +268,7 @@ make_recursive_step_list Func N Rank R :-
     int_to_nat Rank RankTerm,
     make_recursive_step_list Func N1 Rank1 Func',
     pi V \
-      app [{{:coq cons}}, app [{{:coq nth}}, RankTerm, V, {{:coq 0}}],
+      app [{{ cons}}, app [{{ nth}}, RankTerm, V, {{ 0}}],
            Func' V] = R V
   ].
 
@@ -280,13 +277,13 @@ make_recursive_step_list Func N Rank R :-
 % The second argument has to be a sequence of nested implications whose
 % conclusion is an equality.  The instances we are looking for have to be
 % of the form (F (n - k)).  The k values must be real-positive numbers.
-pred eat_implications i:term i:term i:term.
+pred eat_implications i:term, i:term, i:term, o:term.
 
-eat_implications F N (prod _ _ G) :- !,
+eat_implications F N (prod _ _ G) R :- !,
   pi h \ 
-   eat_implications F N (G h).
+   eat_implications F N (G h) R.
 
-eat_implications F N G :-
+eat_implications F N G R :-
    std.do! [
       G = app [_, _, _, RHS],
       % This should recognize (f (n - k)) and store k in the list
@@ -301,37 +298,49 @@ eat_implications F N G :-
       list_max Srt_uses L,
 % Need to generate an abstraction that gives the name V to
 % the result of the recursive call
-      pi V \
-      ((pi A B \ copy A B :-
+     (pi V \
+      (pi A B \ copy A B :-
          replace_rec_call_by_seq_nth L F N V A B) =>
          copy RHS (RHS' V)),
-      coq.say "final list" RHS'].
+     R = (fun `v` _ RHS'),
+].
 
 % The input must have the form:
 %  fun f => f 0 = V1 /\ ... f k = Vk /\ forall n, ... -> ... -> f n = E
 % Displays the ordered sequence of k integers (in builtin type int), such
 % that (f (n - k)) appears in E.
-pred find_uses i:term.
+pred find_uses i:term, o:term.
 
-find_uses Abs_eqn :-
+find_uses (fun N Ty Bo) R :-
+  pi f\
+    decl f `N` Ty => % let one call the pretty printer and type checker inside
+    find_uses_of f (Bo f) R. % R does not use f recursively, but rather the nth value of its recursion history
+
+pred find_uses_of i:term, i:term, o:term.
+
+find_uses_of F Spec Final :-
   std.do! [
-    Abs_eqn = fun _Name1 _T F,
-    pi f \ sigma F1 Sps Sps2 Order\
-    collect_specs f (F f) Sps,
+    collect_specs F Spec Sps,
     alist_sort Sps Sps2,
     check_all_present 0 Sps2 Order,
     make_initial_list Sps2 ListSps,
-    coq.say ListSps,
-    fetch_recursive_equation (F f) (Ts f),
+    coq.say "ListSps = " {coq.term->string ListSps},
+    fetch_recursive_equation Spec Ts,
 % TODO : error reporting is not satisfactory here
-    (Ts f = [prod _ _ F1]),
-    pi n\
-      eat_implications f n (F1 n)
+    std.assert! (Ts = [prod _ _ F1]) "Expecting exactly one recursive equation",
+    (pi n\
+      eat_implications F n (F1 n) (R n)),
+    Final = fun `n` _ R,
+    coq.say "Final" {coq.term->string Final},
   ].
 
-main [str Name, trm Abs_eqn] :- 
-  coq.say "Hello" Name,
-  find_uses Abs_eqn.
+main [str Name, trm Abs_eqn] :-  std.do! [
+  find_uses Abs_eqn Final,
+  std.assert-ok! (coq.typecheck Final Ty) "Type error",
+  % fails since the term has holes, the types of v and n are unknwn (to me)
+  % coq.env.add-const Name Final Ty @transparent! C,
+  % coq.say "Defined" C,
+].
 
 main _ :-
   coq.error "Usage: Recursive name equation_1 .. equation_n".
@@ -346,10 +355,10 @@ Elpi Query lp:{{ int_to_nat 3 V }}.
 
 (* Elpi Query lp:{{
   sigma F \
-  {{:coq sin 0 = 0 /\ sin 1 = 1}} = F,
-  {{:coq sin}} = G,
+  {{ sin 0 = 0 /\ sin 1 = 1}} = F,
+  {{ sin}} = G,
   coq.say F "function" G,
-  collect_specs {{:coq sin}} F F1
+  collect_specs {{ sin}} F F1
   }}.
 *)
 
