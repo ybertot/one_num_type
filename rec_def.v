@@ -21,9 +21,6 @@ Elpi Command Recursive.
 
 Elpi Accumulate lp:{{
 
-kind pair_int_term type.
-type p int -> term -> pair_int_term.
-
 % sorting a list of integers removing duplicates
 pred list_insert i:int i:list int o:list int.
 
@@ -57,18 +54,18 @@ list_max [A, _B | L] V :-
 
 % sorting an association list for values associated to integers
 
-pred alist_insert i:pair_int_term i:list pair_int_term o:list pair_int_term.
+pred alist_insert i:pair int term i:list (pair int term) o:list (pair int term).
 
-alist_insert (p I _) [p I _ | _] _ :- !,
+alist_insert (pr I _) [pr I _ | _] _ :- !,
   coq.error "There are two declarations for the same integer"  I.
 
-alist_insert (p I V) [p I2 V2 | L] [p I V, p I2 V2 | L] :-
+alist_insert (pr I V) [pr I2 V2 | L] [pr I V, pr I2 V2 | L] :-
   I < I2, !.
 
-alist_insert (p I V) [p I2 V2 | L] [p I2 V2 | L2] :-
-  alist_insert (p I V) L L2.
+alist_insert (pr I V) [pr I2 V2 | L] [pr I2 V2 | L2] :-
+  alist_insert (pr I V) L L2.
 
-pred alist_sort i:list pair_int_term o:list pair_int_term.
+pred alist_sort i:list (pair int term) o:list (pair int term).
 
 alist_sort [] [].
 
@@ -182,11 +179,11 @@ replace_rec_call_by_seq_nth L F N V A B :-
     B = app[global Nth, global Rtype, I, V, Zero]
   ].
 
-pred make_one_spec i:term i:term o:pair_int_term.
-make_one_spec V1 V2 (p I1 V2) :-
+pred make_one_spec i:term i:term o:pair int term.
+make_one_spec V1 V2 (pr I1 V2) :-
   real_to_int V1 I1,!.
 
-pred list_app i:list pair_int_term i:list pair_int_term o:list pair_int_term.
+pred list_app i:list (pair int term) i:list (pair int term) o:list (pair int term).
 
 list_app [] L2 L2.
 
@@ -216,7 +213,7 @@ fetch_recursive_equation A _ :-
    "f 0 = v1 /\ f 1 = v2  or of the form forall n, .. -> f n = V2"
    "but found expressions of another form".
 
-pred collect_specs i:term i:term o:list pair_int_term.
+pred collect_specs i:term i:term o:list (pair int term).
 
 collect_specs F (app [Eq, _, app [F, V1], V2]) [S] :-
 % TODO: ask about placing directly {{:coq eq}} above.
@@ -238,23 +235,23 @@ collect_specs F (app [And, Code1, Code2]) Specs :-
     std.append Specs1 Specs2 Specs
   ].
 
-pred check_all_present i:int i:list pair_int_term o:int.
+pred check_all_present i:int i:list (pair int term) o:int.
 
 check_all_present N [] N.
 
-check_all_present N [p N _ | L] N2 :-
+check_all_present N [pr N _ | L] N2 :-
   !,
   N1 is N + 1,
   check_all_present N1 L N2.
 
-check_all_present N [p _ _ | _] _ :-
+check_all_present N [pr _ _ | _] _ :-
   coq.error "missing value for" N.
 
-pred make_initial_list i:list pair_int_term o:term.
+pred make_initial_list i:list (pair int term) o:term.
 
 make_initial_list [] {{:coq nil}}.
 
-make_initial_list [p _ V | L] (app [{{:coq cons}}, V, Tl]) :-
+make_initial_list [pr _ V | L] (app [{{:coq cons}}, V, Tl]) :-
   make_initial_list L Tl.
 
 pred make_recursive_step_list i:(term -> term) i:int i:int o:(term -> term).
