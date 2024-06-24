@@ -261,7 +261,7 @@ pred make_recursive_step_list i:(term -> term) i:int i:int o:(term -> term).
 
 make_recursive_step_list Func 0 Rank R :-
   pi V\
-   app [{{:coq cons}}, (Func V), {{:nil}}] = R V.
+   app [{{:coq cons}}, (Func V), {{ nil }}] = R V.
 
 make_recursive_step_list Func N Rank R :-
   std.do! [
@@ -280,13 +280,13 @@ make_recursive_step_list Func N Rank R :-
 % The second argument has to be a sequence of nested implications whose
 % conclusion is an equality.  The instances we are looking for have to be
 % of the form (F (n - k)).  The k values must be real-positive numbers.
-pred eat_implications i:term i:term i:term.
+pred eat_implications i:term, i:term, i:term, o:term.
 
-eat_implications F N (prod _ _ G) :- !,
+eat_implications F N (prod _ _ G) R :- !,
   pi h \ 
-   eat_implications F N (G h).
+   eat_implications F N (G h) R.
 
-eat_implications F N G :-
+eat_implications F N G R :-
    std.do! [
       G = app [_, _, _, RHS],
       % This should recognize (f (n - k)) and store k in the list
@@ -301,11 +301,12 @@ eat_implications F N G :-
       list_max Srt_uses L,
 % Need to generate an abstraction that gives the name V to
 % the result of the recursive call
-      pi V \
-      ((pi A B \ copy A B :-
+     (pi V \
+      (pi A B \ copy A B :-
          replace_rec_call_by_seq_nth L F N V A B) =>
          copy RHS (RHS' V)),
-      coq.say "final list" RHS'].
+     R = (fun `v` _ RHS'),
+].
 
 % The input must have the form:
 %  fun f => f 0 = V1 /\ ... f k = Vk /\ forall n, ... -> ... -> f n = E
@@ -313,20 +314,27 @@ eat_implications F N G :-
 % that (f (n - k)) appears in E.
 pred find_uses i:term.
 
-find_uses Abs_eqn :-
+find_uses (fun N Ty Bo) :-
+  pi f\
+    decl f `N` Ty => % let one call the pretty printer and type checker inside
+    find_uses_of f (Bo f).
+
+pred find_uses_of i:term, i:term.
+
+find_uses_of F Spec  :-
   std.do! [
-    Abs_eqn = fun _Name1 _T F,
-    pi f \ sigma F1 Sps Sps2 Order\
-    collect_specs f (F f) Sps,
+    collect_specs F Spec Sps,
     alist_sort Sps Sps2,
     check_all_present 0 Sps2 Order,
     make_initial_list Sps2 ListSps,
-    coq.say ListSps,
-    fetch_recursive_equation (F f) (Ts f),
+    coq.say "ListSps = " {coq.term->string ListSps},
+    fetch_recursive_equation Spec Ts,
 % TODO : error reporting is not satisfactory here
-    (Ts f = [prod _ _ F1]),
-    pi n\
-      eat_implications f n (F1 n)
+    std.assert! (Ts = [prod _ _ F1]) "Expecting exactly one recursive equation",
+    (pi n\
+      eat_implications F n (F1 n) (R n)),
+    Final = fun `n` _ R,
+    coq.say "Final" {coq.term->string Final},
   ].
 
 main [str Name, trm Abs_eqn] :- 
