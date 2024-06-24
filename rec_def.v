@@ -309,16 +309,16 @@ eat_implications F N G R :-
 %  fun f => f 0 = V1 /\ ... f k = Vk /\ forall n, ... -> ... -> f n = E
 % Displays the ordered sequence of k integers (in builtin type int), such
 % that (f (n - k)) appears in E.
-pred find_uses i:term.
+pred find_uses i:term, o:term.
 
-find_uses (fun N Ty Bo) :-
+find_uses (fun N Ty Bo) R :-
   pi f\
     decl f `N` Ty => % let one call the pretty printer and type checker inside
-    find_uses_of f (Bo f).
+    find_uses_of f (Bo f) R. % R does not use f recursively, but rather the nth value of its recursion history
 
-pred find_uses_of i:term, i:term.
+pred find_uses_of i:term, i:term, o:term.
 
-find_uses_of F Spec  :-
+find_uses_of F Spec Final :-
   std.do! [
     collect_specs F Spec Sps,
     alist_sort Sps Sps2,
@@ -334,9 +334,13 @@ find_uses_of F Spec  :-
     coq.say "Final" {coq.term->string Final},
   ].
 
-main [str Name, trm Abs_eqn] :- 
-  coq.say "Hello" Name,
-  find_uses Abs_eqn.
+main [str Name, trm Abs_eqn] :-  std.do! [
+  find_uses Abs_eqn Final,
+  std.assert-ok! (coq.typecheck Final Ty) "Type error",
+  % fails since the term has holes, the types of v and n are unknwn (to me)
+  % coq.env.add-const Name Final Ty @transparent! C,
+  % coq.say "Defined" C,
+].
 
 main _ :-
   coq.error "Usage: Recursive name equation_1 .. equation_n".
