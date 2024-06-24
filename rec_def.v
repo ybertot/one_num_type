@@ -255,19 +255,19 @@ make_initial_list [pr _ V | L] (app [{{ cons}}, V, Tl]) :-
 
 pred make_recursive_step_list i:(term -> term) i:int i:int o:(term -> term).
 
-make_recursive_step_list Func 0 Rank R :-
+make_recursive_step_list Func 0 _Rank R :-
   pi V\
    app [{{ cons}}, (Func V), {{ nil }}] = R V.
 
 make_recursive_step_list Func N Rank R :-
   std.do! [
-    1 < N,
+    0 < N,
     N1 is N - 1,
     Rank1 is Rank + 1,
-    int_to_nat Rank RankTerm,
+    int_to_nat Rank1 RankTerm,
     make_recursive_step_list Func N1 Rank1 Func',
     pi V \
-      app [{{ cons}}, app [{{ nth}}, RankTerm, V, {{ 0}}],
+      app [{{ cons}}, app [{{ nth}}, {{R}}, RankTerm, V, {{ 0}}],
            Func' V] = R V
   ].
 
@@ -278,7 +278,9 @@ make_recursive_step_list Func N Rank R :-
 % of the form (F (n - k)).  The k values must be real-positive numbers.
 pred eat_implications i:term, i:term, i:term, o:term.
 
-eat_implications F N (prod _ _ G) R :- !,
+eat_implications F N (prod _ _ G) R :- 
+  %(pi x\ not(occurs x (G x))),
+  (pi x y\ G x = G y), !,
   pi h \ 
    eat_implications F N (G h) R.
 
@@ -301,7 +303,9 @@ eat_implications F N G R :-
       (pi A B \ copy A B :-
          replace_rec_call_by_seq_nth L F N V A B) =>
          copy RHS (RHS' V)),
-     R = (fun `v` _ RHS'),
+      L1 is L - 1,
+      make_recursive_step_list RHS' L1 0 RecList,
+     R = (fun `v` {{list R}} RecList),
 ].
 
 % The input must have the form:
@@ -312,7 +316,7 @@ pred find_uses i:term, o:term.
 
 find_uses (fun N Ty Bo) R :-
   pi f\
-    decl f `N` Ty => % let one call the pretty printer and type checker inside
+    decl f N Ty => % let one call the pretty printer and type checker inside
     find_uses_of f (Bo f) R. % R does not use f recursively, but rather the nth value of its recursion history
 
 pred find_uses_of i:term, i:term, o:term.
@@ -326,10 +330,10 @@ find_uses_of F Spec Final :-
     coq.say "ListSps = " {coq.term->string ListSps},
     fetch_recursive_equation Spec Ts,
 % TODO : error reporting is not satisfactory here
-    std.assert! (Ts = [prod _ _ F1]) "Expecting exactly one recursive equation",
+    std.assert! (Ts = [prod Scalar_name _ F1]) "Expecting exactly one recursive equation",
     (pi n\
-      eat_implications F n (F1 n) (R n)),
-    Final = fun `n` _ R,
+      eat_implications F n (F1 n) (Main_expression n)),
+    Final = fun Scalar_name {{R}} Main_expression,
     coq.say "Final" {coq.term->string Final},
   ].
 
@@ -337,8 +341,8 @@ main [str Name, trm Abs_eqn] :-  std.do! [
   find_uses Abs_eqn Final,
   std.assert-ok! (coq.typecheck Final Ty) "Type error",
   % fails since the term has holes, the types of v and n are unknwn (to me)
-  % coq.env.add-const Name Final Ty @transparent! C,
-  % coq.say "Defined" C,
+  coq.env.add-const Name Final Ty @transparent! C,
+  coq.say "Defined" C,
 ].
 
 main _ :-
@@ -366,6 +370,8 @@ Elpi Query lp:{{ int_to_nat 3 V }}.
 Elpi Recursive fib
   (fun fib => fib 0 = 0 /\ fib 1 = 1 /\
     forall n : R, Rnat n -> n < 2 -> fib n = fib (n - 2) + fib (n - 1)).
+
+
 
 (* Check fun fib =>
         fib 0 = 0 /\
