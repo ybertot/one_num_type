@@ -74,17 +74,16 @@ alist_sort [A | L] L2 :-
 
 % converting a coq object of type positive to a builtin int
 pred positive_to_int i:term o:int.
-
+% TODO regarder dans algebra tactics
 positive_to_int XH 1 :-
   coq.locate "xH" Gref,
   XH = global Gref.
 
-positive_to_int XI N1 :-
-  coq.locate "xI" Gref,
-  XI = app[global Gref, X],
+positive_to_int {{:coq xI lp:X}} N1 :-
   positive_to_int X N,
   N1 is 2 * N + 1.
 
+% TODO
 positive_to_int XO N1 :-
   coq.locate "xO" Gref,
   XO = app[global Gref, X],
