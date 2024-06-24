@@ -302,7 +302,7 @@ eat_implications F N G R :-
       (pi A B \ copy A B :-
          replace_rec_call_by_seq_nth L F N V A B) =>
          copy RHS (RHS' V)),
-     R = (fun `v` _ RHS'),
+     R = (fun `v` {{list R}} RHS'),
 ].
 
 % The input must have the form:
@@ -330,24 +330,27 @@ find_uses_of F Spec Final :-
     std.assert! (Ts = [prod _ _ F1]) "Expecting exactly one recursive equation",
     (pi n\
       eat_implications F n (F1 n) (R n)),
-    Final = fun `n` _ R,
+    Final = fun `n` {{R}} R,
     coq.say "Final" {coq.term->string Final},
   ].
 
-main [str Name, trm Abs_eqn] :-  std.do! [
-  find_uses Abs_eqn Final,
+main [trm (fun N _ _ as Abs_eqn)] :- !, std.do! [
+  std.assert! (find_uses Abs_eqn Final) "Oops",
   std.assert-ok! (coq.typecheck Final Ty) "Type error",
+  coq.name->id N Name,
   % fails since the term has holes, the types of v and n are unknwn (to me)
-  % coq.env.add-const Name Final Ty @transparent! C,
-  % coq.say "Defined" C,
+  coq.env.add-const Name Final Ty @transparent! C,
+  coq.say "Defined" C,
 ].
 
-main _ :-
-  coq.error "Usage: Recursive name equation_1 .. equation_n".
+main L :-
+  coq.error L "Usage: Recursive name equation_1 .. equation_n".
 
 }}.
 
 Elpi Typecheck.
+
+Elpi Export Recursive.
 
 (*
 Elpi Query lp:{{ int_to_nat 3 V }}.
@@ -364,9 +367,17 @@ Elpi Query lp:{{ int_to_nat 3 V }}.
 
 (* Elpi Recursive ex1 (fun ex1 => ex1 0 = 0). *)
 
-Elpi Recursive fib
-  (fun fib => fib 0 = 0 /\ fib 1 = 1 /\
-    forall n : R, Rnat n -> n < 2 -> fib n = fib (n - 2) + fib (n - 1)).
+Notation "'def' id := bo" := (fun id => bo) (id binder, bo at level 100, at level 1, only parsing).
+
+Recursive (def fib := fib 0 = 0 /\ fib 1 = 1 /\
+  forall n : R, Rnat n -> n < 2 -> fib n = fib (n - 2) + fib (n - 1)).
+
+Print fib.
+
+(* coq-elpi bug in argument "parsing"
+Recursive Fixpoint fib : R -> R := fib 0 = 0 /\ fib 1 = 1 /\
+forall n : R, Rnat n -> n < 2 -> fib n = fib (n - 2) + fib (n - 1).
+*)
 
 (* Check fun fib =>
         fib 0 = 0 /\
