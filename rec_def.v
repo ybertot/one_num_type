@@ -97,12 +97,12 @@ pred real_to_int i:term o:int.
 % actually, this works for any positive number encapsulated in two unary
 % functions
 real_to_int (app [Izr, app [Zpos, P]]) I :-
-  Izr = {{:coq IZR}},
-  Zpos = {{:coq Z.pos}},
+  Izr = {{ IZR}},
+  Zpos = {{ Z.pos}},
   positive_to_int P I.
 
 real_to_int Zero 0 :-
-  Zero = {{:coq 0}}.
+  Zero = {{ 0}}.
 
 % the inverse predicate, int_to_real, produces a real number that is
 % the representation of the integer.
@@ -175,7 +175,7 @@ replace_rec_call_by_seq_nth L F N V A B :-
     int_to_nat In I,
     coq.locate "nth" Nth,
     coq.locate "R" Rtype,
-    Zero = {{:coq 0}},
+    Zero = {{ 0}},
     B = app[global Nth, global Rtype, I, V, Zero]
   ].
 
@@ -216,7 +216,7 @@ fetch_recursive_equation A _ :-
 pred collect_specs i:term i:term o:list (pair int term).
 
 collect_specs F (app [Eq, _, app [F, V1], V2]) [S] :-
-% TODO: ask about placing directly {{:coq eq}} above.
+% TODO: ask about placing directly {{ eq}} above.
   std.do! [
     coq.locate "eq" Eqgref,
     Eq = global Eqgref,
@@ -249,16 +249,16 @@ check_all_present N [pr _ _ | _] _ :-
 
 pred make_initial_list i:list (pair int term) o:term.
 
-make_initial_list [] {{:coq nil}}.
+make_initial_list [] {{ nil}}.
 
-make_initial_list [pr _ V | L] (app [{{:coq cons}}, V, Tl]) :-
+make_initial_list [pr _ V | L] (app [{{ cons}}, V, Tl]) :-
   make_initial_list L Tl.
 
 pred make_recursive_step_list i:(term -> term) i:int i:int o:(term -> term).
 
 make_recursive_step_list Func 0 Rank R :-
   pi V\
-   app [{{:coq cons}}, (Func V), {{ nil }}] = R V.
+   app [{{ cons}}, (Func V), {{ nil }}] = R V.
 
 make_recursive_step_list Func N Rank R :-
   std.do! [
@@ -268,7 +268,7 @@ make_recursive_step_list Func N Rank R :-
     int_to_nat Rank RankTerm,
     make_recursive_step_list Func N1 Rank1 Func',
     pi V \
-      app [{{:coq cons}}, app [{{:coq nth}}, RankTerm, V, {{:coq 0}}],
+      app [{{ cons}}, app [{{ nth}}, RankTerm, V, {{ 0}}],
            Func' V] = R V
   ].
 
@@ -351,10 +351,10 @@ Elpi Query lp:{{ int_to_nat 3 V }}.
 
 (* Elpi Query lp:{{
   sigma F \
-  {{:coq sin 0 = 0 /\ sin 1 = 1}} = F,
-  {{:coq sin}} = G,
+  {{ sin 0 = 0 /\ sin 1 = 1}} = F,
+  {{ sin}} = G,
   coq.say F "function" G,
-  collect_specs {{:coq sin}} F F1
+  collect_specs {{ sin}} F F1
   }}.
 *)
 
