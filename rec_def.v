@@ -99,8 +99,13 @@ pred real_to_int i:term o:int.
 
 % actually, this works for any positive number encapsulated in two unary
 % functions
-real_to_int (app [_, app [_, P]]) I :-
+real_to_int (app [Izr, app [Zpos, P]]) I :-
+  Izr = {{:coq IZR}},
+  Zpos = {{:coq Z.pos}},
   positive_to_int P I.
+
+real_to_int Zero 0 :-
+  Zero = {{:coq 0}}.
 
 % the inverse predicate, int_to_real, produces a real number that is
 % the representation of the integer.
@@ -193,12 +198,12 @@ pred fetch_recursive_equation i:term o:list term.
 fetch_recursive_equation X [X] :-
   X = (prod _ _ _), !.
 
-fetch_recursive_equation (app [And, Specs_head, Spec_tail]) R_eqs :-
+fetch_recursive_equation (app [And, Code1, Code2]) R_eqs :-
   std.do! [
     coq.locate "and" Andgref,
     And = global Andgref,
-    fetch_recursive_equation Specs_head L1,
-    fetch_recursive_equation Specs_tail L2,
+    fetch_recursive_equation Code1 L1,
+    fetch_recursive_equation Code2 L2,
     std.append L1 L2 R_eqs
   ].
 
@@ -218,20 +223,56 @@ collect_specs F (app [Eq, _, app [F, V1], V2]) [S] :-
   std.do! [
     coq.locate "eq" Eqgref,
     Eq = global Eqgref,
-    make_one_spec V1 V2 S,
-    coq.say "make_one_spec produce" S
+    make_one_spec V1 V2 S
   ].
 
 collect_specs _F (prod _ _ _) [].
 
-collect_specs F (app [And, Specs_head, Spec_tail]) Specs :-
+collect_specs F (app [And, Code1, Code2]) Specs :-
 % TODO: same as Eq above
   std.do! [
     coq.locate "and" Andgref,
     And = global Andgref,
-    collect_specs F Spec_head Specs1,
-    collect_specs F Spec_tail Specs2,
+    collect_specs F Code1 Specs1,
+    collect_specs F Code2 Specs2,
     std.append Specs1 Specs2 Specs
+  ].
+
+pred check_all_present i:int i:list pair_int_term o:int.
+
+check_all_present N [] N.
+
+check_all_present N [p N _ | L] N2 :-
+  !,
+  N1 is N + 1,
+  check_all_present N1 L N2.
+
+check_all_present N [p _ _ | _] _ :-
+  coq.error "missing value for" N.
+
+pred make_initial_list i:list pair_int_term o:term.
+
+make_initial_list [] {{:coq nil}}.
+
+make_initial_list [p _ V | L] (app [{{:coq cons}}, V, Tl]) :-
+  make_initial_list L Tl.
+
+pred make_recursive_step_list i:(term -> term) i:int i:int o:(term -> term).
+
+make_recursive_step_list Func 0 Rank R :-
+  pi V\
+   app [{{:coq cons}}, (Func V), {{:nil}}] = R V.
+
+make_recursive_step_list Func N Rank R :-
+  std.do! [
+    1 < N,
+    N1 is N - 1,
+    Rank1 is Rank + 1,
+    int_to_nat Rank RankTerm,
+    make_recursive_step_list Func N1 Rank1 Func',
+    pi V \
+      app [{{:coq cons}}, app [{{:coq nth}}, RankTerm, V, {{:coq 0}}],
+           Func' V] = R V
   ].
 
 % QUIRKY: performs part of the jobs of finding the uses of the function
@@ -275,10 +316,12 @@ pred find_uses i:term.
 find_uses Abs_eqn :-
   std.do! [
     Abs_eqn = fun _Name1 _T F,
-    pi f \ sigma F1 \
-    coq.say "before collect_specs",
-    collect_specs f (F f) (Sps f),
-    coq.say Sps,
+    pi f \ sigma F1 Sps Sps2 Order\
+    collect_specs f (F f) Sps,
+    alist_sort Sps Sps2,
+    check_all_present 0 Sps2 Order,
+    make_initial_list Sps2 ListSps,
+    coq.say ListSps,
     fetch_recursive_equation (F f) (Ts f),
 % TODO : error reporting is not satisfactory here
     (Ts f = [prod _ _ F1]),
@@ -301,19 +344,20 @@ Elpi Typecheck.
 Elpi Query lp:{{ int_to_nat 3 V }}.
 *)
 
-Elpi Query lp:{{
+(* Elpi Query lp:{{
   sigma F \
-  {{:coq sin 0 = 0}} = F,
+  {{:coq sin 0 = 0 /\ sin 1 = 1}} = F,
   {{:coq sin}} = G,
   coq.say F "function" G,
   collect_specs {{:coq sin}} F F1
   }}.
+*)
 
 (* Elpi Recursive ex1 (fun ex1 => ex1 0 = 0). *)
 
-(* Elpi Recursive fib
-  (fun fib => fib 0 = 0 /\
-    forall n : R, Rnat n -> n < 2 -> fib n = fib (n - 2) + fib (n - 1)). *)
+Elpi Recursive fib
+  (fun fib => fib 0 = 0 /\ fib 1 = 1 /\
+    forall n : R, Rnat n -> n < 2 -> fib n = fib (n - 2) + fib (n - 1)).
 
 (* Check fun fib =>
         fib 0 = 0 /\
