@@ -437,10 +437,49 @@ Recursive (def fib such that fib 0 = 0 /\ fib 1 = 1 /\
 
 Print fib.
 
-(* Check fun fib =>
-        fib 0 = 0 /\
-        fib 1 = 1 /\
-        (forall n, Rnat n -> n < 2 -> fib n = fib (n - 1) + fib (n - 2)). *)
+Lemma fib0 : fib 0 = 0.
+Proof.
+now unfold fib; rewrite Rnat_rec0.
+Qed.
 
-(* From this input, we should produce the function definition of fib' in
-  file fib.v *)
+Lemma fib1 : fib 1 = 1.
+Proof.
+unfold fib.
+replace 1 with (0 + 1) at 2 by ring.
+rewrite Rnat_rec_succ, Rnat_rec0; simpl.
+  ring.
+apply Rnat0.
+Qed.
+
+Lemma fib_succ : forall n, Rnat (n - 2) ->
+  fib n = fib (n - 2) + fib (n - 1).
+Proof.
+unfold fib.
+set (step := fun _ v => _ :: _ + _ :: _).
+
+intros n.
+enough (main : forall k, Rnat k -> Rnat_rec (0 :: 1 :: nil)
+               step k =
+   (fib k :: fib (k + 1) :: nil)).
+  replace n with (n - 2 + 1 + 1) at 2 by ring.
+  replace (n - 1) with (n - 2 + 1) by ring.
+  intros n2nat.
+  rewrite 2!Rnat_rec_succ; simpl.
+  all:try (repeat apply Rnat_succ; exact n2nat).
+  now rewrite main; simpl.
+intros k; induction 1 as [ | k knat Ih].
+  rewrite Rnat_rec0.
+  rewrite fib0.
+  replace (0 + 1) with 1 by ring.
+  now rewrite fib1.
+rewrite Rnat_rec_succ; auto.
+rewrite Ih.
+unfold step; simpl.
+apply f_equal.
+unfold fib at 3.
+rewrite Rnat_rec_succ; [ | repeat apply Rnat_succ; apply knat].
+rewrite Rnat_rec_succ; [ | repeat apply Rnat_succ; apply knat].
+simpl.
+fold step.
+now rewrite Ih; simpl.
+Qed.
