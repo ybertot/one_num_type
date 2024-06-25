@@ -248,9 +248,9 @@ check_all_present N [pr _ _ | _] _ :-
 
 pred make_initial_list i:list (pair int term) o:term.
 
-make_initial_list [] {{ nil}}.
+make_initial_list [] {{ @nil R}}.
 
-make_initial_list [pr _ V | L] (app [{{ cons}}, V, Tl]) :-
+make_initial_list [pr _ V | L] (app [{{ @cons R}}, V, Tl]) :-
   make_initial_list L Tl.
 
 pred make_recursive_step_list i:(term -> term) i:int i:int o:(term -> term).
@@ -276,15 +276,15 @@ make_recursive_step_list Func N Rank R :-
 % The second argument has to be a sequence of nested implications whose
 % conclusion is an equality.  The instances we are looking for have to be
 % of the form (F (n - k)).  The k values must be real-positive numbers.
-pred eat_implications i:term, i:term, i:term, o:term.
+pred eat_implications i:int i:term, i:term, i:term, o:term.
 
-eat_implications F N (prod _ _ G) R :- 
+eat_implications Order F N (prod _ _ G) R :- 
   %(pi x\ not(occurs x (G x))),
   (pi x y\ G x = G y), !,
   pi h \ 
-   eat_implications F N (G h) R.
+   eat_implications Order F N (G h) R.
 
-eat_implications F N G R :-
+eat_implications Order F N G R :-
    std.do! [
       G = app [_, _, _, RHS],
       % This should recognize (f (n - k)) and store k in the list
@@ -299,6 +299,7 @@ eat_implications F N G R :-
       list_max Srt_uses L,
 % Need to generate an abstraction that gives the name V to
 % the result of the recursive call
+     std.assert! (L = Order) "The number of base values does not match the depth of recursive calls",
      (pi V \
       (pi A B \ copy A B :-
          replace_rec_call_by_seq_nth L F N V A B) =>
@@ -330,27 +331,31 @@ find_uses_of F Spec Final :-
     coq.say "ListSps = " {coq.term->string ListSps},
     fetch_recursive_equation Spec Ts,
 % TODO : error reporting is not satisfactory here
-    std.assert! (Ts = [prod Scalar_name _ F1]) "Expecting exactly one recursive equation",
+    std.assert! (Ts = [prod Scalar_name Sc_type F1]) "Expecting exactly one recursive equation",
     (pi n\
-      eat_implications F n (F1 n) (Main_expression n)),
-    Final = fun Scalar_name {{R}} Main_expression,
+      decl n Scalar_name Sc_type =>
+      eat_implications Order F n (F1 n) (Main_expression n)),
+    Final = {{Rnat_rec lp:{{ListSps}} lp:{{fun Scalar_name {{R}} Main_expression}} }},
     coq.say "Final" {coq.term->string Final},
   ].
 
-main [str Name, trm Abs_eqn] :-  std.do! [
-  find_uses Abs_eqn Final,
+main [trm (fun N _ _ as Abs_eqn)] :- !, std.do! [
+  std.assert! (find_uses Abs_eqn Final) "Oops",
   std.assert-ok! (coq.typecheck Final Ty) "Type error",
+  coq.name->id N Name,
   % fails since the term has holes, the types of v and n are unknwn (to me)
   coq.env.add-const Name Final Ty @transparent! C,
   coq.say "Defined" C,
 ].
 
-main _ :-
-  coq.error "Usage: Recursive name equation_1 .. equation_n".
+main L :-
+  coq.error L "Usage: Recursive name equation_1 .. equation_n".
 
 }}.
 
 Elpi Typecheck.
+
+Elpi Export Recursive.
 
 (*
 Elpi Query lp:{{ int_to_nat 3 V }}.
@@ -367,9 +372,20 @@ Elpi Query lp:{{ int_to_nat 3 V }}.
 
 (* Elpi Recursive ex1 (fun ex1 => ex1 0 = 0). *)
 
-Elpi Recursive fib
-  (fun fib => fib 0 = 0 /\ fib 1 = 1 /\
-    forall n : R, Rnat n -> n < 2 -> fib n = fib (n - 2) + fib (n - 1)).
+Notation "'def' id 'such' 'that' bo" := (fun id => bo) 
+ (id binder, bo at level 100, at level 1, only parsing).
+
+Elpi Trace Browser.
+
+Recursive (def fib such that fib 0 = 0 /\ fib 1 = 1 /\
+  forall n : R, Rnat (n - 2) -> fib n = fib (n - 2) + fib (n - 1)).
+
+Print fib.
+
+(* coq-elpi bug in argument "parsing"
+Recursive Fixpoint fib : R -> R := fib 0 = 0 /\ fib 1 = 1 /\
+forall n : R, Rnat n -> n < 2 -> fib n = fib (n - 2) + fib (n - 1).
+*)
 
 
 
