@@ -1,21 +1,73 @@
 From elpi Require Import elpi.
-Require Import List Reals.
+Require Import List Reals ClassicalEpsilon Lia Lra.
+Require Import Wellfounded.
+
 Open Scope R_scope.
 
 Inductive Rnat : R -> Prop :=
   Rnat0 : Rnat 0
 | Rnat_succ : forall n, Rnat n -> Rnat (n + 1).
 
-Parameter Rnat_rec :
-  forall {A : Type} (v0 : A) (step : R -> A -> A) (n : R)
-    (h : Rnat n), A.
+Existing Class Rnat.
 
-Parameter Rnat_rec0 : forall {A : Type} (v0 : A) (step : R -> A -> A),
-  Rnat_rec v0 step 0 Rnat0 = v0.
+Definition IRZ x :=
+  epsilon (inhabits 0%Z) (fun y => x = IZR y).
 
-Parameter Rnat_rec_succ : forall {A : Type} (v0 : A) (step : R -> A -> A)
-  n (h : Rnat n) (h' : Rnat (n + 1)),
-  Rnat_rec v0 step (n + 1) h' = step n (Rnat_rec v0 step n h).
+Lemma IRZ_IZR z : IRZ (IZR z) = z.
+Proof.
+unfold IRZ.
+assert (exz : exists y, IZR z = IZR y).
+  exists z; easy.
+apply eq_sym, eq_IZR.
+now apply epsilon_spec.
+Qed.
+
+Lemma Rnat_exists_nat x {xnat : Rnat x} : exists n, x = IZR (Z.of_nat n).
+Proof.
+induction xnat as [ | x xnat [n xn]].
+  exists 0%nat; easy.
+exists (S n).
+now rewrite Nat2Z.inj_succ, <- Z.add_1_r, plus_IZR, xn.
+Qed.
+
+Definition IRN (x : R) := Z.abs_nat (IRZ x).
+
+Lemma INR_IRN x {xnat : Rnat x} : INR (IRN x) = x.
+Proof.
+destruct (Rnat_exists_nat x) as [x' xx'].
+rewrite xx'.
+unfold IRN.
+rewrite IRZ_IZR.
+rewrite INR_IZR_INZ.
+now rewrite Zabs2Nat.id.
+Qed.
+
+Definition Rnat_rec {A : Type} (v0 : A) (stf : R -> A -> A) (x : R) : A :=
+  nat_rect (fun _ => A) v0 (fun x => stf (INR x)) (IRN x).
+
+Lemma Rnat_rec0 {A : Type} (v0 : A) stf : Rnat_rec v0 stf 0 = v0.
+Proof.
+now unfold Rnat_rec, IRN; rewrite IRZ_IZR.
+Qed.
+
+Lemma Rnat_rec_succ {A : Type} (v0 : A) stf (x : R) :
+  Rnat x ->
+  Rnat_rec v0 stf (x + 1) = stf x (Rnat_rec v0 stf x).
+Proof.
+intros xnat.
+destruct (Rnat_exists_nat x) as [x' xx'].
+unfold Rnat_rec.
+replace (IRN (x + 1)) with (S (IRN x)).
+  now simpl; rewrite INR_IRN.
+rewrite xx'.
+unfold IRN.
+rewrite <- plus_IZR.
+rewrite !IRZ_IZR.
+replace 1%Z with (Z.of_nat 1) by (simpl; ring).
+rewrite <- Nat2Z.inj_add.
+rewrite !Zabs2Nat.id.
+ring.
+Qed.
 
 Elpi Command Recursive.
 
@@ -80,7 +132,7 @@ positive_to_int XH 1 :-
   XH = global Gref.
 
 positive_to_int {{:coq xI lp:X}} N1 :-
-  positive_to_int X N,
+    positive_to_int X N,
   N1 is 2 * N + 1.
 
 % TODO
@@ -299,7 +351,7 @@ eat_implications Order F N G R :-
       list_max Srt_uses L,
 % Need to generate an abstraction that gives the name V to
 % the result of the recursive call
-     std.assert! (L = Order) "The number of base values does not match the depth of recursive calls",
+std.assert! (L = Order) "The number of base values does not match the depth of recursive calls",
      (pi V \
       (pi A B \ copy A B :-
          replace_rec_call_by_seq_nth L F N V A B) =>
@@ -335,14 +387,17 @@ find_uses_of F Spec Final :-
     (pi n\
       decl n Scalar_name Sc_type =>
       eat_implications Order F n (F1 n) (Main_expression n)),
-    Final = {{Rnat_rec lp:{{ListSps}} lp:{{fun Scalar_name {{R}} Main_expression}} }},
+    %Final = {{Rnat_rec lp:ListSps (fun x : R => lp:(Main_expression x)) }},
+    Final = {{ fun r : R => nth 0 
+                (Rnat_rec lp:ListSps lp:{{ fun Scalar_name {{R}} Main_expression}} r) 0}},
     coq.say "Final" {coq.term->string Final},
   ].
 
-main [trm (fun N _ _ as Abs_eqn)] :- !, std.do! [
+main [trm (fun N _ _ as Abs_eqn)] :-
+std.do! [
   std.assert! (find_uses Abs_eqn Final) "Oops",
   std.assert-ok! (coq.typecheck Final Ty) "Type error",
-  coq.name->id N Name,
+coq.name->id N Name,
   % fails since the term has holes, the types of v and n are unknwn (to me)
   coq.env.add-const Name Final Ty @transparent! C,
   coq.say "Defined" C,
@@ -375,19 +430,12 @@ Elpi Query lp:{{ int_to_nat 3 V }}.
 Notation "'def' id 'such' 'that' bo" := (fun id => bo) 
  (id binder, bo at level 100, at level 1, only parsing).
 
-Elpi Trace Browser.
+(* Elpi Trace Browser. *)
 
 Recursive (def fib such that fib 0 = 0 /\ fib 1 = 1 /\
-  forall n : R, Rnat (n - 2) -> fib n = fib (n - 2) + fib (n - 1)).
+    forall n : R, Rnat (n - 2) -> fib n = fib (n - 2) + fib (n - 1)).
 
 Print fib.
-
-(* coq-elpi bug in argument "parsing"
-Recursive Fixpoint fib : R -> R := fib 0 = 0 /\ fib 1 = 1 /\
-forall n : R, Rnat n -> n < 2 -> fib n = fib (n - 2) + fib (n - 1).
-*)
-
-
 
 (* Check fun fib =>
         fib 0 = 0 /\
