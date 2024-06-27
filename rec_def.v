@@ -92,6 +92,8 @@ alist_insert (pr I V) [pr I2 V2 | L] [pr I V, pr I2 V2 | L] :-
 alist_insert (pr I V) [pr I2 V2 | L] [pr I2 V2 | L2] :-
   alist_insert (pr I V) L L2.
 
+alist_insert (pr I V) [] [pr I V].
+
 pred alist_sort i:list (pair int term) o:list (pair int term).
 
 alist_sort [] [].
@@ -328,7 +330,8 @@ eat_implications Order F N G R :-
       list_max Srt_uses L,
 % Need to generate an abstraction that gives the name V to
 % the result of the recursive call
-std.assert! (L = Order) "The number of base values does not match the depth of recursive calls",
+std.assert! (L = Order)
+  "The number of base values does not match the depth of recursive calls",
      (pi V \
       (pi A B \ copy A B :-
          replace_rec_call_by_seq_nth L F N V A B) =>
@@ -347,7 +350,8 @@ pred find_uses i:term, o:term.
 find_uses (fun N Ty Bo) R :-
   pi f\
     decl f N Ty => % let one call the pretty printer and type checker inside
-    find_uses_of f (Bo f) R. % R does not use f recursively, but rather the nth value of its recursion history
+    find_uses_of f (Bo f) R.  % R does not use f recursively, but rather
+                              % the nth value of its recursion history
 
 pred find_uses_of i:term, i:term, o:term.
 
@@ -357,22 +361,24 @@ find_uses_of F Spec Final :-
     alist_sort Sps Sps2,
     check_all_present 0 Sps2 Order,
     make_initial_list Sps2 ListSps,
-    coq.say "ListSps = " {coq.term->string ListSps},
+    % coq.say "ListSps = " {coq.term->string ListSps},
     fetch_recursive_equation Spec Ts,
 % TODO : error reporting is not satisfactory here
-    std.assert! (Ts = [prod Scalar_name Sc_type F1]) "Expecting exactly one recursive equation",
+    std.assert! (Ts = [prod Scalar_name Sc_type F1])
+       "Expecting exactly one recursive equation",
     (pi n\
       decl n Scalar_name Sc_type =>
       eat_implications Order F n (F1 n) (Main_expression n)),
     %Final = {{Rnat_rec lp:ListSps (fun x : R => lp:(Main_expression x)) }},
     Final = {{ fun r : R => nth 0 
-                (Rnat_rec lp:ListSps lp:{{ fun Scalar_name {{R}} Main_expression}} r) 0}},
-    coq.say "Final" {coq.term->string Final},
+                (Rnat_rec lp:ListSps lp:{{ fun Scalar_name {{R}}
+                              Main_expression}} r) 0}}
   ].
 
 main [trm (fun N _ _ as Abs_eqn)] :-
 std.do! [
-  std.assert! (find_uses Abs_eqn Final) "Oops",
+  find_uses Abs_eqn Final,
+  % std.assert! (find_uses Abs_eqn Final) "Oops",
   std.assert-ok! (coq.typecheck Final Ty) "Type error",
 coq.name->id N Name,
   % fails since the term has holes, the types of v and n are unknwn (to me)
@@ -380,8 +386,8 @@ coq.name->id N Name,
   coq.say "Defined" C,
 ].
 
-main L :-
-  coq.error L "Usage: Recursive name equation_1 .. equation_n".
+main _L :-
+  coq.error [] "Usage: Recursive name equation_1 .. equation_n".
 
 }}.
 
@@ -409,7 +415,10 @@ Notation "'def' id 'such' 'that' bo" := (fun id => bo)
 
 (* Elpi Trace Browser. *)
 
-Recursive (def fib such that fib 0 = 0 /\ fib 1 = 1 /\
+Recursive (def simple_example such that simple_example 0 = 0 /\
+   forall n, Rnat (n - 1) -> simple_example n = simple_example (n - 1) + 1).
+
+Recursive (def fib such that fib 0 = 0 /\ (fib 1 = 1) /\
     forall n : R, Rnat (n - 2) -> fib n = fib (n - 2) + fib (n - 1)).
 
 Print fib.
@@ -461,7 +470,7 @@ fold step.
 now rewrite Ih; simpl.
 Qed.
 
-(* This on e is based on the discovery that a proof by induction is actually *)
+(* This one is based on the discovery that a proof by induction is actually *)
 (* not needed. *)
 Lemma fib_succ2 : forall n, Rnat (n - 2) ->
   fib n = fib (n - 2) + fib (n - 1).
@@ -473,4 +482,13 @@ rewrite !Rplus_minus_r.
 repeat rewrite Rnat_rec_succ.
 all: repeat apply Rnat_succ; try assumption.
 easy.
+Qed.
+
+Lemma fib20 : fib 20 = 6765.
+Proof.
+unfold fib.
+rewrite Rnat_rec_to_nat_rec;[ | apply Rnat_cst].
+unfold IRN.
+rewrite IRZ_IZR.
+simpl; ring.
 Qed.
