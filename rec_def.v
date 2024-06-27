@@ -2,45 +2,9 @@ From elpi Require Import elpi.
 Require Import List Reals ClassicalEpsilon Lia Lra.
 Require Import Wellfounded.
 
+Require Import R_subsets.
+
 Open Scope R_scope.
-
-Inductive Rnat : R -> Prop :=
-  Rnat0 : Rnat 0
-| Rnat_succ : forall n, Rnat n -> Rnat (n + 1).
-
-Existing Class Rnat.
-
-Definition IRZ x :=
-  epsilon (inhabits 0%Z) (fun y => x = IZR y).
-
-Lemma IRZ_IZR z : IRZ (IZR z) = z.
-Proof.
-unfold IRZ.
-assert (exz : exists y, IZR z = IZR y).
-  exists z; easy.
-apply eq_sym, eq_IZR.
-now apply epsilon_spec.
-Qed.
-
-Lemma Rnat_exists_nat x {xnat : Rnat x} : exists n, x = IZR (Z.of_nat n).
-Proof.
-induction xnat as [ | x xnat [n xn]].
-  exists 0%nat; easy.
-exists (S n).
-now rewrite Nat2Z.inj_succ, <- Z.add_1_r, plus_IZR, xn.
-Qed.
-
-Definition IRN (x : R) := Z.abs_nat (IRZ x).
-
-Lemma INR_IRN x {xnat : Rnat x} : INR (IRN x) = x.
-Proof.
-destruct (Rnat_exists_nat x) as [x' xx'].
-rewrite xx'.
-unfold IRN.
-rewrite IRZ_IZR.
-rewrite INR_IZR_INZ.
-now rewrite Zabs2Nat.id.
-Qed.
 
 Definition Rnat_rec {A : Type} (v0 : A) (stf : R -> A -> A) (x : R) : A :=
   nat_rect (fun _ => A) v0 (fun x => stf (INR x)) (IRN x).
@@ -68,6 +32,16 @@ rewrite <- Nat2Z.inj_add.
 rewrite !Zabs2Nat.id.
 ring.
 Qed.
+
+(* This lemma should be used to automatically prove that  functions
+  defined by our new command satisfy the specification that was given
+  as a definition.  But this lemma is not intended for final users' eyes
+  because it exposes the nat type. *)
+Lemma Rnat_rec_to_nat_rec {A : Type} (v0 : A) (stf : R -> A -> A) (x : R) :
+   Rnat x -> 
+   Rnat_rec v0 stf x = 
+   nat_rect (fun _ => A) v0 (fun x => stf (INR x)) (IRN x).
+Proof. easy. Qed.
 
 Elpi Command Recursive.
 
@@ -106,7 +80,8 @@ list_max [A, _B | L] V :-
 
 % sorting an association list for values associated to integers
 
-pred alist_insert i:pair int term i:list (pair int term) o:list (pair int term).
+pred alist_insert i:pair int term i:list (pair int term)
+  o:list (pair int term).
 
 alist_insert (pr I _) [pr I _ | _] _ :- !,
   coq.error "There are two declarations for the same integer"  I.
@@ -234,7 +209,8 @@ pred make_one_spec i:term i:term o:pair int term.
 make_one_spec V1 V2 (pr I1 V2) :-
   real_to_int V1 I1,!.
 
-pred list_app i:list (pair int term) i:list (pair int term) o:list (pair int term).
+pred list_app i:list (pair int term) i:list (pair int term)
+  o:list (pair int term).
 
 list_app [] L2 L2.
 
@@ -338,6 +314,7 @@ eat_implications Order F N (prod _ _ G) R :-
 
 eat_implications Order F N G R :-
    std.do! [
+    %$  G = {{_ = lp:RHS}}
       G = app [_, _, _, RHS],
       % This should recognize (f (n - k)) and store k in the list
       (pi A E Op V\
@@ -439,16 +416,16 @@ Print fib.
 
 Lemma fib0 : fib 0 = 0.
 Proof.
-now unfold fib; rewrite Rnat_rec0.
+unfold fib.
+rewrite Rnat_rec_to_nat_rec;[ | apply Rnat0].
+now rewrite IRN0.
 Qed.
 
 Lemma fib1 : fib 1 = 1.
 Proof.
 unfold fib.
-replace 1 with (0 + 1) at 2 by ring.
-rewrite Rnat_rec_succ, Rnat_rec0; simpl.
-  ring.
-apply Rnat0.
+rewrite Rnat_rec_to_nat_rec;[ | apply Rnat_cst].
+now rewrite IRN_pos.
 Qed.
 
 Lemma fib_succ : forall n, Rnat (n - 2) ->
@@ -482,4 +459,18 @@ rewrite Rnat_rec_succ; [ | repeat apply Rnat_succ; apply knat].
 simpl.
 fold step.
 now rewrite Ih; simpl.
+Qed.
+
+(* This on e is based on the discovery that a proof by induction is actually *)
+(* not needed. *)
+Lemma fib_succ2 : forall n, Rnat (n - 2) ->
+  fib n = fib (n - 2) + fib (n - 1).
+Proof.
+unfold fib.
+intros n; set (m := n - 2); intros mnat.
+replace n with (m + 1 + 1) by (unfold m; ring).
+rewrite !Rplus_minus_r.
+repeat rewrite Rnat_rec_succ.
+all: repeat apply Rnat_succ; try assumption.
+easy.
 Qed.
