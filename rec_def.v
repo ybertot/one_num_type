@@ -33,12 +33,14 @@ rewrite !Zabs2Nat.id.
 ring.
 Qed.
 
-(* This lemma should be used to automatically prove that  functions
+(* This lemma could be used to automatically prove that functions
   defined by our new command satisfy the specification that was given
-  as a definition.  But this lemma is not intended for final users' eyes
-  because it exposes the nat type. *)
+  as a definition.  This lemma is not intended for final users' eyes
+  because it exposes the nat type. We may want to add a pre-condition
+  to restrict usage to the Rnat subset.  It is not certain this
+  lemma will be used much, since unfold does the same trick.
+  *)
 Lemma Rnat_rec_to_nat_rec {A : Type} (v0 : A) (stf : R -> A -> A) (x : R) :
-   Rnat x -> 
    Rnat_rec v0 stf x = 
    nat_rect (fun _ => A) v0 (fun x => stf (INR x)) (IRN x).
 Proof. easy. Qed.
@@ -380,11 +382,27 @@ std.do! [
   find_uses Abs_eqn Final,
   % std.assert! (find_uses Abs_eqn Final) "Oops",
   std.assert-ok! (coq.typecheck Final Ty) "Type error",
-coq.name->id N Name,
-  % fails since the term has holes, the types of v and n are unknwn (to me)
+  coq.name->id N Name,
   coq.env.add-const Name Final Ty @transparent! C,
   coq.say "Defined" C,
+
+  (Abs_eqn = fun _ _ F),
+  (Statement = (F (global (const C)))),
+  (Statement = {{lp:Statement1 /\ lp:_Statement2}}),
+  coq.say "statement to prove" {coq.term->string Statement1},
+  (Statement1 = {{lp:_ lp:Arg = lp:Val}}),
+  coq.say "debug" Arg,
+  mk_Rnat_proof Arg Arg_nat,
+  std.assert-ok! (coq.typecheck Arg_nat {{Rnat lp:Arg}})
+    "not the right proof"
+
 ].
+
+pred mk_Rnat_proof i:term o:term.
+
+mk_Rnat_proof {{0}} {{Rnat0}}.
+
+mk_Rnat_proof {{IZR(Z.pos lp:P)}} {{Rnat_cst lp:P}}.
 
 main _L :-
   coq.error [] "Usage: Recursive name equation_1 .. equation_n".
@@ -426,16 +444,20 @@ Print fib.
 Lemma fib0 : fib 0 = 0.
 Proof.
 unfold fib.
-rewrite Rnat_rec_to_nat_rec;[ | apply Rnat0].
+rewrite Rnat_rec_to_nat_rec.
 now rewrite IRN0.
 Qed.
 
 Lemma fib1 : fib 1 = 1.
 Proof.
 unfold fib.
-rewrite Rnat_rec_to_nat_rec;[ | apply Rnat_cst].
+rewrite Rnat_rec_to_nat_rec.
 now rewrite IRN_pos.
 Qed.
+
+(* This is a first attempt at proving the recursive part of fib's
+  definition, but it was discovered later that an induction proof
+  is not needed.*)
 
 Lemma fib_succ : forall n, Rnat (n - 2) ->
   fib n = fib (n - 2) + fib (n - 1).
@@ -484,11 +506,19 @@ all: repeat apply Rnat_succ; try assumption.
 easy.
 Qed.
 
+(* This example puts the user interface under stress, as it returs
+  a tree of additions, where all the leaves are either 1 or (0 + 1).
+  with the parentheses, this data should take at least 10 k chars. *)
 Lemma fib20 : fib 20 = 6765.
 Proof.
 unfold fib.
-rewrite Rnat_rec_to_nat_rec;[ | apply Rnat_cst].
+rewrite Rnat_rec_to_nat_rec.
 unfold IRN.
 rewrite IRZ_IZR.
+(* If the simpl command is placed alone in a command and its result
+  should be improved, this breaks the outputting machinery of
+  VsCoq2's current version.  Otherwise, just executing the combined
+  simpl; ring command leads to a command that takes 3 seconds to
+  execute. *)
 simpl; ring.
 Qed.
