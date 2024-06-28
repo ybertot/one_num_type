@@ -501,9 +501,14 @@ unfold fib.
 intros n; set (m := n - 2); intros mnat.
 replace n with (m + 1 + 1) by (unfold m; ring).
 rewrite !Rplus_minus_r.
-repeat rewrite Rnat_rec_succ.
+(* The next 3 lines should be replaced by rewrite !Rnat_rec_succ but this
+  breaks the user-interface (for now). *)
+rewrite Rnat_rec_succ.
+simpl nth.
+rewrite Rnat_rec_succ.
+simpl nth.
+reflexivity.
 all: repeat apply Rnat_succ; try assumption.
-easy.
 Qed.
 
 (* This example puts the user interface under stress, as it returs
@@ -520,5 +525,6 @@ rewrite IRZ_IZR.
   VsCoq2's current version.  Otherwise, just executing the combined
   simpl; ring command leads to a command that takes 3 seconds to
   execute. *)
-simpl; ring.
+simpl; ring_simplify.
+Show.
 Qed.
