@@ -388,6 +388,24 @@ find_uses_of F Spec Final :-
                               Main_expression}} r) 0}}
   ].
 
+
+pred prove_base_case i:term i:term i:term o:term.
+
+prove_base_case ListSps STP {{lp:F (IZR lp:Z) = lp:V}} Prf :-
+  real_to_int {{IZR lp:Z}} I,
+  int_to_nat I N,
+  Prf1 =
+    {{eq_ind_r (fun z => Z.abs_nat z = lp:N)
+       (eq_refl : Z.abs_nat lp:Z = lp:N) (IRZ_IZR lp:Z)}},
+  Prf =
+    {{eq_ind_r (fun n =>
+        nth 0 (nat_rect (fun _ => list R)
+                 lp:ListSps lp:STP n) 0 = lp:V)
+        (eq_refl : nth 0 (nat_rect (fun _ => list R)
+            lp:ListSps lp:STP lp:N) 0 = lp:V) lp:Prf1}},
+  std.assert-ok! (coq.typecheck Prf {{lp:F (IZR lp:Z) = lp:V}})
+     "failed to prove a base case".
+
 main [trm (fun N _ _ as Abs_eqn)] :-
 std.do! [
   find_uses Abs_eqn Final,
@@ -440,6 +458,11 @@ Notation "'def' id 'such' 'that' bo" := (fun id => bo)
 
 Recursive (def simple_example such that simple_example 0 = 0 /\
    forall n, Rnat (n - 1) -> simple_example n = simple_example (n - 1) + 1).
+
+Elpi Query
+  lp:{{ prove_base_case {{0 :: nil}}
+     {{fun (n : nat) (l : list R) => nth 0 l 0 + 1 :: nil}}
+     {{simple_example 0 = 0}} P}}.
 
 Recursive (def fib such that fib 0 = 0 /\ (fib 1 = 1) /\
     forall n : R, Rnat (n - 2) -> fib n = fib (n - 2) + fib (n - 1)).
