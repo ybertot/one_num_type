@@ -1,7 +1,6 @@
 From elpi Require Import elpi.
 Require Import List Reals ClassicalEpsilon Lia Lra.
 Require Import Wellfounded.
-
 Require Import R_subsets.
 
 Open Scope R_scope.
@@ -303,33 +302,43 @@ make_recursive_step_list Func N Rank R :-
            Func' V] = R V
   ].
 
+
+
+% make a proof that the input real number is in the Rnat subset
+pred mk_Rnat_proof i:term o:term.
+
+mk_Rnat_proof {{0}} {{Rnat0}}.
+
+mk_Rnat_proof {{IZR(Z.pos lp:P)}} {{Rnat_cst lp:P}}.
+
 % QUIRKY: performs part of the jobs of finding the uses of the function
 % given as first argument inside the second argument.
 % The second argument has to be a sequence of nested implications whose
 % conclusion is an equality.  The instances we are looking for have to be
 % of the form (F (n - k)).  The k values must be real-positive numbers.
-pred eat_implications i:int i:term, i:term, i:term, o:term.
+pred eat_implications i:term, o:term.
 
-eat_implications Order F N (prod _ _ G) R :- 
+eat_implications (prod _ _ G) R :-
   %(pi x\ not(occurs x (G x))),
   (pi x y\ G x = G y), !,
   pi h \ 
-   eat_implications Order F N (G h) R.
+   eat_implications (G h) R.
 
-eat_implications Order F N G R :-
+eat_implications {{_ = lp:RHS}} RHS.
+
+pred build_step_function i:int, i:term, i:term, i:term, o:term.
+
+build_step_function Order F N RHS STP :-
    std.do! [
-    %$  G = {{_ = lp:RHS}}
-      G = app [_, _, _, RHS],
-      % This should recognize (f (n - k)) and store k in the list
+      % This should recognize instance of (F (N - k)) and store k in the list
       (pi A E Op V\
          fold-map (app [F, app[Op, V, E]]) A
                   (app [F, app[Op, V, E]]) [E | A])
         =>
-      fold-map RHS [] _ Uses,
+      (fold-map RHS [] _ Uses),
       std.map Uses (real_to_int) Uses_int,
-      list_sort Uses_int Srt_uses,
-% TODO: just take the last element
-      list_max Srt_uses L,
+      list_max Uses_int L,
+            coq.say "arrived here",
 % Need to generate an abstraction that gives the name V to
 % the result of the recursive call
 std.assert! (L = Order)
@@ -340,7 +349,8 @@ std.assert! (L = Order)
          copy RHS (RHS' V)),
       L1 is L - 1,
       make_recursive_step_list RHS' L1 0 RecList,
-     R = (fun `v` {{list R}} RecList),
+     STP = (fun `v` {{list R}} RecList),
+           coq.say "arrived here"
 ].
 
 % The input must have the form:
@@ -370,7 +380,8 @@ find_uses_of F Spec Final :-
        "Expecting exactly one recursive equation",
     (pi n\
       decl n Scalar_name Sc_type =>
-      eat_implications Order F n (F1 n) (Main_expression n)),
+      (eat_implications (F1 n) (RHS n),
+       build_step_function Order F n (RHS n) (Main_expression n))),
     %Final = {{Rnat_rec lp:ListSps (fun x : R => lp:(Main_expression x)) }},
     Final = {{ fun r : R => nth 0 
                 (Rnat_rec lp:ListSps lp:{{ fun Scalar_name {{R}}
@@ -386,23 +397,17 @@ std.do! [
   coq.env.add-const Name Final Ty @transparent! C,
   coq.say "Defined" C,
 
-  (Abs_eqn = fun _ _ F),
-  (Statement = (F (global (const C)))),
-  (Statement = {{lp:Statement1 /\ lp:_Statement2}}),
-  coq.say "statement to prove" {coq.term->string Statement1},
-  (Statement1 = {{lp:_ lp:Arg = lp:Val}}),
-  coq.say "debug" Arg,
-  mk_Rnat_proof Arg Arg_nat,
-  std.assert-ok! (coq.typecheck Arg_nat {{Rnat lp:Arg}})
-    "not the right proof"
+%  (Abs_eqn = fun _ _ F),
+% (Statement = (F (global (const C)))),
+% (Statement = {{lp:Statement1 /\ lp:_Statement2}}),
+%  coq.say "statement to prove" {coq.term->string Statement1},
+%  (Statement1 = {{lp:_ lp:Arg = lp:Val}}),
+%  coq.say "debug" Arg,
+%  mk_Rnat_proof Arg Arg_nat,
+% std.assert-ok! (coq.typecheck Arg_nat {{Rnat lp:Arg}})
+%   "not the right proof"
 
 ].
-
-pred mk_Rnat_proof i:term o:term.
-
-mk_Rnat_proof {{0}} {{Rnat0}}.
-
-mk_Rnat_proof {{IZR(Z.pos lp:P)}} {{Rnat_cst lp:P}}.
 
 main _L :-
   coq.error [] "Usage: Recursive name equation_1 .. equation_n".
@@ -441,18 +446,45 @@ Recursive (def fib such that fib 0 = 0 /\ (fib 1 = 1) /\
 
 Print fib.
 
+
 Lemma fib0 : fib 0 = 0.
 Proof.
-unfold fib.
-rewrite Rnat_rec_to_nat_rec.
-now rewrite IRN0.
+(* This proof serves as a a workplan for automatic generation in
+  the Elpi command. *)
+assert (tmp3: Z.abs_nat (IRZ 0) = 0%nat).
+  apply (eq_ind_r
+           (fun z => Z.abs_nat z = 0%nat)
+           (eq_refl : Z.abs_nat 0 = 0%nat) (IRZ_IZR _)).
+apply (eq_ind_r
+         (fun n =>
+          nth 0 (nat_rect (fun _ => list R)
+           (0 :: 1 :: nil)
+         (fun _ l => (nth 1 l 0 ::
+                nth 0 l 0 + nth 1 l 0 :: nil)) n) 0 = 0
+         ) (eq_refl : nth 0 (nat_rect (fun _ => list R)
+           (0 :: 1 :: nil)
+         (fun _ l => (nth 1 l 0 ::
+                nth 0 l 0 + nth 1 l 0 :: nil)) 0) 0 = 0) tmp3).
 Qed.
 
 Lemma fib1 : fib 1 = 1.
 Proof.
-unfold fib.
-rewrite Rnat_rec_to_nat_rec.
-now rewrite IRN_pos.
+(* This proof serves as a a workplan for automatic generation in
+  the Elpi command. *)
+assert (tmp3: Z.abs_nat (IRZ 1) = 1%nat).
+  apply (eq_ind_r
+           (fun z => Z.abs_nat z = 1%nat)
+           (eq_refl : Z.abs_nat 1 = 1%nat) (IRZ_IZR _)).
+apply (eq_ind_r
+         (fun n =>
+          nth 0 (nat_rect (fun _ => list R)
+           (0 :: 1 :: nil)
+         (fun _ l => (nth 1 l 0 ::
+                nth 0 l 0 + nth 1 l 0 :: nil)) n) 0 = 1
+         ) (eq_refl : nth 0 (nat_rect (fun _ => list R)
+           (0 :: 1 :: nil)
+         (fun _ l => (nth 1 l 0 ::
+                nth 0 l 0 + nth 1 l 0 :: nil)) 1) 0 = 1) tmp3).
 Qed.
 
 (* This is a first attempt at proving the recursive part of fib's
@@ -501,13 +533,7 @@ unfold fib.
 intros n; set (m := n - 2); intros mnat.
 replace n with (m + 1 + 1) by (unfold m; ring).
 rewrite !Rplus_minus_r.
-(* The next 3 lines should be replaced by rewrite !Rnat_rec_succ but this
-  breaks the user-interface (for now). *)
-rewrite Rnat_rec_succ.
-simpl nth.
-rewrite Rnat_rec_succ.
-simpl nth.
-reflexivity.
+rewrite !Rnat_rec_succ; try reflexivity.
 all: repeat apply Rnat_succ; try assumption.
 Qed.
 
@@ -526,5 +552,5 @@ rewrite IRZ_IZR.
   simpl; ring command leads to a command that takes 3 seconds to
   execute. *)
 simpl; ring_simplify.
-Show.
+easy.
 Qed.
