@@ -467,6 +467,42 @@ Elpi Query
 Recursive (def fib such that fib 0 = 0 /\ (fib 1 = 1) /\
     forall n : R, Rnat (n - 2) -> fib n = fib (n - 2) + fib (n - 1)).
 
+Elpi Query
+  lp:{{ prove_base_case {{0 :: 1 :: nil}} 
+    {{fun (n : nat) (l : list R) => nth 1 l 0 :: nth 0 l 0 + nth 1 l 0 :: nil}}
+    {{fib 1 = 1}} P
+    }}.
+
+Fixpoint shift_seq {A : Type} (default : A) (offset length : nat)
+  (l : list A) (final : list A -> A) :=
+  match length with
+    0%nat =>  final l :: nil
+  | S p => nth (S offset) l default :: shift_seq default (S offset) p l final
+  end.
+
+Lemma shift_seq_prop_rec {A : Type} (default : A) base offset length llength l
+  (f : nat -> A) final:
+  (forall k, (k <= llength)%nat -> nth k l default = f (base + k)%nat) ->
+  (offset + length <= llength)%nat ->
+  (forall k, (k < length)%nat ->
+     nth k (shift_seq default offset length l final) default =
+     f (S base + offset + k)%nat).
+Proof.
+intros lprop.
+revert offset; induction length as [ | len Ih].
+  intros offset k abs; lia.
+intros offset offsetbound k kbound.
+  simpl. (* bug of vscoq: if I write simpl, then remove, the goal window
+            is not a good representation of the state of Coq. *)
+  destruct k as [ | k'].
+    replace (S (base + offset + 0)) with (base + S offset)%nat by ring.
+    apply lprop; lia.
+  rewrite Ih.
+    apply f_equal; ring.
+  lia.
+lia.
+Qed.
+
 Print fib.
 
 
