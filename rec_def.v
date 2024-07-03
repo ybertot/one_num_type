@@ -474,9 +474,9 @@ Elpi Query
     }}.
 
 Fixpoint shift_seq {A : Type} (default : A) (offset length : nat)
-  (l : list A) (final : list A -> A) :=
+  (l : list A) (final : A) :=
   match length with
-    0%nat =>  final l :: nil
+    0%nat =>  final :: nil
   | S p => nth (S offset) l default :: shift_seq default (S offset) p l final
   end.
 
@@ -503,6 +503,66 @@ intros offset offsetbound k kbound.
 lia.
 Qed.
 
+Lemma two_step_ind_aux (body : nat -> R -> R -> R) 
+  (v0 : list R)
+  (f := nat_rect (fun _ => list R) v0
+        (fun n l => shift_seq 0 0 1 l (body (S (S n)) (nth 0 l 0) (nth 1 l 0)))) (n : nat):
+  (1 < n)%nat ->
+   nth 0 (f n) 0 = body n (nth 0 (f (n - 2)%nat) 0) (nth 0 (f (n - 1)%nat) 0).
+Proof.
+destruct n as [ | [ | n]]; try lia; intros _.
+simpl; rewrite Nat.sub_0_r.
+easy.
+Qed.
+
+Fixpoint body_type_aux (k : nat) : Type :=
+  match k with
+  | 0 => R
+  | S p => R -> body_type_aux p
+  end.
+
+Fixpoint full_apply (l : list R) (k : nat) : body_type_aux k -> R :=
+match k return body_type_aux k -> R with
+  0 => fun g => g
+| S p => fun g => (full_apply (List.tl l) p (g (nth 0 l 0)) )
+end.
+
+Fixpoint multi_compose (f : nat -> R) (k : nat) : body_type_aux k -> R :=
+match k return body_type_aux k -> R with
+| 0 => fun g => g
+| S p => fun g => multi_compose (fun x => f (S x)) p (g (f 0%nat))
+end.
+
+Example multi_compose_fib (fib : nat -> R) n :
+  (1 < n)%nat ->
+  multi_compose (fun m => fib (m + (n - 2))%nat) 2 Rplus =
+    fib (n - 2)%nat + fib (n - 1)%nat.
+Proof. 
+intros ngt1; simpl.
+replace (S (n - 2)) with (n - 1)%nat by lia.
+easy.
+Qed.
+
+Lemma k_step_ind_aux (k : nat) (body : nat -> body_type_aux (S k))
+(v0 : list R)
+(f := nat_rect (fun _ => list R) v0
+  (fun n l => shift_seq 0 0 k l (full_apply l (S k)
+     (body (S (k + n)))))) (n : nat):
+    (k < n)%nat ->
+    nth 0 (f n) 0 =
+    multi_compose (fun m => nth 0 (f (m + (n - (S k)))%nat) 0) (S k) (body n).
+Proof.
+revert body f.
+induction k.
+  simpl.
+  intros body; destruct n as [ | n].
+    lia.
+  intros _.
+  simpl.
+  now rewrite Nat.sub_0_r.
+simpl.
+      
+   
 Print fib.
 
 
