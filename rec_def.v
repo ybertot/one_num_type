@@ -120,7 +120,7 @@ Elpi Command Recursive.
 Elpi Accumulate lp:{{
 
 % sorting a list of integers removing duplicates
-pred list_insert i:int i:list int o:list int.
+pred list_insert i:int, i:list int, o:list int.
 
 list_insert I [] [I].
 
@@ -134,7 +134,7 @@ list_insert I [A | L] [A | L1] :-
   
 % sorting a list of integers: the main predicate
 
-pred list_sort i:list int o:list int.
+pred list_sort i:list int, o:list int.
 list_sort [] [].
 
 list_sort [A | L] L1 :-
@@ -152,7 +152,7 @@ list_max [A, _B | L] V :-
 
 % sorting an association list for values associated to integers
 
-pred alist_insert i:pair int term i:list (pair int term)
+pred alist_insert i:pair int term, i:list (pair int term),
   o:list (pair int term).
 
 alist_insert (pr I _) [pr I _ | _] _ :- !,
@@ -166,7 +166,7 @@ alist_insert (pr I V) [pr I2 V2 | L] [pr I2 V2 | L2] :-
 
 alist_insert (pr I V) [] [pr I V].
 
-pred alist_sort i:list (pair int term) o:list (pair int term).
+pred alist_sort i:list (pair int term), o:list (pair int term).
 
 alist_sort [] [].
 
@@ -174,49 +174,44 @@ alist_sort [A | L] L2 :-
   alist_insert A L L2.
 
 % converting a coq object of type positive to a builtin int
-pred positive_to_int i:term o:int.
+pred positive_to_int i:term, o:int.
 % TODO regarder dans algebra tactics
 positive_to_int {{xH}} 1 :- !.
 
 positive_to_int {{:coq xI lp:X}} N1 :-
-    positive_to_int X N,
+  positive_to_int X N,
   N1 is 2 * N + 1.
 
 % TODO
-positive_to_int XO N1 :-
-  coq.locate "xO" Gref,
-  XO = app[global Gref, X],
+positive_to_int {{xO lp:X}} N1 :-
   positive_to_int X N,
   N1 is 2 * N.
 
 % converting a real number to an int
-pred real_to_int i:term o:int.
+pred real_to_int i:term, o:int.
 
 % actually, this works for any positive number encapsulated in two unary
 % functions
-real_to_int (app [Izr, app [Zpos, P]]) I :-
-  Izr = {{ IZR}},
-  Zpos = {{ Z.pos}},
+real_to_int {{IZR (Z.pos lp:P)}} I :-
   positive_to_int P I.
 
-real_to_int Zero 0 :-
-  Zero = {{ 0}}.
+real_to_int {{0}} 0.
 
 % the inverse predicate, int_to_real, produces a real number that is
 % the representation of the integer.
 
-pred int_to_real i:int o:term.
+pred int_to_real i:int, o:term.
 
 int_to_real I {{IZR lp:Iz}} :-
   int_to_Z I Iz.
 
-pred int_to_Z i:int o:term.
+pred int_to_Z i:int, o:term.
 int_to_Z 0 {{Z0}} :- !.
 
 int_to_Z I {{Z.pos lp:Ip}} :-
   int_to_positive I Ip.
 
-pred int_to_positive i:int o:term.
+pred int_to_positive i:int, o:term.
 int_to_positive 1 {{xH}}:- !.
 
 int_to_positive N (app[C, Td]) :-
@@ -226,7 +221,7 @@ int_to_positive N (app[C, Td]) :-
   choose_pos_constructor.aux B C,
   int_to_positive Nd Td.
 
-pred int_to_nat i:int o:term.
+pred int_to_nat i:int, o:term.
 int_to_nat 0 {{O}} :- !.
 
 int_to_nat N {{S lp:N'}} :-
@@ -236,7 +231,7 @@ int_to_nat N {{S lp:N'}} :-
     int_to_nat N1 N'
   ].
   
-pred choose_pos_constructor.aux i:int o:term.
+pred choose_pos_constructor.aux i:int, o:term.
 
 choose_pos_constructor.aux 1 {{xI}} :- !.
 
@@ -245,7 +240,8 @@ choose_pos_constructor.aux 0 {{xO}} :- !.
 choose_pos_constructor.aux _ _ :-
   coq.error "choose_pos_constructor.aux only accepts 0 or 1 as input".
 
-pred replace_rec_call_by_seq_nth i:int i:term i:term i:term i:term o:term.
+pred replace_rec_call_by_seq_nth i:int, i:term, i:term, i:term ,i:term,
+  o:term.
 
 % replace (F (N - k)) by (nth (L - k) V 0) everywhere in term A
 % But the subtraction (L - k) is actually computed and a number of type nat,
@@ -265,11 +261,11 @@ replace_rec_call_by_seq_nth L F N V A B :-
     B = app[global Nth, global Rtype, I, V, Zero]
   ].
 
-pred make_one_spec i:term i:term o:pair int term.
+pred make_one_spec i:term, i:term, o:pair int term.
 make_one_spec V1 V2 (pr I1 V2) :-
   real_to_int V1 I1,!.
 
-pred list_app i:list (pair int term) i:list (pair int term)
+pred list_app i:list (pair int term), i:list (pair int term),
   o:list (pair int term).
 
 list_app [] L2 L2.
@@ -277,7 +273,7 @@ list_app [] L2 L2.
 list_app [A | L1] L2 [A | L3] :-
   list_app L1 L2 L3.
 
-pred fetch_recursive_equation i:term o:list term.
+pred fetch_recursive_equation i:term, o:list term.
 
 fetch_recursive_equation X [X] :-
   X = (prod _ _ _), !.
@@ -300,7 +296,7 @@ fetch_recursive_equation A _ :-
    "f 0 = v1 /\ f 1 = v2  or of the form forall n, .. -> f n = V2"
    "but found expressions of another form".
 
-pred collect_specs i:term i:term o:list (pair int term).
+pred collect_specs i:term, i:term, o:list (pair int term).
 
 collect_specs F (app [Eq, _, app [F, V1], V2]) [S] :-
 % TODO: ask about placing directly {{ eq}} above.
@@ -322,7 +318,7 @@ collect_specs F (app [And, Code1, Code2]) Specs :-
     std.append Specs1 Specs2 Specs
   ].
 
-pred check_all_present i:int i:list (pair int term) o:int.
+pred check_all_present i:int, i:list (pair int term), o:int.
 
 check_all_present N [] N.
 
@@ -334,14 +330,15 @@ check_all_present N [pr N _ | L] N2 :-
 check_all_present N [pr _ _ | _] _ :-
   coq.error "missing value for" N.
 
-pred make_initial_list i:list (pair int term) o:term.
+pred make_initial_list i:list (pair int term), o:term.
 
 make_initial_list [] {{ @nil R}}.
 
 make_initial_list [pr _ V | L] (app [{{ @cons R}}, V, Tl]) :-
   make_initial_list L Tl.
 
-pred make_recursive_step_list i:(term -> term) i:int i:int o:(term -> term).
+pred make_recursive_step_list i:(term -> term), i:int, i:int,
+   o:(term -> term).
 
 make_recursive_step_list Func 0 _Rank R :-
   pi V\
@@ -364,7 +361,7 @@ make_recursive_step_list Func N Rank R :-
 % The second argument has to be a sequence of nested implications whose
 % conclusion is an equality.  The instances we are looking for have to be
 % of the form (F (n - k)).  The k values must be real-positive numbers.
-pred eat_implications i:int i:term, i:term, i:term, o:term.
+pred eat_implications i:int, i:term, i:term, i:term, o:term.
 
 eat_implications Order F N (prod _ _ G) R :-
   %(pi x\ not(occurs x (G x))),
@@ -459,12 +456,6 @@ std.do! [
 
 ].
 
-pred mk_Rnat_proof i:term o:term.
-
-mk_Rnat_proof {{0}} {{Rnat0}}.
-
-mk_Rnat_proof {{IZR(Z.pos lp:P)}} {{Rnat_cst lp:P}}.
-
 main _L :-
   coq.error [] "Usage: Recursive name equation_1 .. equation_n".
 
@@ -504,98 +495,10 @@ Recursive (def fib such that fib 0 = 0 /\ fib 1 = 1 /\
 
 Check fib_eqn.
 
-Lemma fib_eqn : (fib 0 = 0 /\ fib 1 = 1 /\
-  (forall n, Rnat (n - 2) -> fib n = fib (n - 2) + fib (n - 1))).
-Proof.
-prove_recursive_specification fib 2%Z.
-Qed.
-
 Recursive (def trib such that trib 0 = 0 /\ trib 1 = 1 /\ trib 2 = 2 /\
   forall n, Rnat (n - 3) -> trib n = trib (n - 3) + trib (n - 2)).
 
-Lemma trib_eqn : trib 0 = 0 /\ trib 1 = 1 /\ trib 2 = 2 /\
-  forall n, Rnat (n - 3) -> trib n = trib (n - 3) + trib (n - 2).
-Proof.
-prove_recursive_specification trib 3%Z.
-Qed.
-
-Print fib.
-Check fib_eqn.
-
-
-Lemma fib0 : fib 0 = 0.
-Proof. base_case fib. Qed.
-
-Lemma fib1 : fib 1 = 1.
-Proof. base_case fib. Qed.
-
-Lemma simple_example0 : simple_example 0 = 0.
-Proof. base_case simple_example. Qed.
-
-
-(* This is a first attempt at proving the recursive part of fib's
-  definition, but it was discovered later that an induction proof
-  is not needed.*)
-
-Lemma fib_succ : forall n, Rnat (n - 2) ->
-  fib n = fib (n - 2) + fib (n - 1).
-Proof.
-intros n nnat.
-unfold fib, Rnat_rec.
-set (base := IRN (n - 2)).
-repeat (rewrite (IRN_to_S n 2);[ | reflexivity | assumption ]).
-rewrite (IRN_to_S_top n 2);[| reflexivity | assumption].
-reflexivity.
-Qed.
-
-unfold fib.
-set (step := fun _ v => _ :: _ + _ :: _).
-
-intros n.
-enough (main : forall k, Rnat k -> Rnat_rec (0 :: 1 :: nil)
-               step k =
-   (fib k :: fib (k + 1) :: nil)).
-  replace n with (n - 2 + 1 + 1) at 2 by ring.
-  replace (n - 1) with (n - 2 + 1) by ring.
-  intros n2nat.
-  rewrite 2!Rnat_rec_succ; simpl.
-  all:try (repeat apply Rnat_succ; exact n2nat).
-  now rewrite main; simpl.
-intros k; induction 1 as [ | k knat Ih].
-  rewrite Rnat_rec0.
-  rewrite fib0.
-  replace (0 + 1) with 1 by ring.
-  now rewrite fib1.
-rewrite Rnat_rec_succ; auto.
-rewrite Ih.
-unfold step; simpl.
-apply f_equal.
-unfold fib at 3.
-rewrite Rnat_rec_succ; [ | repeat apply Rnat_succ; apply knat].
-rewrite Rnat_rec_succ; [ | repeat apply Rnat_succ; apply knat].
-simpl.
-fold step.
-now rewrite Ih; simpl.
-Qed.
-
-(* This one is based on the discovery that a proof by induction is actually *)
-(* not needed. *)
-Lemma fib_succ2 : forall n, Rnat (n - 2) ->
-  fib n = fib (n - 2) + fib (n - 1).
-Proof.
-unfold fib.
-intros n; set (m := n - 2); intros mnat.
-replace n with (m + 1 + 1) by (unfold m; ring).
-rewrite !Rplus_minus_r.
-(* The next 3 lines should be replaced by rewrite !Rnat_rec_succ but this
-  breaks the user-interface (for now). *)
-rewrite Rnat_rec_succ.
-simpl nth.
-rewrite Rnat_rec_succ.
-simpl nth.
-reflexivity.
-all: repeat apply Rnat_succ; try assumption.
-Qed.
+Check trib_eqn.
 
 (* This example puts the user interface under stress, as it returs
   a tree of additions, where all the leaves are either 1 or (0 + 1).
@@ -603,7 +506,7 @@ Qed.
 Lemma fib20 : fib 20 = 6765.
 Proof.
 unfold fib.
-rewrite Rnat_rec_to_nat_rec.
+unfold Rnat_rec.
 unfold IRN.
 rewrite IRZ_IZR.
 (* If the simpl command is placed alone in a command and its result
@@ -612,5 +515,5 @@ rewrite IRZ_IZR.
   simpl; ring command leads to a command that takes 3 seconds to
   execute. *)
 simpl; ring_simplify.
-Show.
+reflexivity.
 Qed.
