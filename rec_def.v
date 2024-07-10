@@ -1,6 +1,7 @@
 From elpi Require Import elpi.
 Require Import List Reals ClassicalEpsilon Lia Lra.
 Require Import Wellfounded.
+
 Require Import R_subsets.
 
 Open Scope R_scope.
@@ -39,10 +40,80 @@ Qed.
   to restrict usage to the Rnat subset.  It is not certain this
   lemma will be used much, since unfold does the same trick.
   *)
-Lemma Rnat_rec_to_nat_rec {A : Type} (v0 : A) (stf : R -> A -> A) (x : R) :
-   Rnat_rec v0 stf x = 
-   nat_rect (fun _ => A) v0 (fun x => stf (INR x)) (IRN x).
-Proof. easy. Qed.
+Lemma Rnat_rec_to_nat_rec_p {A : Type} (v0 : A) (stf : R -> A -> A)
+  (p : positive) :
+   Rnat_rec v0 stf (IZR (Z.pos p)) =
+   nat_rect (fun _ => A) v0 (fun x => stf (INR x))
+     (Z.abs_nat (Z.pos p)).
+Proof.
+unfold Rnat_rec, IRN.
+now rewrite IRZ_IZR.
+Qed.
+
+Lemma IRN_to_S (r : R) (p : Z) (q : Z):
+  (q < p)%Z ->
+  Rnat (r - IZR p) -> IRN (r - IZR q) =
+     (Z.abs_nat (p - q) + IRN (r - IZR p))%nat.
+Proof.
+intros qltp rmpnat.
+unfold IRN.
+destruct (Rnat_exists_nat (r - IZR p)) as [v vq].
+assert (rq : r = IZR (Z.of_nat v + p)).
+  apply (Rplus_eq_reg_r (- (IZR p))).
+  rewrite <- opp_IZR at 2.
+  rewrite <- plus_IZR.
+  replace (Z.of_nat v + p + - p)%Z with (Z.of_nat v) by ring.
+  exact vq.
+rewrite <- Zabs2Nat.inj_add.
+    rewrite rq.
+    rewrite <- minus_IZR, IRZ_IZR.
+    rewrite <- minus_IZR.
+    replace (Z.of_nat v + p - p)%Z with (Z.of_nat v) by ring.
+    rewrite IRZ_IZR.
+    apply f_equal.
+    ring.
+  lia.
+rewrite vq, IRZ_IZR.
+apply Nat2Z.is_nonneg.
+Qed.
+
+Lemma IRN_to_S_top (r : R) (p : Z) :
+  (0 < p)%Z ->
+  Rnat (r - IZR p) -> IRN r = (Z.abs_nat p + IRN (r - IZR p))%nat.
+Proof.
+intros pgt0 rmpnat.
+unfold IRN.
+destruct (Rnat_exists_nat (r - IZR p)) as [v vq].
+  assert (rq : r = IZR (Z.of_nat v + p)).
+  apply (Rplus_eq_reg_r (- (IZR p))).
+  rewrite <- opp_IZR at 2.
+  rewrite <- plus_IZR.
+  replace (Z.of_nat v + p + - p)%Z with (Z.of_nat v) by ring.
+  exact vq.
+rewrite <- Zabs2Nat.inj_add.
+    rewrite rq.
+    rewrite <- minus_IZR, IRZ_IZR.
+    replace (Z.of_nat v + p - p)%Z with (Z.of_nat v) by ring.
+    rewrite IRZ_IZR.
+    apply f_equal.
+    ring.
+  lia.
+rewrite vq, IRZ_IZR.
+apply Nat2Z.is_nonneg.
+Qed.
+
+
+Ltac prove_recursive_specification T z := unfold T;
+  repeat split;
+    (now (rewrite Rnat_rec0 || rewrite Rnat_rec_to_nat_rec_p)) ||
+    (let N := fresh "n" in let Nnat := fresh "nnat" in
+     let Protector := fresh "protect_base" in
+     unfold Rnat_rec; intros N Nat;
+     set (Protector := IRN (N - IZR z));
+     repeat (rewrite (IRN_to_S N z);[ | reflexivity | assumption]);
+     rewrite (IRN_to_S_top N z);[ | reflexivity | assumption];
+     reflexivity).
+
 
 Elpi Command Recursive.
 
@@ -105,9 +176,7 @@ alist_sort [A | L] L2 :-
 % converting a coq object of type positive to a builtin int
 pred positive_to_int i:term o:int.
 % TODO regarder dans algebra tactics
-positive_to_int XH 1 :-
-  coq.locate "xH" Gref,
-  XH = global Gref.
+positive_to_int {{xH}} 1 :- !.
 
 positive_to_int {{:coq xI lp:X}} N1 :-
     positive_to_int X N,
@@ -137,24 +206,18 @@ real_to_int Zero 0 :-
 % the representation of the integer.
 
 pred int_to_real i:int o:term.
-int_to_real 0 T :-
-  std.do! [
-    coq.locate "IZR" Izr_gref,
-    coq.locate "Z0" Zero_gref,
-    T = app[global Izr_gref, global Zero_gref]
-  ].
 
-int_to_real N T :-
-  int_to_positive N NT,
-  std.do![
-    coq.locate "IZR" Izr_gref,
-    coq.locate "Z.pos" Zpos_gref,
-    T = app[global Izr_gref, app[global Zpos_gref, NT]]
-  ].
+int_to_real I {{IZR lp:Iz}} :-
+  int_to_Z I Iz.
+
+pred int_to_Z i:int o:term.
+int_to_Z 0 {{Z0}} :- !.
+
+int_to_Z I {{Z.pos lp:Ip}} :-
+  int_to_positive I Ip.
 
 pred int_to_positive i:int o:term.
-int_to_positive 1 (global Hgref) :-
-  coq.locate "xH" Hgref.
+int_to_positive 1 {{xH}}:- !.
 
 int_to_positive N (app[C, Td]) :-
   1 < N,
@@ -164,26 +227,20 @@ int_to_positive N (app[C, Td]) :-
   int_to_positive Nd Td.
 
 pred int_to_nat i:int o:term.
-int_to_nat 0 (global Oref) :-
-  coq.locate "O" Oref.
+int_to_nat 0 {{O}} :- !.
 
-int_to_nat N (app [global Sref, N']) :-
+int_to_nat N {{S lp:N'}} :-
   std.do! [
     0 < N,
-    coq.locate "S" Sref,
     N1 is N - 1,
     int_to_nat N1 N'
   ].
   
 pred choose_pos_constructor.aux i:int o:term.
 
-choose_pos_constructor.aux 1 T :-
-  coq.locate "xI" XI_gref,
-  T = global XI_gref.
+choose_pos_constructor.aux 1 {{xI}} :- !.
 
-choose_pos_constructor.aux 0 T :-
-  coq.locate "xO" XI_gref,
-  T = global XI_gref.
+choose_pos_constructor.aux 0 {{xO}} :- !.
 
 choose_pos_constructor.aux _ _ :-
   coq.error "choose_pos_constructor.aux only accepts 0 or 1 as input".
@@ -302,43 +359,33 @@ make_recursive_step_list Func N Rank R :-
            Func' V] = R V
   ].
 
-
-
-% make a proof that the input real number is in the Rnat subset
-pred mk_Rnat_proof i:term o:term.
-
-mk_Rnat_proof {{0}} {{Rnat0}}.
-
-mk_Rnat_proof {{IZR(Z.pos lp:P)}} {{Rnat_cst lp:P}}.
-
 % QUIRKY: performs part of the jobs of finding the uses of the function
 % given as first argument inside the second argument.
 % The second argument has to be a sequence of nested implications whose
 % conclusion is an equality.  The instances we are looking for have to be
 % of the form (F (n - k)).  The k values must be real-positive numbers.
-pred eat_implications i:term, o:term.
+pred eat_implications i:int i:term, i:term, i:term, o:term.
 
-eat_implications (prod _ _ G) R :-
+eat_implications Order F N (prod _ _ G) R :-
   %(pi x\ not(occurs x (G x))),
   (pi x y\ G x = G y), !,
   pi h \ 
-   eat_implications (G h) R.
+   eat_implications Order F N (G h) R.
 
-eat_implications {{_ = lp:RHS}} RHS.
-
-pred build_step_function i:int, i:term, i:term, i:term, o:term.
-
-build_step_function Order F N RHS STP :-
+eat_implications Order F N G R :-
    std.do! [
-      % This should recognize instance of (F (N - k)) and store k in the list
+    %$  G = {{_ = lp:RHS}}
+      G = app [_, _, _, RHS],
+      % This should recognize (f (n - k)) and store k in the list
       (pi A E Op V\
          fold-map (app [F, app[Op, V, E]]) A
                   (app [F, app[Op, V, E]]) [E | A])
         =>
-      (fold-map RHS [] _ Uses),
+      fold-map RHS [] _ Uses,
       std.map Uses (real_to_int) Uses_int,
-      list_max Uses_int L,
-            coq.say "arrived here",
+      list_sort Uses_int Srt_uses,
+% TODO: just take the last element
+      list_max Srt_uses L,
 % Need to generate an abstraction that gives the name V to
 % the result of the recursive call
 std.assert! (L = Order)
@@ -349,25 +396,26 @@ std.assert! (L = Order)
          copy RHS (RHS' V)),
       L1 is L - 1,
       make_recursive_step_list RHS' L1 0 RecList,
-     STP = (fun `v` {{list R}} RecList),
-           coq.say "arrived here"
+     R = (fun `v` {{list R}} RecList),
 ].
 
 % The input must have the form:
 %  fun f => f 0 = V1 /\ ... f k = Vk /\ forall n, ... -> ... -> f n = E
 % Displays the ordered sequence of k integers (in builtin type int), such
 % that (f (n - k)) appears in E.
-pred find_uses i:term, o:term.
+pred find_uses i:term, o:term, o:term.
 
-find_uses (fun N Ty Bo) R :-
+find_uses (fun N Ty Bo) R Order_Z :-
   pi f\
     decl f N Ty => % let one call the pretty printer and type checker inside
-    find_uses_of f (Bo f) R.  % R does not use f recursively, but rather
-                              % the nth value of its recursion history
+    find_uses_of f (Bo f) R Order_Z. 
+                              % R does not use f recursively, but rather
+                              % the value of its recursion history at depth
+                              % Order_Z (which must be a cic term of type Z)
 
-pred find_uses_of i:term, i:term, o:term.
+pred find_uses_of i:term, i:term, o:term, o:term.
 
-find_uses_of F Spec Final :-
+find_uses_of F Spec Final Order_Z :-
   std.do! [
     collect_specs F Spec Sps,
     alist_sort Sps Sps2,
@@ -380,52 +428,42 @@ find_uses_of F Spec Final :-
        "Expecting exactly one recursive equation",
     (pi n\
       decl n Scalar_name Sc_type =>
-      (eat_implications (F1 n) (RHS n),
-       build_step_function Order F n (RHS n) (Main_expression n))),
+      eat_implications Order F n (F1 n) (Main_expression n)),
     %Final = {{Rnat_rec lp:ListSps (fun x : R => lp:(Main_expression x)) }},
     Final = {{ fun r : R => nth 0 
                 (Rnat_rec lp:ListSps lp:{{ fun Scalar_name {{R}}
-                              Main_expression}} r) 0}}
+                              Main_expression}} r) 0}},
+    int_to_Z Order Order_Z
   ].
-
-
-pred prove_base_case i:term i:term i:term o:term.
-
-prove_base_case ListSps STP {{lp:F (IZR lp:Z) = lp:V}} Prf :-
-  real_to_int {{IZR lp:Z}} I,
-  int_to_nat I N,
-  Prf1 =
-    {{eq_ind_r (fun z => Z.abs_nat z = lp:N)
-       (eq_refl : Z.abs_nat lp:Z = lp:N) (IRZ_IZR lp:Z)}},
-  Prf =
-    {{eq_ind_r (fun n =>
-        nth 0 (nat_rect (fun _ => list R)
-                 lp:ListSps lp:STP n) 0 = lp:V)
-        (eq_refl : nth 0 (nat_rect (fun _ => list R)
-            lp:ListSps lp:STP lp:N) 0 = lp:V) lp:Prf1}},
-  std.assert-ok! (coq.typecheck Prf {{lp:F (IZR lp:Z) = lp:V}})
-     "failed to prove a base case".
 
 main [trm (fun N _ _ as Abs_eqn)] :-
 std.do! [
-  find_uses Abs_eqn Final,
-  % std.assert! (find_uses Abs_eqn Final) "Oops",
+  find_uses Abs_eqn Final Order,
   std.assert-ok! (coq.typecheck Final Ty) "Type error",
-  coq.name->id N Name,
-  coq.env.add-const Name Final Ty @transparent! C,
+  coq.name->id N N_id,
+  Eqs_N_id is N_id ^ "_eqn",
+  coq.env.add-const N_id Final Ty @transparent! C,
   coq.say "Defined" C,
 
-%  (Abs_eqn = fun _ _ F),
-% (Statement = (F (global (const C)))),
-% (Statement = {{lp:Statement1 /\ lp:_Statement2}}),
-%  coq.say "statement to prove" {coq.term->string Statement1},
-%  (Statement1 = {{lp:_ lp:Arg = lp:Val}}),
-%  coq.say "debug" Arg,
-%  mk_Rnat_proof Arg Arg_nat,
-% std.assert-ok! (coq.typecheck Arg_nat {{Rnat lp:Arg}})
-%   "not the right proof"
+  (Abs_eqn = fun _ _ F),
+  (Statement = (F (global (const C)))),
+
+  coq.typecheck Eq_prf Statement ok,
+  coq.ltac.collect-goals Eq_prf [G1] _ShelvedGs,
+  coq.ltac.open(coq.ltac.call
+    "prove_recursive_specification"
+    [trm (global (const C)), trm Order])
+    G1 [],
+   coq.env.add-const Eqs_N_id Eq_prf _ @opaque! C_eqn,
+   coq.say "Defined" C_eqn
 
 ].
+
+pred mk_Rnat_proof i:term o:term.
+
+mk_Rnat_proof {{0}} {{Rnat0}}.
+
+mk_Rnat_proof {{IZR(Z.pos lp:P)}} {{Rnat_cst lp:P}}.
 
 main _L :-
   coq.error [] "Usage: Recursive name equation_1 .. equation_n".
@@ -459,152 +497,41 @@ Notation "'def' id 'such' 'that' bo" := (fun id => bo)
 Recursive (def simple_example such that simple_example 0 = 0 /\
    forall n, Rnat (n - 1) -> simple_example n = simple_example (n - 1) + 1).
 
-Elpi Query
-  lp:{{ prove_base_case {{0 :: nil}}
-     {{fun (n : nat) (l : list R) => nth 0 l 0 + 1 :: nil}}
-     {{simple_example 0 = 0}} P}}.
+Check simple_example_eqn.
 
-Recursive (def fib such that fib 0 = 0 /\ (fib 1 = 1) /\
+Recursive (def fib such that fib 0 = 0 /\ fib 1 = 1 /\
     forall n : R, Rnat (n - 2) -> fib n = fib (n - 2) + fib (n - 1)).
 
-Elpi Query
-  lp:{{ prove_base_case {{0 :: 1 :: nil}} 
-    {{fun (n : nat) (l : list R) => nth 1 l 0 :: nth 0 l 0 + nth 1 l 0 :: nil}}
-    {{fib 1 = 1}} P
-    }}.
+Check fib_eqn.
 
-Fixpoint shift_seq {A : Type} (default : A) (offset length : nat)
-  (l : list A) (final : A) :=
-  match length with
-    0%nat =>  final :: nil
-  | S p => nth (S offset) l default :: shift_seq default (S offset) p l final
-  end.
-
-Lemma shift_seq_prop_rec {A : Type} (default : A) base offset length llength l
-  (f : nat -> A) final:
-  (forall k, (k <= llength)%nat -> nth k l default = f (base + k)%nat) ->
-  (offset + length <= llength)%nat ->
-  (forall k, (k < length)%nat ->
-     nth k (shift_seq default offset length l final) default =
-     f (S base + offset + k)%nat).
+Lemma fib_eqn : (fib 0 = 0 /\ fib 1 = 1 /\
+  (forall n, Rnat (n - 2) -> fib n = fib (n - 2) + fib (n - 1))).
 Proof.
-intros lprop.
-revert offset; induction length as [ | len Ih].
-  intros offset k abs; lia.
-intros offset offsetbound k kbound.
-  simpl. (* bug of vscoq: if I write simpl, then remove, the goal window
-            is not a good representation of the state of Coq. *)
-  destruct k as [ | k'].
-    replace (S (base + offset + 0)) with (base + S offset)%nat by ring.
-    apply lprop; lia.
-  rewrite Ih.
-    apply f_equal; ring.
-  lia.
-lia.
+prove_recursive_specification fib 2%Z.
 Qed.
 
-Lemma two_step_ind_aux (body : nat -> R -> R -> R) 
-  (v0 : list R)
-  (f := nat_rect (fun _ => list R) v0
-        (fun n l => shift_seq 0 0 1 l (body (S (S n)) (nth 0 l 0) (nth 1 l 0)))) (n : nat):
-  (1 < n)%nat ->
-   nth 0 (f n) 0 = body n (nth 0 (f (n - 2)%nat) 0) (nth 0 (f (n - 1)%nat) 0).
+Recursive (def trib such that trib 0 = 0 /\ trib 1 = 1 /\ trib 2 = 2 /\
+  forall n, Rnat (n - 3) -> trib n = trib (n - 3) + trib (n - 2)).
+
+Lemma trib_eqn : trib 0 = 0 /\ trib 1 = 1 /\ trib 2 = 2 /\
+  forall n, Rnat (n - 3) -> trib n = trib (n - 3) + trib (n - 2).
 Proof.
-destruct n as [ | [ | n]]; try lia; intros _.
-simpl; rewrite Nat.sub_0_r.
-easy.
+prove_recursive_specification trib 3%Z.
 Qed.
 
-Fixpoint body_type_aux (k : nat) : Type :=
-  match k with
-  | 0 => R
-  | S p => R -> body_type_aux p
-  end.
-
-Fixpoint full_apply (l : list R) (k : nat) : body_type_aux k -> R :=
-match k return body_type_aux k -> R with
-  0 => fun g => g
-| S p => fun g => (full_apply (List.tl l) p (g (nth 0 l 0)) )
-end.
-
-Fixpoint multi_compose (f : nat -> R) (k : nat) : body_type_aux k -> R :=
-match k return body_type_aux k -> R with
-| 0 => fun g => g
-| S p => fun g => multi_compose (fun x => f (S x)) p (g (f 0%nat))
-end.
-
-Example multi_compose_fib (fib : nat -> R) n :
-  (1 < n)%nat ->
-  multi_compose (fun m => fib (m + (n - 2))%nat) 2 Rplus =
-    fib (n - 2)%nat + fib (n - 1)%nat.
-Proof. 
-intros ngt1; simpl.
-replace (S (n - 2)) with (n - 1)%nat by lia.
-easy.
-Qed.
-
-Lemma k_step_ind_aux (k : nat) (body : nat -> body_type_aux (S k))
-(v0 : list R)
-(f := nat_rect (fun _ => list R) v0
-  (fun n l => shift_seq 0 0 k l (full_apply l (S k)
-     (body (S (k + n)))))) (n : nat):
-    (k < n)%nat ->
-    nth 0 (f n) 0 =
-    multi_compose (fun m => nth 0 (f (m + (n - (S k)))%nat) 0) (S k) (body n).
-Proof.
-revert body f.
-induction k.
-  simpl.
-  intros body; destruct n as [ | n].
-    lia.
-  intros _.
-  simpl.
-  now rewrite Nat.sub_0_r.
-simpl.
-      
-   
 Print fib.
+Check fib_eqn.
 
 
 Lemma fib0 : fib 0 = 0.
-Proof.
-(* This proof serves as a a workplan for automatic generation in
-  the Elpi command. *)
-assert (tmp3: Z.abs_nat (IRZ 0) = 0%nat).
-  apply (eq_ind_r
-           (fun z => Z.abs_nat z = 0%nat)
-           (eq_refl : Z.abs_nat 0 = 0%nat) (IRZ_IZR _)).
-apply (eq_ind_r
-         (fun n =>
-          nth 0 (nat_rect (fun _ => list R)
-           (0 :: 1 :: nil)
-         (fun _ l => (nth 1 l 0 ::
-                nth 0 l 0 + nth 1 l 0 :: nil)) n) 0 = 0
-         ) (eq_refl : nth 0 (nat_rect (fun _ => list R)
-           (0 :: 1 :: nil)
-         (fun _ l => (nth 1 l 0 ::
-                nth 0 l 0 + nth 1 l 0 :: nil)) 0) 0 = 0) tmp3).
-Qed.
+Proof. base_case fib. Qed.
 
 Lemma fib1 : fib 1 = 1.
-Proof.
-(* This proof serves as a a workplan for automatic generation in
-  the Elpi command. *)
-assert (tmp3: Z.abs_nat (IRZ 1) = 1%nat).
-  apply (eq_ind_r
-           (fun z => Z.abs_nat z = 1%nat)
-           (eq_refl : Z.abs_nat 1 = 1%nat) (IRZ_IZR _)).
-apply (eq_ind_r
-         (fun n =>
-          nth 0 (nat_rect (fun _ => list R)
-           (0 :: 1 :: nil)
-         (fun _ l => (nth 1 l 0 ::
-                nth 0 l 0 + nth 1 l 0 :: nil)) n) 0 = 1
-         ) (eq_refl : nth 0 (nat_rect (fun _ => list R)
-           (0 :: 1 :: nil)
-         (fun _ l => (nth 1 l 0 ::
-                nth 0 l 0 + nth 1 l 0 :: nil)) 1) 0 = 1) tmp3).
-Qed.
+Proof. base_case fib. Qed.
+
+Lemma simple_example0 : simple_example 0 = 0.
+Proof. base_case simple_example. Qed.
+
 
 (* This is a first attempt at proving the recursive part of fib's
   definition, but it was discovered later that an induction proof
@@ -613,6 +540,14 @@ Qed.
 Lemma fib_succ : forall n, Rnat (n - 2) ->
   fib n = fib (n - 2) + fib (n - 1).
 Proof.
+intros n nnat.
+unfold fib, Rnat_rec.
+set (base := IRN (n - 2)).
+repeat (rewrite (IRN_to_S n 2);[ | reflexivity | assumption ]).
+rewrite (IRN_to_S_top n 2);[| reflexivity | assumption].
+reflexivity.
+Qed.
+
 unfold fib.
 set (step := fun _ v => _ :: _ + _ :: _).
 
@@ -652,7 +587,13 @@ unfold fib.
 intros n; set (m := n - 2); intros mnat.
 replace n with (m + 1 + 1) by (unfold m; ring).
 rewrite !Rplus_minus_r.
-rewrite !Rnat_rec_succ; try reflexivity.
+(* The next 3 lines should be replaced by rewrite !Rnat_rec_succ but this
+  breaks the user-interface (for now). *)
+rewrite Rnat_rec_succ.
+simpl nth.
+rewrite Rnat_rec_succ.
+simpl nth.
+reflexivity.
 all: repeat apply Rnat_succ; try assumption.
 Qed.
 
@@ -671,5 +612,5 @@ rewrite IRZ_IZR.
   simpl; ring command leads to a command that takes 3 seconds to
   execute. *)
 simpl; ring_simplify.
-easy.
+Show.
 Qed.
