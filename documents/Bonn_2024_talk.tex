@@ -18,7 +18,7 @@
 \begin{frame}
 \frametitle{The context}
 \begin{itemize}
-\item Type theory base theorem provers are increasingly used for mathematics
+\item Type theory based theorem provers are increasingly used for mathematics
 \item Mathematical Components, Mathlib, Isabelle's AFP, etc,
 are directed at experts
 \item This talks concentrates on a different mathematical audience: early
@@ -28,7 +28,7 @@ are directed at experts
 \item The language is not the only problem, the material may also be an issue
 \item Strong contention against the natural numbers
 \end{itemize}
-\item Typing helps, but not the type of natural numbers
+\item Typing helps young mathematicians, but not the type of natural numbers
 \end{itemize}
 \end{frame}
 \begin{frame}
@@ -47,7 +47,7 @@ are directed at experts
 \item The status of function/constructor {\tt S} is difficult to grasp.
 \item In Coq, {\tt S 4} and {\tt 5} and interchangeable,
    but\\ {\tt S x} and {\tt x + 1} are not
-\item Inductive types distort the notion fo {\sl computation}
+\item Inductive types distort the notion of {\sl computation}
 \item Too much cognitive load for struggling students
 \end{itemize}
 \end{itemize}
@@ -55,7 +55,7 @@ are directed at experts
 \begin{frame}
 \frametitle{Numbers in the mind of math beginners}
 \begin{itemize}
-\item Starting at age 12, kids probably know about integers, rational, and
+\item Starting at age 12, kids probably know about integer, rational, and
 real numbers
 \item \(3 - 5\) exists as a number, it is not 0
 \item Computing \(127 - 42\) yields a natural number, \(3 - 5\) an integer,
@@ -256,32 +256,48 @@ also be proved
 \item recursive sequences are also a typical introductory subject
 \item As an illustration, let us consider the {\em Fibonacci} sequence\\
 {\em The Fibonacci sequence is the function \(F\) such that \(F_0= 0\), \(F_1=1\), and \(F_{n+2} = F_{n} + F_{n + 1}\) for every natural number \(n\)}
-\item Here we will miss specific syntax for recursive definition
 \item Proof by induction and the defining equations are enough to
 {\em study} a sequence
 \item But {\em def{}ining} is still needed
+\item Solution: define a recursive definition command using Elpi
 \end{itemize}
 \end{frame}
 \begin{frame}[fragile]
 \frametitle{Definition of recursive functions}
 \begin{itemize}
 \item We can use a {\em recursor}, mirror of the recursor on natural numbers
-\item Provide different recursors for different recursion depths
+\item {\tt Rnat\_rec : ?A -> (R -> ?A -> ?A) -> R -> ?A}
+\item Multi-step récursion can be implemented by using tuples of the
+  right size
 \end{itemize}
 \begin{small}
 \begin{alltt}
-Definition fibr := Rnat_rect_2 0 1
-   (fun n fibr_n fibr_n' => fibr_n + fibr_n').
+(* fib 0 = 0  fib 1 = 1              *)
+(* fib n = fib (n - 1) + fib (n - 2) *)
 
-Lemma fibr0 : fibr 0 = 0.
-Proof. ... Qed.
-
-Lemma fibr1 : fibr 1 = 0.
-Proof. ... Qed.
-
-Lemma fibr_succ n : Rnat n -> fibr (n + 2) =
-   fibr n + fibr (n + 1).
-Proof. ... Qed.
+Definition fibr := Rnat_rec [0; 1]
+   (fun n l => [nth 1 l 0; nth 0 l 0 + nth 1 l 0]).
+\end{alltt}
+\end{small}
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{Meta-programming a recursive definition command}
+\begin{itemize}
+\item The definition in the previous slide can be generated
+\item Taking as input the equations (in comments)
+\item The results of the definition are in two parts
+\begin{itemize}
+\item The function of type {\tt R -> R}
+\item The proof the logical statement for that function
+\end{itemize}
+\end{itemize}
+\begin{small}
+\begin{alltt}
+Recursive (def fib such that
+             fib 0 = 0 /\
+             fib 1 = 1 /\
+             forall n : R, Rnat (n - 2) ->
+                fib n = fib (n - 2) + fib (n - 1)).
 \end{alltt}
 \end{small}
 \end{frame}
@@ -299,7 +315,7 @@ Proof. ... Qed.
  (and recursors)
 \item {\tt unfold} for functions defined by students
 \item {\tt apply} and {\tt lra} to handle all side conditions related to bounds
-\item {\tt auto with rnat} to handle all subset conditions
+\item {\tt typeclasses eauto} to prove membership in {\tt Rnat}
 \begin{itemize}
 \item Explicit handling for subtraction and division
 \end{itemize}
