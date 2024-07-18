@@ -103,16 +103,21 @@ apply Nat2Z.is_nonneg.
 Qed.
 
 
-Ltac prove_recursive_specification T z := unfold T;
+Ltac prove_recursive_specification T Order := unfold T;
   repeat split;
     (now (rewrite Rnat_rec0 || rewrite Rnat_rec_to_nat_rec_p)) ||
     (let N := fresh "n" in let Nnat := fresh "nnat" in
      let Protector := fresh "protect_base" in
      unfold Rnat_rec; intros N Nat;
-     set (Protector := IRN (N - IZR z));
-     repeat (rewrite (IRN_to_S N z);[ | reflexivity | assumption]);
-     rewrite (IRN_to_S_top N z);[ | reflexivity | assumption];
-     reflexivity).
+     set (Protector := IRN (N - IZR Order));
+     repeat (rewrite (IRN_to_S N Order);[ | reflexivity | assumption]);
+     rewrite (IRN_to_S_top N Order);[ | reflexivity | assumption];
+     (reflexivity (* useful when N is only used in recursive calls*) ||
+       (simpl;
+        let Last_eqn := fresh "H" in
+        enough (Last_eqn : IZR Order + INR (IRN (N - IZR Order)) = N)
+            by (rewrite Last_eqn; reflexivity);
+            rewrite INR_IRN;[try ring | assumption]))).
 
 
 Elpi Command Recursive.
@@ -287,18 +292,17 @@ fetch_recursive_equation (app [And, Code1, Code2]) R_eqs :-
     std.append L1 L2 R_eqs
   ].
 
-fetch_recursive_equation (app [Eq , _, _, _]) [] :-
-  coq.locate "eq" Eqgref, Eq = global Eqgref, !.
+fetch_recursive_equation {{lp:_ = lp: _}} [].
 
 fetch_recursive_equation A _ :-
   coq.say "wrong term" A,
-  coq.error "expecting function specification to be either of the form"
-   "f 0 = v1 /\ f 1 = v2  or of the form forall n, .. -> f n = V2"
+  coq.error "expecting function specification to be a conjunction of"
+   "formulas of the form f 0 = v1 f 1 = v2  or forall n, .. -> f n = V2"
    "but found expressions of another form".
 
-pred collect_specs i:term, i:term, o:list (pair int term).
+pred collect_base_specs i:term, i:term, o:list (pair int term).
 
-collect_specs F (app [Eq, _, app [F, V1], V2]) [S] :-
+collect_base_specs F (app [Eq, _, app [F, V1], V2]) [S] :-
 % TODO: ask about placing directly {{ eq}} above.
   std.do! [
     coq.locate "eq" Eqgref,
@@ -306,15 +310,13 @@ collect_specs F (app [Eq, _, app [F, V1], V2]) [S] :-
     make_one_spec V1 V2 S
   ].
 
-collect_specs _F (prod _ _ _) [].
+collect_base_specs _F (prod _ _ _) [].
 
-collect_specs F (app [And, Code1, Code2]) Specs :-
+collect_base_specs F ({{lp:Code1 /\ lp:Code2}}) Specs :-
 % TODO: same as Eq above
   std.do! [
-    coq.locate "and" Andgref,
-    And = global Andgref,
-    collect_specs F Code1 Specs1,
-    collect_specs F Code2 Specs2,
+    collect_base_specs F Code1 Specs1,
+    collect_base_specs F Code2 Specs2,
     std.append Specs1 Specs2 Specs
   ].
 
@@ -356,11 +358,22 @@ make_recursive_step_list Func N Rank R :-
            Func' V] = R V
   ].
 
+pred shift_real i:int, i:term, o:term.
+
+shift_real 0 N N.
+
+shift_real K N {{lp:K_as_real + lp:N}}:-
+  std.do! [
+    0 < K,
+    int_to_real K K_as_real].
+
 % QUIRKY: performs part of the jobs of finding the uses of the function
-% given as first argument inside the second argument.
-% The second argument has to be a sequence of nested implications whose
+% given as second argument inside the fourth argument.
+% The fourth argument has to be a sequence of nested implications whose
 % conclusion is an equality.  The instances we are looking for have to be
 % of the form (F (n - k)).  The k values must be real-positive numbers.
+% The first argument is the depth of the recursion, The third argument
+% is the numeric variable used for recursion.
 pred eat_implications i:int, i:term, i:term, i:term, o:term.
 
 eat_implications Order F N (prod _ _ G) R :-
@@ -375,8 +388,10 @@ eat_implications Order F N G R :-
       G = app [_, _, _, RHS],
       % This should recognize (f (n - k)) and store k in the list
       (pi A E Op V\
-         fold-map (app [F, app[Op, V, E]]) A
-                  (app [F, app[Op, V, E]]) [E | A])
+%         fold-map (app [F, app[Op, V, E]]) A
+%                 (app [F, app[Op, V, E]]) [E | A]
+        fold-map {{lp:F (lp:V - lp:E)}} A
+                 {{lp:F (lp:V - lp:E)}} [E | A])
         =>
       fold-map RHS [] _ Uses,
       std.map Uses (real_to_int) Uses_int,
@@ -385,15 +400,17 @@ eat_implications Order F N G R :-
       list_max Srt_uses L,
 % Need to generate an abstraction that gives the name V to
 % the result of the recursive call
-std.assert! (L = Order)
+      std.assert! (L = Order)
   "The number of base values does not match the depth of recursive calls",
+      shift_real Order N N_plus_Order,
      (pi V \
-      (pi A B \ copy A B :-
-         replace_rec_call_by_seq_nth L F N V A B) =>
+      ((pi A B \ copy A B :-
+         replace_rec_call_by_seq_nth L F N V A B),
+       copy N N_plus_Order) =>
          copy RHS (RHS' V)),
       L1 is L - 1,
       make_recursive_step_list RHS' L1 0 RecList,
-     R = (fun `v` {{list R}} RecList),
+     R = (fun `v` {{list R}} RecList)
 ].
 
 % The input must have the form:
@@ -414,11 +431,10 @@ pred find_uses_of i:term, i:term, o:term, o:term.
 
 find_uses_of F Spec Final Order_Z :-
   std.do! [
-    collect_specs F Spec Sps,
+    collect_base_specs F Spec Sps,
     alist_sort Sps Sps2,
     check_all_present 0 Sps2 Order,
     make_initial_list Sps2 ListSps,
-    % coq.say "ListSps = " {coq.term->string ListSps},
     fetch_recursive_equation Spec Ts,
 % TODO : error reporting is not satisfactory here
     std.assert! (Ts = [prod Scalar_name Sc_type F1])
@@ -433,27 +449,34 @@ find_uses_of F Spec Final Order_Z :-
     int_to_Z Order Order_Z
   ].
 
+pred make_eqn_proof i:Name, i:term, i:term, i:constant.
+
+make_eqn_proof N_id Abs_eqn  Order C :-
+std.do![
+  Abs_eqn = fun _ _ F,
+  Statement = (F (global (const C))),
+  Eqs_N_id is N_id ^ "_eqn",
+  coq.typecheck Eq_prf Statement ok,
+  coq.ltac.collect-goals Eq_prf [G1] _ShelvedGs,
+  coq.ltac.open(coq.ltac.call
+    "prove_recursive_specification"
+    [trm (global (const C)), trm Order]) G1 [],
+  coq.env.add-const Eqs_N_id Eq_prf _ @opaque! C_eqn,
+  coq.say "Defined" C_eqn].
+
+make_eqn_proof _ _ _ _ :-
+  coq.say "proof of equations failed".
+
 main [trm (fun N _ _ as Abs_eqn)] :-
 std.do! [
   find_uses Abs_eqn Final Order,
   std.assert-ok! (coq.typecheck Final Ty) "Type error",
   coq.name->id N N_id,
-  Eqs_N_id is N_id ^ "_eqn",
+
   coq.env.add-const N_id Final Ty @transparent! C,
   coq.say "Defined" C,
 
-  (Abs_eqn = fun _ _ F),
-  (Statement = (F (global (const C)))),
-
-  coq.typecheck Eq_prf Statement ok,
-  coq.ltac.collect-goals Eq_prf [G1] _ShelvedGs,
-  coq.ltac.open(coq.ltac.call
-    "prove_recursive_specification"
-    [trm (global (const C)), trm Order])
-    G1 [],
-   coq.env.add-const Eqs_N_id Eq_prf _ @opaque! C_eqn,
-   coq.say "Defined" C_eqn
-
+  make_eqn_proof N_id Abs_eqn Order C
 ].
 
 main _L :-
@@ -465,21 +488,6 @@ Elpi Typecheck.
 
 Elpi Export Recursive.
 
-(*
-Elpi Query lp:{{ int_to_nat 3 V }}.
-*)
-
-(* Elpi Query lp:{{
-  sigma F \
-  {{ sin 0 = 0 /\ sin 1 = 1}} = F,
-  {{ sin}} = G,
-  coq.say F "function" G,
-  collect_specs {{ sin}} F F1
-  }}.
-*)
-
-(* Elpi Recursive ex1 (fun ex1 => ex1 0 = 0). *)
-
 Notation "'def' id 'such' 'that' bo" := (fun id => bo) 
  (id binder, bo at level 100, at level 1, only parsing).
 
@@ -488,22 +496,37 @@ Notation "'def' id 'such' 'that' bo" := (fun id => bo)
 Recursive (def simple_example such that simple_example 0 = 0 /\
    forall n, Rnat (n - 1) -> simple_example n = simple_example (n - 1) + 1).
 
-Check simple_example_eqn.
-
 Recursive (def fib such that fib 0 = 0 /\ fib 1 = 1 /\
-    forall n : R, Rnat (n - 2) -> fib n = fib (n - 2) + fib (n - 1)).
+    forall n : R, Rnat (n - 2) -> 
+    fib n = fib (n - 2) + fib (n - 1)).
 
-Check fib_eqn.
-
-Recursive (def trib such that trib 0 = 0 /\ trib 1 = 1 /\ trib 2 = 2 /\
+Recursive (def trib such that trib 0 = 0 /\ trib 1 = 1 /\
+   trib 2 = 2 /\
   forall n, Rnat (n - 3) -> trib n = trib (n - 3) + trib (n - 2)).
 
 Check trib_eqn.
 
+Recursive (fun  test3 : R -> R => test3 0 = 0 /\ test3 1 = 1 /\
+     forall n, Rnat (n - 2) ->
+       test3 n = test3 (n - 2) + test3 (n - 1) + n).
+
+Recursive (def fact3 such that fact3 0 = 1 /\
+  forall n, Rnat (n - 1) -> fact3 n = n * fact3 (n - 1)).
+
+Lemma fact_6 : fact3 6 = 720.
+Proof.
+unfold fact3.
+unfold Rnat_rec.
+unfold IRN.
+rewrite IRZ_IZR.
+simpl.
+ring.
+Qed.
+
 (* This example puts the user interface under stress, as it returs
   a tree of additions, where all the leaves are either 1 or (0 + 1).
   with the parentheses, this data should take at least 10 k chars. *)
-Lemma fib20 : fib 20 = 6765.
+Lemma fib11 : fib 11 = 89.
 Proof.
 unfold fib.
 unfold Rnat_rec.
@@ -514,6 +537,7 @@ rewrite IRZ_IZR.
   VsCoq2's current version.  Otherwise, just executing the combined
   simpl; ring command leads to a command that takes 3 seconds to
   execute. *)
-simpl; ring_simplify.
+simpl.
+ ring_simplify.
 reflexivity.
 Qed.
