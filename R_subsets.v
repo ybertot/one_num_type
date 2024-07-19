@@ -306,3 +306,30 @@ Proof.
 unfold IRN.
 now rewrite INR_IZR_INZ, IRZ_IZR, Zabs2Nat.id.
 Qed.
+
+Definition Rnat_rec {A : Type} (v0 : A) (stf : R -> A -> A) (x : R) : A :=
+  nat_rect (fun _ => A) v0 (fun x => stf (INR x)) (IRN x).
+
+Lemma Rnat_rec0 {A : Type} (v0 : A) stf : Rnat_rec v0 stf 0 = v0.
+Proof.
+now unfold Rnat_rec, IRN; rewrite IRZ_IZR.
+Qed.
+
+Lemma Rnat_rec_succ {A : Type} (v0 : A) stf (x : R) :
+  Rnat x ->
+  Rnat_rec v0 stf (x + 1) = stf x (Rnat_rec v0 stf x).
+Proof.
+intros xnat.
+destruct (Rnat_exists_nat x) as [x' xx'].
+unfold Rnat_rec.
+replace (IRN (x + 1)) with (S (IRN x)).
+  now simpl; rewrite INR_IRN.
+rewrite xx'.
+unfold IRN.
+rewrite <- plus_IZR.
+rewrite !IRZ_IZR.
+replace 1%Z with (Z.of_nat 1) by (simpl; ring).
+rewrite <- Nat2Z.inj_add.
+rewrite !Zabs2Nat.id.
+ring.
+Qed.
