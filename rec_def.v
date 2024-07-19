@@ -504,7 +504,7 @@ Definition fibz (n : nat) : Z :=
   nth 0 (nat_rect (fun _ => list Z) (0 :: 1 :: nil)%Z
     (fun k l => nth 1 l 0%Z :: (nth 0 l 0 + nth 1 l 0)%Z :: nil) n) 0%Z.
 
-Lemma fibz_IZR n : Rnat n -> fib n = IZR (fibz (IRN n)).
+Lemma fib_fibz n : Rnat n -> fib n = IZR (fibz (IRN n)).
 Proof.
 intros nnat.
 unfold fib, Rnat_rec, fibz.
@@ -558,7 +558,20 @@ Existing Instance fib_nat.
 
 Derive f36 SuchThat (fib (fib 9 + 2) = f36) As Ex_f_9.
 Proof.
-repeat (rewrite <- plus_IZR || rewrite fib_IZR); try typeclasses eauto.
+assert (Rnat 9) by typeclasses eauto.
+assert (Rnat (fib 9 + 2)) by typeclasses eauto.
+repeat (rewrite <- plus_IZR || (rewrite fib_fibz; try typeclasses eauto)).
+  unfold IRN; rewrite !IRZ_IZR.
+  match goal with
+  |- IZR ?v0 = _ =>
+     let v := eval compute in v0 in change v0 with v
+  end.
+unfold f36.
+reflexivity.
+Qed.
+
+(* Using Derive, we need an extra step to see the result. *)
+Print f36.
 
 Recursive (def trib such that trib 0 = 0 /\ trib 1 = 1 /\ trib 2 = 2 /\
   forall n, Rnat (n - 3) -> trib n = trib (n - 3) + trib (n - 2)).
@@ -570,14 +583,52 @@ Recursive (fun  test3 : R -> R => test3 0 = 0 /\ test3 1 = 1 /\
 Recursive (def fact3 such that fact3 0 = 1 /\
   forall n, Rnat (n - 1) -> fact3 n = n * fact3 (n - 1)).
 
-Lemma fact_6 : fact3 6 = 720.
+Definition fact3z n :=
+  nth 0 (nat_rect (fun _ => list Z) (1 :: nil)%Z
+    (fun n l => ((1 + Z.of_nat n) * nth 0 l 0)%Z :: nil) n) 0%Z.
+
+Lemma fact3_fact3z n : Rnat n ->
+  fact3 n = IZR (fact3z (IRN n)).
 Proof.
-unfold fact3.
-unfold Rnat_rec.
-unfold IRN.
-rewrite IRZ_IZR.
-simpl.
-ring.
+intros nnat.
+unfold fact3, Rnat_rec, fact3z.
+set (fr := nat_rect (fun _ => list R) _ _ _).
+set (fz := nat_rect (fun _ => list Z) _ _ _).
+enough (main : fr = map IZR fz).
+  destruct fr as [ | r0 tl].
+    destruct fz as [ | z0 tl]; try discriminate.
+    easy.
+  destruct fz as [ | z0 tlz]; try discriminate.
+  now injection main as r0q _; rewrite r0q.
+unfold fr, fz.
+apply (private.nat_rect_list_IZR (1 :: nil)%Z).
+intros k lR lZ lq.
+destruct lR as [ | r0 tr].
+  destruct lZ as [ | z0 tz]; try discriminate.
+  cbn [map].
+  rewrite mult_IZR.
+  rewrite plus_IZR.
+  rewrite INR_IZR_INZ.
+  easy.
+destruct lZ as [ | z0 tz]; try discriminate.
+injection lq as r0q _; rewrite r0q.
+cbn [nth map].
+rewrite mult_IZR, plus_IZR.
+rewrite INR_IZR_INZ.
+easy.
+Qed.
+
+Derive fct15 SuchThat (fact3 15 = fct15) As fct15_eq.
+Proof.
+rewrite fact3_fact3z; try typeclasses eauto.
+unfold IRN; rewrite IRZ_IZR.
+match goal with
+ |- IZR ?v0 = _ =>
+   let v := eval compute in v0 in
+     change v0 with v
+end.
+unfold fct15.
+reflexivity.
 Qed.
 
 (* This example puts the user interface under stress, as it returns
