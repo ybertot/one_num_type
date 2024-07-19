@@ -3,35 +3,11 @@ Require Import List Reals ClassicalEpsilon Lia Lra.
 Require Import Wellfounded.
 
 Require Import R_subsets.
+Require Import Derive.
 
 Open Scope R_scope.
 
-Definition Rnat_rec {A : Type} (v0 : A) (stf : R -> A -> A) (x : R) : A :=
-  nat_rect (fun _ => A) v0 (fun x => stf (INR x)) (IRN x).
-
-Lemma Rnat_rec0 {A : Type} (v0 : A) stf : Rnat_rec v0 stf 0 = v0.
-Proof.
-now unfold Rnat_rec, IRN; rewrite IRZ_IZR.
-Qed.
-
-Lemma Rnat_rec_succ {A : Type} (v0 : A) stf (x : R) :
-  Rnat x ->
-  Rnat_rec v0 stf (x + 1) = stf x (Rnat_rec v0 stf x).
-Proof.
-intros xnat.
-destruct (Rnat_exists_nat x) as [x' xx'].
-unfold Rnat_rec.
-replace (IRN (x + 1)) with (S (IRN x)).
-  now simpl; rewrite INR_IRN.
-rewrite xx'.
-unfold IRN.
-rewrite <- plus_IZR.
-rewrite !IRZ_IZR.
-replace 1%Z with (Z.of_nat 1) by (simpl; ring).
-rewrite <- Nat2Z.inj_add.
-rewrite !Zabs2Nat.id.
-ring.
-Qed.
+Module private.
 
 (* This lemma could be used to automatically prove that functions
   defined by our new command satisfy the specification that was given
@@ -102,16 +78,44 @@ rewrite vq, IRZ_IZR.
 apply Nat2Z.is_nonneg.
 Qed.
 
+Lemma nat_rect_list_IZR (l0 : list Z) (f : nat -> list Z -> list Z)
+  (f' : nat -> list R -> list R)
+  (n : nat) :
+  (forall k lR lZ, lR = map IZR lZ ->
+        f' k lR = map IZR (f k lZ)) ->
+  nat_rect (fun _ => list R) (map IZR l0) f' n =
+  map IZR (nat_rect (fun _ => list Z) l0 f n).
+Proof.
+intros ff'; induction n as [ | n Ih].
+  easy.
+simpl.
+apply ff'.
+apply Ih.
+Qed.
+
+Lemma Rnat_rec_nat (l0 : list R) (f : R -> list R -> list R) (n : R) :
+  Forall Rnat l0 ->
+  (forall n l, Rnat n -> Forall Rnat l -> Forall Rnat (f n l)) ->
+  Rnat n -> Forall Rnat (Rnat_rec l0 f n).
+Proof.
+intros ln fn.
+induction 1 as [ | n nnat Ih].
+  now rewrite Rnat_rec0.
+rewrite Rnat_rec_succ;[ | assumption].
+now apply fn.
+Qed.
+
+End private.
 
 Ltac prove_recursive_specification T Order := unfold T;
   repeat split;
-    (now (rewrite Rnat_rec0 || rewrite Rnat_rec_to_nat_rec_p)) ||
+    (now (rewrite Rnat_rec0 || rewrite private.Rnat_rec_to_nat_rec_p)) ||
     (let N := fresh "n" in let Nnat := fresh "nnat" in
      let Protector := fresh "protect_base" in
      unfold Rnat_rec; intros N Nat;
      set (Protector := IRN (N - IZR Order));
-     repeat (rewrite (IRN_to_S N Order);[ | reflexivity | assumption]);
-     rewrite (IRN_to_S_top N Order);[ | reflexivity | assumption];
+     repeat (rewrite (private.IRN_to_S N Order);[ | reflexivity | assumption]);
+     rewrite (private.IRN_to_S_top N Order);[ | reflexivity | assumption];
      (reflexivity (* useful when N is only used in recursive calls*) ||
        (simpl;
         let Last_eqn := fresh "H" in
@@ -384,8 +388,8 @@ eat_implications Order F N G R :-
       G = app [_, _, _, RHS],
       % This should recognize (f (n - k)) and store k in the list
       (pi A E Op V\
-%         fold-map (app [F, app[Op, V, E]]) A
-%                 (app [F, app[Op, V, E]]) [E | A]
+         %         fold-map (app [F, app[Op, V, E]]) A
+                  %                 (app [F, app[Op, V, E]]) [E | A]
         fold-map {{lp:F (lp:V - lp:E)}} A
                  {{lp:F (lp:V - lp:E)}} [E | A])
         =>
@@ -396,9 +400,9 @@ eat_implications Order F N G R :-
       list_max Srt_uses L,
 % Need to generate an abstraction that gives the name V to
 % the result of the recursive call
-      std.assert! (L = Order)
+std.assert! (L = Order)
   "The number of base values does not match the depth of recursive calls",
-      shift_real Order N N_plus_Order,
+shift_real Order N N_plus_Order,
      (pi V \
       ((pi A B \ copy A B :-
          replace_rec_call_by_seq_nth L F N V A B),
@@ -431,6 +435,7 @@ find_uses_of F Spec Final Order_Z :-
     alist_sort Sps Sps2,
     check_all_present 0 Sps2 Order,
     make_initial_list Sps2 ListSps,
+    % coq.say "ListSps = " {coq.term->string ListSps},
     fetch_recursive_equation Spec Ts,
 % TODO : error reporting is not satisfactory here
     std.assert! (Ts = [prod Scalar_name Sc_type F1])
@@ -468,7 +473,7 @@ std.do! [
   find_uses Abs_eqn Final Order,
   std.assert-ok! (coq.typecheck Final Ty) "Type error",
   coq.name->id N N_id,
-
+  
   coq.env.add-const N_id Final Ty @transparent! C,
   coq.say "Defined" C,
 
@@ -493,14 +498,70 @@ Recursive (def simple_example such that simple_example 0 = 0 /\
    forall n, Rnat (n - 1) -> simple_example n = simple_example (n - 1) + 1).
 
 Recursive (def fib such that fib 0 = 0 /\ fib 1 = 1 /\
-    forall n : R, Rnat (n - 2) -> 
-    fib n = fib (n - 2) + fib (n - 1)).
+    forall n : R, Rnat (n - 2) -> fib n = fib (n - 2) + fib (n - 1)).
 
-Recursive (def trib such that trib 0 = 0 /\ trib 1 = 1 /\
-   trib 2 = 2 /\
+Definition fibz (n : nat) : Z :=
+  nth 0 (nat_rect (fun _ => list Z) (0 :: 1 :: nil)%Z
+    (fun k l => nth 1 l 0%Z :: (nth 0 l 0 + nth 1 l 0)%Z :: nil) n) 0%Z.
+
+Lemma fibz_IZR n : Rnat n -> fib n = IZR (fibz (IRN n)).
+Proof.
+intros nnat.
+unfold fib, Rnat_rec, fibz.
+set (fr := nat_rect (fun _ : nat => list R) _ _ _).
+set (fz := nat_rect (fun _ : nat => list Z) _ _ _).
+enough (pr : fr = map IZR fz).
+  destruct fr as [ | r0 tr].
+    destruct fz as [ | z0 tz]; try discriminate.
+    easy.
+  destruct fz as [ | z0 tz]; try discriminate.
+  simpl in pr; injection pr as r0q _.
+  easy.
+unfold fr, fz.
+apply (private.nat_rect_list_IZR (0 :: 1 :: nil)%Z).
+intros k lR lZ lq; simpl.
+destruct lR as [ | r0 [ | r1 tr]].
+    destruct lZ as [ | z0 tz]; try discriminate.
+    now simpl; rewrite <- plus_IZR.
+  destruct lZ as [ | z0 [ | z1 tz]]; try discriminate.
+  simpl.
+  now injection lq as r0q; rewrite r0q, <- plus_IZR.
+destruct lZ as [ | z0 [ | z1 tz]]; try discriminate.
+simpl; injection lq as r0q r1q tq; rewrite r0q, r1q, <- plus_IZR.
+easy.
+Qed.
+
+Lemma fib_nat n : Rnat n -> Rnat (fib n).
+Proof.
+intros nnat.
+enough (main : Forall Rnat (Rnat_rec (0 :: 1 :: nil)
+  (fun _ l => nth 1 l 0 :: nth 0 l 0 + nth 1 l 0 :: nil) n)).
+  inversion main as [v0 | x ys xnat ysnat vs].
+    unfold fib; rewrite <- v0; simpl; typeclasses eauto.
+  now unfold fib; rewrite <- vs; simpl.
+apply private.Rnat_rec_nat.
+    repeat constructor; typeclasses eauto.
+  intros k l _ lnat.
+  assert (Rnat (nth 0 l 0) /\ Rnat (nth 1 l 0)) as [nat_at_0 nat_at_1].
+    inversion lnat as [v0 | x l' nx nl lq].
+      now simpl; repeat constructor.
+    inversion nl as [v1 | y l2 ny nl2 l'q].
+      now simpl; repeat constructor.
+    now simpl; repeat constructor.
+  repeat constructor.
+    easy.
+  typeclasses eauto.
+easy.
+Qed.
+
+Existing Instance fib_nat.
+
+Derive f36 SuchThat (fib (fib 9 + 2) = f36) As Ex_f_9.
+Proof.
+repeat (rewrite <- plus_IZR || rewrite fib_IZR); try typeclasses eauto.
+
+Recursive (def trib such that trib 0 = 0 /\ trib 1 = 1 /\ trib 2 = 2 /\
   forall n, Rnat (n - 3) -> trib n = trib (n - 3) + trib (n - 2)).
-
-Check trib_eqn.
 
 Recursive (fun  test3 : R -> R => test3 0 = 0 /\ test3 1 = 1 /\
      forall n, Rnat (n - 2) ->
