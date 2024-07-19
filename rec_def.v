@@ -302,18 +302,14 @@ fetch_recursive_equation A _ :-
 
 pred collect_base_specs i:term, i:term, o:list (pair int term).
 
-collect_base_specs F (app [Eq, _, app [F, V1], V2]) [S] :-
-% TODO: ask about placing directly {{ eq}} above.
+collect_base_specs F {{lp:F lp:V1 = lp:V2}} [S] :-
   std.do! [
-    coq.locate "eq" Eqgref,
-    Eq = global Eqgref,
     make_one_spec V1 V2 S
   ].
 
 collect_base_specs _F (prod _ _ _) [].
 
-collect_base_specs F ({{lp:Code1 /\ lp:Code2}}) Specs :-
-% TODO: same as Eq above
+collect_base_specs F {{lp:Code1 /\ lp:Code2}} Specs :-
   std.do! [
     collect_base_specs F Code1 Specs1,
     collect_base_specs F Code2 Specs2,
@@ -396,7 +392,7 @@ eat_implications Order F N G R :-
       fold-map RHS [] _ Uses,
       std.map Uses (real_to_int) Uses_int,
       list_sort Uses_int Srt_uses,
-% TODO: just take the last element
+% TODO: just take the last element, or avoid sorting
       list_max Srt_uses L,
 % Need to generate an abstraction that gives the name V to
 % the result of the recursive call
@@ -523,7 +519,7 @@ simpl.
 ring.
 Qed.
 
-(* This example puts the user interface under stress, as it returs
+(* This example puts the user interface under stress, as it returns
   a tree of additions, where all the leaves are either 1 or (0 + 1).
   with the parentheses, this data should take at least 10 k chars. *)
 Lemma fib11 : fib 11 = 89.
@@ -538,6 +534,6 @@ rewrite IRZ_IZR.
   simpl; ring command leads to a command that takes 3 seconds to
   execute. *)
 simpl.
- ring_simplify.
+ring_simplify.
 reflexivity.
 Qed.
