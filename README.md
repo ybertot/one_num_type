@@ -261,20 +261,25 @@ Rnat_rec : A -> (R -> A -> A) -> R -> A
 where the argument is the value in 0, the second argument tells how
 to compute the value in n+1, given the value n and the value in n.
 
-However, a definition given using this way is not as readable as desired.
+However, a definition given using `Rnat_rec` is not as readable as desired.
+For instance, the recursive function on natural numbers such that
+`f 0 = v0` and  `f n = B n (f (n - 1))` when `n` is a natural larger than
+0 would be described as :
+```
+Definition f := Rnat_rec v0 (fun n v => B n v).
+```
+It is not immediately visible that `f n = B n (f (n - 1))`.
+
 Instead, we propose to write a piece of code that takes as input, the
 expected theorem explaining the behavior of the function, in this form:
-
 ```
-fun f => (f 0 = v0 /\ (forall n, 0 < n -> f n = B n (f (n - 1))
+Recursive (def f such that (f 0 = v0 /\
+    (forall n, Rnat (n - 1) -> f n = B n (f (n - 1))).
 ```
 From this expression, the command would generate the value:
 ```
 Rnat_rec v0 B
 ```
-This is more readable because it shows exactly that one is using the
-recursive call `(f (n - 1))`, instead of a bound variable in the lambda
-expression that describes `B`.
 
 This command should be made adaptable to the case, where several initial
 values are provided for base cases (for inputs 0, 1, and maybe more)
@@ -283,11 +288,113 @@ maybe more).
 
 A first version of this command is described in file `rec_def.v` using the
 `coq-elpi` metaprogramming extension of Coq.  At the time of writing these
-lines, This accepts several inputs (an example is given with the Fibonacci
-sequence).
+lines, This command accepts multiple step recursion, where
+several base values `f 0`, `f 1`, ... `f (k - 1)` and in the general case the
+value of `f n` can depend all preceding values between `f (n - 1)`
+`f (n - k)`.  This command defines the function `f` and also provides a single
+theorem called `f_eqn` stating that `f` satisfies the required specification.
 
-At the time of writing these lines, what is missing is a proof that the
-specification is satisfied by the function that is produced.  For the case
-of the Fibonacci sequence, the example shows how the various parts of
-the specification can be proved.  Future work will focus on automating this
-proof.
+For instance, for the Fibonacci sequence, one write the following command.
+
+Recursive (def fib such that f 0 = 0 /\ f 1 = 1 /\
+      forall n, Rnat (n - 2) -> f n = f (n - 2) + f (n - 1)).
+
+Executing this commands has the effect of adding two constants in the
+Coq context.  A constant `fib` and a constant `fib_eqn` such that `fib` has
+type `R -> R` and `fib_eqn` is a proof of
+
+```
+f 0 = 0 /\ f 1 = 1 /\
+forall n : R, Rnat (n - 2) -> f n = f (n - 2) + f (n - 1)
+```
+
+Note that `fib_eqn` can help reason on the value of `fib` for any argument
+that is a real number in the `Rnat` subset.  It does not provide any help to
+reason about the value of `f` for inputs that are not natural numbers.
+
+# computation
+
+When defining a function over an inductive type, computation is provided for
+free.  Thus after defining addition and multiplication as they are given
+for natural numbers, we can use the proof assistant as a pocket calculator and
+obtain values for arbitrary inputs.
+
+For instance, we can ask to compute the value `4237 + 1345` by just typing
+the following command, in a context where numerical values are automatically
+interpreted as natural numbers or integers.
+
+```
+Compute 4237 + 1345.
+```
+This returns the expeected value `5582`
+
+On the other hand, when the numerical values are automatically interpreted as
+real numbers, such a computation returns a disappointing result.
+
+```
+Require Import Reals.
+
+Open Scope R_scope.
+
+Compute 4237 + 1345.
+```
+The result is 
+```
+    = R1 +
+       (R1 + R1) *
+       ((R1 + R1) *
+        (R1 +
+         (R1 + R1) *
+         (R1 +
+          (R1 + R1) *
+          ((R1 + R1) *
+           ((R1 + R1) *
+            ((R1 + R1) *
+             (R1 +
+              (R1 + R1) * ((R1 + R1) * ((R1 + R1) * ((R1 + R1) * (R1 + R1))))))))))) +
+       (R1 +
+        (R1 + R1) *
+        ((R1 + R1) *
+         ((R1 + R1) *
+          ((R1 + R1) *
+           ((R1 + R1) *
+            ((R1 + R1) *
+             (R1 + (R1 + R1) * ((R1 + R1) * (R1 + (R1 + R1) * (R1 + R1))))))))))
+     : R
+```
+This is not interesting: this result is actually the sum of two numbers,
+where each of them is described as binary encoding (successions of
+multiplication by 2 and additions of 1).
+
+If we wish to recover computing capabilities we need to exploit the following
+characteristics.
+
+ - A numeral in R, when it is a natural number, is represented as `IZR z`,
+  where `z` is the corresponding integer (of type `Z`).
+ - There is a collections of theorems expressing the morphism properties of
+  the injection of integers into real numbers.  In particular for addition,
+  there is a theorem named `plus_IZR` with the following statement.
+
+```
+    forall n m : Z, IZR (n + m) = IZR n + IZR m
+```
+  - The expression `4237 + 1345` can be rewritten thanks to `plus_IZR` into
+    `IZR (4237 + 1345)` where the expressions between parentheses is
+    an integer of type `Z`, and Coq can compute that addition to a ground
+    value.  In the context of a goal, this can be done in this manner.
+
+```
+    match goal with |- context [IZR ?v] => 
+      let v' := eval compute in v in change v with v'
+    end.
+```
+
+  - If the expression one wishes to compute contains only basic operations,
+    the `ring_simplify` tactic can be used instead.
+
+  - However, a recursive definition like `fib` can be coupled with a `fibz`
+    function of type `Z -> Z` such that `fib (IZR z) = IZR (fibz z)`.  The
+    function `fibz` can be computed by Coq.  the function `fibz` should be
+    constructed automatically at the time `fib` is constructed: it has
+    the same definition, just replacing operations on real numbers with
+    operations on integers.
