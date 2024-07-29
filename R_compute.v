@@ -24,7 +24,8 @@ decompose {{Rplus lp:A lp:B}}
     std.do! [
       coq.say "start with " {coq.term->string E},
       decompose E E1,
-      coq.say " = " {coq.term->string E1}
+      E2 = {{IZR lp:E1}},
+      coq.say " = " {coq.term->string E2}
     ].
 
 }}.
