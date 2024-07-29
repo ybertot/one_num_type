@@ -275,8 +275,11 @@ Proof.
 now unfold IRN; rewrite IRZ_IZR.
 Qed.
 
+Lemma IRN_IZR z : IRN (IZR z) = Z.abs_nat z.
+Proof. now unfold IRN; rewrite IRZ_IZR. Qed.
+
 Lemma IRN_pos p : IRN (IZR (Z.pos p)) = Pos.to_nat p.
-Proof. now unfold IRN; rewrite IRZ_IZR, Zabs2Nat.inj_pos. Qed.
+Proof. now rewrite IRN_IZR, Zabs2Nat.inj_pos. Qed.
 
 Example IRN_42 : IRN 42 = 42%nat.
 Proof. now rewrite IRN_pos. Qed.
