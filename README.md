@@ -41,14 +41,14 @@ that all numbers share a lot in common and are distinguished from
 other objects in the mathematical world.  for instance, you can apply
 the basic operations to a number (with the slight difficulty of
 division and 0), but it is not straightforward what it means to apply
-a basic operation on a pair of number, and vice-versa, it is
+a basic operation like addition on a pair of number, and vice-versa, it is
 straightforward to project a pair of numbers to its first component,
 but taking the first component of a number hardly makes any sense.
 
 However, the tradition of type-theory based proof systems is to make a
-strong distinction between several types of numbers, especially as way
+strong distinction between several types of numbers, especially as a way
 to explain how the mathematical world is "constructed".  Often, one
-starts by explaining the existence of type of natural numbers,
+starts by explaining the existence of a type of natural numbers,
 followed by integers, rational numbers, and most often real numbers.
 
 There are real benefits to doing so, in particular because most of the
@@ -72,17 +72,19 @@ Let's list here some of the benefits:
    properties using the scheme of proof by induction, and the proof
    assistant helps students understanding the discipline that should
    come with this proving technique (be clear about what statement
-   will be prove by induction, etc).
+   will be proved by induction, etc).
 
 However, there are a few oddities that make the whole construction at
 odds with usual mathematical practice.
 
  - Type theory requires every function to be defined for every
-   argument.  As a result, subtraction *m - n* has to be defined even
+   argument in the input type.  As a result, subtraction
+   *m - n* has to be defined even
    when *n* is larger than m.  The usual practice is to decide that in
    this case *m - n = 0*, but this makes some properties of operations
-   awkward to use:  For instance, *m - (m - n) = n* is true only when
-   *n* is smaller than, or equal to *m*.  The mathematical practice
+   awkward to use:  For instance, the equality *m - (m - n) = n* holds
+   only when *n* is smaller than, or equal to *m*.  On the other hand,
+   the mathematical practice
    concerning this kind of partial function is multiple.  For
    subtraction, people actually think that *m - n* exists when *n* is
    larger than *m*, but falls outside the set of natural number.  For
@@ -92,49 +94,52 @@ odds with usual mathematical practice.
  - Computation, as provided by the concept of reduction in type
    theory, is only available for the types of numbers that are easily
    defined as inductive types.  However, the type of real numbers does
-   not belong to that collection, and is less straight forward to give
+   not belong to that collection, and it is less straight forward to give
    a meaning to the sentence "compute a formula".  For instance, what
    is the meaning of computing *PI + 1*?  The value *4.14* might be
    what the user expects, but it is an incorrect answer.
 
 # A predicate for each type of number
 
-In higher-order logic proof assistants, like Isabelle/HOL or HOL,
-inductive type are defined by first exhibiting an inductive subset of
-the working universe.  This reminds us that any inductive type can
-actually be described as an inductive predicate, as long as we have an
-ambient type in which to work.  To teach mathematics, it is probably
-enough to work with the type of real numbers as the ambient type.
-
-So we propose to design a new library, staying at the level of
+We propose to design a new library, staying at the level of
 elementary facts, where different types of numbers are actually viewed
-as subsets of the type of real numbers.  Three aspects can then be
-studied:
+as subsets of the type of real numbers.  Several methods can be
+used to define these subsets, either using inductive predicates, or
+using the image of the functions injecting natural numbers and integers
+in the real numbers.  In file `R_subsets.v` we show an implementation
+using inductive predicates.  In file `R_nat_ind.v`, we show an implementation
+using images of injections.  The file `binomial/binomial_exp.v` also contains
+experiments based on inductive types, but this file is destined to be
+decomposed in several smaller files.
 
- - Should the set description rely on an inductive definition that
-   mirrors the construction of the represented datatype?  It would
-   then be necessary that the set is stable by the usual operations.
-   At this point, we already see that subtraction should receive a
-   specific treatment, because the set of natural numbers is not
-   stable by subtraction, but most theorems about natural number
-   substraction are still valid, because they have a premise stating
-   that the arguments should be ordered adequately.  This approach is
-   used in file binomial/binomial_exp.v
+Once the subsets corresponding to natural numbers and integers are defined,
+one should also include tools to facilitate proofs that some real numbers
+do belong in the subsets.  A first stage is to recover the facilities that
+were automatically provided by typing: since addition, multiplication,
+were automatically given as operations within the types nat and Z, we now have
+to express stability laws.  Here, we see that subtraction and division must be
+treated in an ad-hoc way: the subtraction of two natural numbers is an integer,
+the division of two natural numbers or integers is a rational number
+(at early stage of this library's development, the subset of rational numbers
+has not been described yet).
 
- - An alternative approach is to simply state that the set
-   corresponding to a given type of numbers is the image of that type
-   by the natural injection of this type to the type of real numbers.
-   This approach is used in file R_nat_ind.v.  In that case, the
-   stability properties can still be recovered.
+Then, theorems should also be provided to express under what
+conditions the subtraction of two numbers is a natural number, and this
+comes with the notion of order.  Here we can exploit the existing order
+between real numbers and all the monotonicity properties that basic operations
+enjoy with respect to this order.
 
-In any case, operations that involved the reciprocal functions of
-addition and multiplication need to be treated in an ad hoc way.
-natural number subtraction, as it is treated in Type Theory, needs to
-be hidden as much as possible, because it is wrong in a more dramatic
-way than division: it returns a value which is not the one everybody
-agrees on.  Subtraction of a large number from a small number, when
-treated as a real number operation, is faithful to a mathematician or
-a student's intuition.
+Similarly, one should study under what conditions the division of two integers
+is a rational numbers.  This brings about the notion of divisibility.
+
+Thanks to this approach, the subtraction between two numbers is always written
+as a subtraction between real numbers, and the meaning of this operation is
+always "natural" to the eye of mathematicians and students.  Whether the result
+is a natural number can be explained and reasoned about.  By comparison,
+if one had been using subtraction between natural numbers, reasoning on the
+fact that the result is a natural number is really possible (it is a natural
+number by force due to typing) and what needs to be reasoned about is whether
+the result is the expected value.
 
 # Defining functions on integers and natural numbers
 
@@ -145,8 +150,11 @@ these functions be defined, so that their use remains natural.  We
 propose that definitions should rely on one of the following
 approaches:
 
- - We can define a function IRZ from R to Z which associates to every real
-   number the corresponding integer.  The key property of this
+# TODO rework starting from here
+ - We can define a function IRZ (resp. IRN) from R to Z (resp. nat) which
+   associates to every real
+   number the corresponding integer (resp. natural number).  The key
+   property of this
    function is that when x is an integer real number, then IZR (IRZ x)
    = x.  This function can then be composed with existing function on
    type Z to obtain the corresponding function on real numbers.  The
