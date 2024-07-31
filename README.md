@@ -130,63 +130,43 @@ between real numbers and all the monotonicity properties that basic operations
 enjoy with respect to this order.
 
 Similarly, one should study under what conditions the division of two integers
-is a rational numbers.  This brings about the notion of divisibility.
+is a rational number.  This study brings about the notion of divisibility.
 
 Thanks to this approach, the subtraction between two numbers is always written
 as a subtraction between real numbers, and the meaning of this operation is
 always "natural" to the eye of mathematicians and students.  Whether the result
 is a natural number can be explained and reasoned about.  By comparison,
 if one had been using subtraction between natural numbers, reasoning on the
-fact that the result is a natural number is really possible (it is a natural
-number by force due to typing) and what needs to be reasoned about is whether
-the result is the expected value.
+fact that the result is a natural number is not really possible
+(it is a natural number by force due to typing) and what needs to be
+reasoned about is whether the result computed by the proof assistant
+is the expected value, which makes the proof assistant look bad.
 
 # Defining functions on integers and natural numbers
 
 Once numeric functions are all defined as function from type R to type
 R, there remains the difficulty that some functions are really meant
 as functions from integers or natural numbers to natural numbers.  How could
-these functions be defined, so that their use remains natural.  We
-propose that definitions should rely on one of the following
-approaches:
+these functions be defined, so that their usage remains natural.  We
+propose that definitions visible by students should rely on one of the
+following approaches:
 
-# TODO rework starting from here
- - We can define a function IRZ (resp. IRN) from R to Z (resp. nat) which
-   associates to every real
-   number the corresponding integer (resp. natural number).  The key
-   property of this
-   function is that when x is an integer real number, then IZR (IRZ x)
-   = x.  This function can then be composed with existing function on
-   type Z to obtain the corresponding function on real numbers.  The
-   students should never have to study this definition, and the main
-   *defining* properties of the functions should be provided by the
-   library developer (these properties can usually be proved from the
-   definition).  An example of this approach is given in file
-   `binomial/binomial_exp.v` for the factorial function.
- - We can use an induction principle on the property of "being an
-   integer" or "being a natural number" to show that the value
-   expected for a function can be defined, and then use Hilbert's
-   choice operator to define the function satisfying the expected
-   recursive equation.  I expect that a fairly large amount of
-   apparatus should be provided to make this kind of definitions
-   practical.
- - We can provide once and for all a function taking as input a
-   real number n, and returning the sequence 0 1, ..., n (here the
-   sequence can be chosen to be either undetermined if n is not a
-   natural number, or the sequence limited to the integral part of n
-   in all cases, i.e., the largest real number k that is a natural
-   number such that k <= n).  This sequence can then be passed as
-   argument to a recursive function on lists, or to an iterated
-   operator.  If this kind of definition needs to be shown to
-   students, then they need to have a good understanding of iterated
-   operations (big sums and big products), or maybe they need to have
-   a training in programming recursive function on sequences.
+ - For any function f of type A -> A, we can compute n iterations of
+   f, where n is a real number in the natural number subset.
 
-If we think of the factorial function, it should be rather easy to
-define using any of these technique.  On the other hand, sequences
-that are naturally given by a recursive scheme, like the Fibonacci
-sequence, will probably better rely on the second technique, which
-needs to receive proper attention.
+ - For any real numbers m and n, where n is a real number in the natural
+   number subset, we can construct the sequence of numbers
+   (m, m + 1, ... , m + n).  We should then provide a big-op construction
+   (as in math-comp) for iteration of binary operations over such a sequence.
+   This gives a nice way to describe the factorial function, for instance.
+
+ - One should provide a syntax for the definition of recursive sequences
+   of natural numbers.  This should make it possible to use multi-step
+   recursion, as would be needed to define the Fibonacci sequence.
+
+In all three cases, proof by induction on natural numbers should be enough
+to make it possible for students to reason on the value of functions defined
+using these tools.
 
 Whatever the techniques used, many of the theorems explaining the
 behavior of functions will have as pre-condition the fact that the
@@ -205,6 +185,28 @@ these arguments, the proof should happen automatically, because the
 considered arguments satisfy the predicate by assumption or by
 construction.
 
+For instance, the definition of a function describing the Fibonacci sequence
+introduces a function `fib` and a theorem describing its behavior that
+has the following shape:
+```
+fib 0 = 0 /\ fib 1 = 1 /\
+forall n, Rnat (n - 2) -> fib n = fib (n - 2) + fib (n - 1)
+```
+Every time the third clause in this definition is used, a membership condition
+in the `Rnat` subset needs to be proved.  This is non-trivial, because
+subtraction is not automatically guaranteed to be a natural number,
+even if the inputs are natural numbers.
+
+An alternative presentation of the first clause is also possible:
+```
+forall n, Rnat n -> fib (n + 2) = fib n + fib (n + 1)
+```
+This presentation leads to membership condition that are easier to prove,
+but instances of the equation's left hand side are then harder to detect.
+
+In the context of mathematics education, the question is how much time do
+the educators think the student should spend on verifying these
+membership conditions.
 ## a form of weak typing
 
 The proof that a formula satisfies a "sub-type" predicate usually
@@ -213,6 +215,27 @@ To this, "sub-type" information should be added to the functions being
 considered.  For instance, it should be recorded that the factorial
 function maps integers to integers (or even natural numbers to natural
 numbers).
+
+Having recorded that the `Rnat` subset is stable under addition,
+multiplication, factorial, and that the immediate constants 0, 1, 2, etc
+are natural numbers, it is a matter of automatic proof to show that
+```
+3 + 5 * factorial 12
+```
+is a member of `Rnat`.
+
+Moreover, in the presence of an unknown `n` such that `Rnat n` holds,
+the automatic procedure can also prove that
+```
+n + 5 * factorial n
+```
+is a member of `Rnat`.
+
+When defining a new function, such as the `fib` function used in a previous
+example, proving that such a function always returns a natural number is
+also possible.  It should probably be used as an exercise in natural number
+recursion at early stages of training, but this kind of proof can probably also
+be automated (see file `rec_def_examples.v`).
 
 Sometimes, the "weak typing information" is part of the folklore, but
 it may not be easily recoverable from the definition, or at least not
@@ -233,40 +256,89 @@ result is always an integer if the inputs are within the correct bounds.
 One of the great qualities of Type Theory based proof system is that
 they can be used to perform experimental mathematics: the inductive
 type used for natural numbers and integers support the definition of
-recursive function whose value can be computed in fairly short time.
+recursive functions whose value can be computed in fairly short time, as
+long as they are applied to *immediate* natural number or integer values.
 
-If the objective is to use a type theory based proof system to help
-students learn mathematics, it may be counter-productive to teach them
-all the competence required to program recursively with these
-datatypes.  However, the library developer may want to provide
-experimenting facilities so that students test running the functions
-provided to them in personal experiments.  In the current setting,
-We have been experimenting with the capability to compute functions
-from real numbers to real numbers, even though this type is not an
-inductive type and thus not equipped with the same computation
-capability.
+when using the type of real numbers, computations are blocked, because
+multiplication, addition, etc, are now opaque constants with the computation
+behavior only described by rewriting theorems.
 
-The key to this capability to compute is to exploit the theorem
-stating that IZR is the left inverse of IRZ and the fact that any
-integer constant in Coq is given as an instance of IZR.  For instance,
-the file binomial/binomial_exp.v contains an instance of a tactic
-called `compute_factorial` which recognizes instances of the factorial
-function applied to an integer constant and replace these instances by
-their value.
+However, it is possible to develop a computation facility that relies on
+a mapping from functions on real numbers to functions on integers.  A command
+`R_compute` is described in file `R_compute.v`.  Examples of usage are
+presented in `rec_def_examples.v`
 
-This tactic should be made more generic, so that it can easily be
-extended to compute the value of any real number function, as soon as
-an executable representant is provided by the library developer as
-function from Z to Z.
+As a first stage, it is possible to provide computation facility without
+formal guarantees, where the educator provides a `Z` function for each
+`R` function and no equivalence theorem.  This immediately provides the
+possibility to compute values, but not to use these computation in proofs.
+The pairs of functions are simply stored in a table and a symbolic
+manipulation simply transforms the formula to compute into a formula where
+the proof assistant's conversion mechanism can reduced the `Z` functions.
 
-# Definition of recursive functions
+Here is an example.  The system comes with the following pairs already
+recorded : `(Rplus, Z.add)`, `(Rminus, Z.sub)`, `(Ropp, Z.opp)`, and each
+number for instance the number `42` is automatically in correspondence with
+the same number `42` in type Z.  The educator provides definitions for
+the `fib` sequence and the `factorial` function and the corresponding
+`fibz` and `factorialz` (in a more advanced revision of this work, these
+will be generated automatically).  The computation of a formula containing
+both a factorial and the Fibonacci sequence becomes possible (this can
+generate huge results, but since we are using integers, it can go quite far).
+
+```
+Recursive (def fib such that fib 0 = 0 /\ fib 1 = 1 /\
+  (forall n, Rnat (n - 2) -> fib (n - 2) = fib (n - 2) + fib (n - 1))).
+
+Definition fibz (n : Z) : Z :=
+  nth 0 (nat_rect (fun _ => list Z) (0 :: 1 :: nil)%Z
+    (fun k l => nth 1 l 0%Z :: (nth 0 l 0 + nth 1 l 0)%Z :: nil)
+   (Z.abs_nat n)) 0%Z.
+
+Recursive (def factorial such that factorial 0 = 1 /\
+  forall n, Rnat (n - 1) -> factorial n = n * factorial (n - 1)).
+
+Definition factorialz (n : Z) :=
+  nth 0 (nat_rect (fun _ => list Z) (1 :: nil)%Z
+    (fun n l => ((1 + Z.of_nat n) * nth 0 l 0)%Z :: nil) (Z.abs_nat n)) 0%Z.
+
+Elpi add_computation fib fibz.
+Elpi add_computation factorial factorialz.
+
+Elpi R_compute (42 + fib (factorial 4)).
+```
+This work by replacing the formula
+```
+Rplus (IZR 42) (fib (factorial (IZR 4)))
+```
+with the following formula:
+```
+IZR (Z.add 42 (fibz (factorialz 5)))
+```
+There is a single `IZR` instance in this new formula and its argument
+is a formula that the proof assistant's conversion capability can
+reduce to a numeric constant (in this case a number whose decimal has around
+30 digits).
+
+The replacement is performed by a simple traversal program that builds the
+translated formula recursively, using elements of the function pair table to
+construct a well-typed integer expression that can then be reduced by the
+proof assistant.
+
+When correctness theorems are provided for the pairs of functions, these
+theorems can be used inside proofs.  An advanced version of the computation
+capabilities should provided a tactic equivalent to the `R_compute` function
+described above.  It is not clear whether such a computation capability inside
+proofs will be very useful in an educational context.
+
+# Definition of recursive functions under the hood
 
 It is quite easy to define a recursor of type:
 
 ```
 Rnat_rec : A -> (R -> A -> A) -> R -> A
 ```
-where the argument is the value in 0, the second argument tells how
+where the first argument is the value in 0, the second argument tells how
 to compute the value in n+1, given the value n and the value in n.
 
 However, a definition given using `Rnat_rec` is not as readable as desired.
@@ -278,18 +350,19 @@ Definition f := Rnat_rec v0 (fun n v => B n v).
 ```
 It is not immediately visible that `f n = B n (f (n - 1))`.
 
-Instead, we propose to write a piece of code that takes as input, the
+Instead, we propose to write a piece of code that takes as input the
 expected theorem explaining the behavior of the function, in this form:
 ```
 Recursive (def f such that (f 0 = v0 /\
     (forall n, Rnat (n - 1) -> f n = B n (f (n - 1))).
 ```
-From this expression, the command would generate the value:
+From this expression, the command would generate the value (or something
+similar):
 ```
 Rnat_rec v0 B
 ```
 
-This command should be made adaptable to the case, where several initial
+This command can be adaptable to the case, where several initial
 values are provided for base cases (for inputs 0, 1, and maybe more)
 and the expression B make take more recursive calls (to (n - 1), (n -2), and
 maybe more).
@@ -318,91 +391,38 @@ forall n : R, Rnat (n - 2) -> f n = f (n - 2) + f (n - 1)
 
 Note that `fib_eqn` can help reason on the value of `fib` for any argument
 that is a real number in the `Rnat` subset.  It does not provide any help to
-reason about the value of `f` for inputs that are not natural numbers.
+reason about the value of `f` for inputs that are not natural numbers.  In
+a sense, `f` is undefined outside the subset of natural numbers.
 
-# computation
+# A few benefitting examples
 
-When defining a function over an inductive type, computation is provided for
-free.  Thus after defining addition and multiplication as they are given
-for natural numbers, we can use the proof assistant as a pocket calculator and
-obtain values for arbitrary inputs.
+## binomial function
 
-For instance, we can ask to compute the value `4237 + 1345` by just typing
-the following command, in a context where numerical values are automatically
-interpreted as natural numbers or integers.
-
-```
-Compute 4237 + 1345.
-```
-This returns the expeected value `5582`
-
-On the other hand, when the numerical values are automatically interpreted as
-real numbers, such a computation returns a disappointing result.
+The factorial function can be defined either by relying as the product of
+the sequence of the n first positive integers or as an example of recursive
+sequence of integers.  Once the factorial function is provided, the binomial
+of `n` and `m` can be defined using the ratio of factorials.
 
 ```
-Require Import Reals.
-
-Open Scope R_scope.
-
-Compute 4237 + 1345.
-```
-The result is 
-```
-    = R1 +
-       (R1 + R1) *
-       ((R1 + R1) *
-        (R1 +
-         (R1 + R1) *
-         (R1 +
-          (R1 + R1) *
-          ((R1 + R1) *
-           ((R1 + R1) *
-            ((R1 + R1) *
-             (R1 +
-              (R1 + R1) * ((R1 + R1) * ((R1 + R1) * ((R1 + R1) * (R1 + R1))))))))))) +
-       (R1 +
-        (R1 + R1) *
-        ((R1 + R1) *
-         ((R1 + R1) *
-          ((R1 + R1) *
-           ((R1 + R1) *
-            ((R1 + R1) *
-             (R1 + (R1 + R1) * ((R1 + R1) * (R1 + (R1 + R1) * (R1 + R1))))))))))
-     : R
-```
-This is not interesting: this result is actually the sum of two numbers,
-where each of them is described as binary encoding (successions of
-multiplication by 2 and additions of 1).
-
-If we wish to recover computing capabilities we need to exploit the following
-characteristics.
-
- - A numeral in R, when it is a natural number, is represented as `IZR z`,
-  where `z` is the corresponding integer (of type `Z`).
- - There is a collections of theorems expressing the morphism properties of
-  the injection of integers into real numbers.  In particular for addition,
-  there is a theorem named `plus_IZR` with the following statement.
-
-```
-    forall n m : Z, IZR (n + m) = IZR n + IZR m
-```
-  - The expression `4237 + 1345` can be rewritten thanks to `plus_IZR` into
-    `IZR (4237 + 1345)` where the expressions between parentheses is
-    an integer of type `Z`, and Coq can compute that addition to a ground
-    value.  In the context of a goal, this can be done in this manner.
-
-```
-    match goal with |- context [IZR ?v] => 
-      let v' := eval compute in v in change v with v'
-    end.
+Definition binomial (n m : R) :=
+  factorial n / (factorial (n - m) * factorial m).
 ```
 
-  - If the expression one wishes to compute contains only basic operations,
-    the `ring_simplify` tactic can be used instead.
+This is well defined only when `n`, `m`, and `n - m` are natural numbers.
 
-  - However, a recursive definition like `fib` can be coupled with a `fibz`
-    function of type `Z -> Z` such that `fib (IZR z) = IZR (fibz z)`.  The
-    function `fibz` can be computed by Coq.  the function `fibz` should be
-    constructed automatically at the time `fib` is constructed: it has
-    the same definition, just replacing operations on real numbers with
-    operations on integers.
+Traditional presentations in mathematics also rely on an alternative
+presentation given by the following equalities (where n and m are natural
+numbers and m < n).  This is known as Pascal's triangle.
+```
+binomial 0 0 = 1
+binomial n 0 = 1
+binomial n n = n
+binomial (n + 1) (m + 1) = binomial n (m + 1) + binomial n m
+```
+And since traditional presentations in proof assistants rely on the type of
+natural numbers, the binomial function is also extended to the case where
+(m > n) by taking as convention that the binomial function returns 0 in that
+case.
+
+If we take the definition with the ratio of factorials, the various equations
+in Pascal's triangle can be proved to hold, using a proof by induction.
