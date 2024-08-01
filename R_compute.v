@@ -66,6 +66,29 @@ Elpi Accumulate lp:{{
       {coq.term->string (global B1)},
     coq.elpi.accumulate _ "R_compute.db"
      (clause _ _ (compute_table (global A1) (global B1))).
+
+  main L :-
+    coq.error "Usage: Elpi add_computation Name1 Name2.\n instead received: " L.
 }}.
 
 Elpi Typecheck.
+
+Elpi Command mirror_recursive_definition.
+Elpi Accumulate Db R_compute.db.
+
+Elpi Accumulate lp:{{
+
+% TODO: find the value of the name given in argument
+% which should be of the form (nth 0 (@Rnat_rec (list R) L0 F) 0)
+% replace all values in L0 by their corresponding integer values to obtain L1
+% F should be of type R -> list R -> list R
+% In the body of F n l, all occurences of R should be replace by Z
+% all occurrences of n should be replaced by Z.of_nat n
+% all occurrences of IZR z should be replaced by z
+% all occurrences of functions should be replaced by their correspondence
+% in compute_table (as in decompose), to obtain F1
+% A new function should be defined whose value should be
+% (nth 0 (nat_rect (fun _ => list Z) L1 F1) 0%Z)
+main L :-
+  coq.error "Usage: Elpi mirror_recursive_definition Name.\n instead received: " L.
+}}.
