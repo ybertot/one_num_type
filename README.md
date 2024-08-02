@@ -371,10 +371,12 @@ theorem called `f_eqn` stating that `f` satisfies the required specification.
 
 For instance, for the Fibonacci sequence, one write the following command.
 
+```
 Recursive (def fib such that f 0 = 0 /\ f 1 = 1 /\
       forall n, Rnat (n - 2) -> f n = f (n - 2) + f (n - 1)).
+```
 
-Executing this commands has the effect of adding two constants in the
+Executing this command has the effect of adding two constants in the
 Coq context.  A constant `fib` and a constant `fib_eqn` such that `fib` has
 type `R -> R` and `fib_eqn` is a proof of
 
@@ -387,6 +389,12 @@ Note that `fib_eqn` can help reason on the value of `fib` for any argument
 that is a real number in the `Rnat` subset.  It does not provide any help to
 reason about the value of `f` for inputs that are not natural numbers.  In
 a sense, `f` is undefined outside the subset of natural numbers.
+
+Another provided command (`Elpi mirror_recursive_definition`) constructs a
+similar function of type `Z -> Z` where
+all operations on `R` replaced by corresponding operation on `Z`.  This
+extra function to perform computations by exploiting the reductions facilities
+that come with inductive types in the proof assistant.
 
 # A few benefitting examples
 
