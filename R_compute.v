@@ -87,7 +87,7 @@ start_translate
   {{fun (x : R) => 
      nth 0 (Rnat_rec lp:L0 lp:F x) 0}}
   {{fun (x : Z) =>
-     nth 0 (nat_rec (fun _ => list Z) lp:L1 lp:F1 (Z.abs_nat x)) 0%Z}}
+     nth 0 (nat_rect (fun _ => list Z) lp:L1 lp:F1 (Z.abs_nat x)) 0%Z}}
         :-
   std.do! [
     translate L0 L1,
