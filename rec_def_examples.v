@@ -13,18 +13,17 @@ Recursive (def simple_example such that simple_example 0 = 0 /\
 
 Recursive (def fib such that fib 0 = 0 /\ fib 1 = 1 /\
     forall n : R, Rnat (n - 2) -> fib n = fib (n - 2) + fib (n - 1)).
+Inspect 2.
 
-(* fibz is not for the eyes of the student.  The library developer can simply
-  use this function to make computation possible with the R_compute command.  *)
-Definition fibz (n : Z) : Z :=
-  nth 0 (nat_rect (fun _ => list Z) (0 :: 1 :: nil)%Z
-    (fun k l => nth 1 l 0%Z :: (nth 0 l 0 + nth 1 l 0)%Z :: nil) (Z.abs_nat n)) 0%Z.
+Elpi mirror_recursive_definition fib.
 
-(* This is the proof that fibz is correct.  *)
-Lemma fibz_IZR n : Rnat n -> fib n = IZR (fibz (IRZ n)).
+Elpi R_compute (fib (fib 9 + 2)).
+
+(* This is the proof that fib_Z_mirror is correct.  *)
+Lemma fib_Z_mirror_IZR n : Rnat n -> fib n = IZR (fib_Z_mirror (IRZ n)).
 Proof.
 intros nnat.
-unfold fib, Rnat_rec, fibz.
+unfold fib, Rnat_rec, fib_Z_mirror.
 set (fr := nat_rect (fun _ : nat => list R) _ _ _).
 set (fz := nat_rect (fun _ : nat => list Z) _ _ _).
 enough (pr : fr = map IZR fz).
@@ -98,10 +97,6 @@ apply private.Rnat_rec_nat.
 easy.
 Qed.
 
-(* This command should only be seen by library developers. *)
-Elpi add_computation fib fibz.
-
-Elpi R_compute (fib (fib 9 + 2)).
 (* Thanks to this command, we know that the result is 14930352 *)
 
 (* this is one way to keep the result in a theorem, without using the
@@ -112,13 +107,13 @@ Proof.
   (*  It is difficult to make this succession of computation
     steps automatic, because they should rather be done inside
     out. *)
-rewrite (fibz_IZR 9); try typeclasses eauto.
+rewrite (fib_Z_mirror_IZR 9); try typeclasses eauto.
 rewrite IRZ_IZR.
 rewrite <- plus_IZR.
 match goal with |- context [IZR ?x] =>
   let v := eval compute in x in change x with v
 end.
-rewrite fibz_IZR; try typeclasses eauto.
+rewrite fib_Z_mirror_IZR; try typeclasses eauto.
 rewrite IRZ_IZR.
 match goal with |- context [IZR ?x] =>
   let v := eval compute in x in change x with v
@@ -157,12 +152,13 @@ all: match goal with |- fib ?v = _ =>
   end.
 Qed.
 
-Recursive (def trib such that trib 0 = 0 /\ trib 1 = 1 /\ trib 2 = 2 /\
-  forall n, Rnat (n - 3) -> trib n = trib (n - 3) + trib (n - 2)).
-
 Recursive (fun  test3 : R -> R => test3 0 = 0 /\ test3 1 = 1 /\
      forall n, Rnat (n - 2) ->
        test3 n = test3 (n - 2) + test3 (n - 1) + n).
+
+Elpi mirror_recursive_definition test3.
+
+Elpi R_compute (test3 10).
 
 Recursive (def factorial such that factorial 0 = 1 /\
   forall n, Rnat (n - 1) -> factorial n = n * factorial (n - 1)).
@@ -180,6 +176,9 @@ Qed.
 
 Existing Instance factorial_nat.
 
+Elpi mirror_recursive_definition factorial.
+
+Elpi R_compute (factorial 6).
 
 (* lra is usable in the automatic step here because each multiplication instance is
   actually multiplciation by an integer constant. *)
@@ -209,15 +208,11 @@ end.
 *)
 Qed.
 
-Definition factorialz (n : Z) :=
-  nth 0 (nat_rect (fun _ => list Z) (1 :: nil)%Z
-    (fun n l => ((1 + Z.of_nat n) * nth 0 l 0)%Z :: nil) (Z.abs_nat n)) 0%Z.
-
-Lemma factorial_factorialz n : Rnat n ->
-  factorial n = IZR (factorialz (IRZ n)).
+Lemma factorial_factorial_Z_mirror n : Rnat n ->
+  factorial n = IZR (factorial_Z_mirror (IRZ n)).
 Proof.
 intros nnat.
-unfold factorial, Rnat_rec, factorialz.
+unfold factorial, Rnat_rec, factorial_Z_mirror.
 set (fr := nat_rect (fun _ => list R) _ _ _).
 set (fz := nat_rect (fun _ => list Z) _ _ _).
 enough (main : fr = map IZR fz).
@@ -244,13 +239,11 @@ rewrite INR_IZR_INZ.
 easy.
 Qed.
 
-Elpi add_computation factorial factorialz.
-
 Elpi R_compute (42 + fib (factorial 5)).
 
 Derive fct15 SuchThat (fct15 = factorial 15) As fct15_eq.
 Proof.
-rewrite factorial_factorialz; try typeclasses eauto.
+rewrite factorial_factorial_Z_mirror; try typeclasses eauto.
 rewrite IRZ_IZR.
 match goal with
  |- context[IZR ?v0] =>
@@ -263,9 +256,9 @@ Qed.
 
 Derive huge_val SuchThat (huge_val = 42 + fib (factorial 5)) As uge_val_eq.
 Proof.
-rewrite fibz_IZR;[ | typeclasses eauto].
+rewrite fib_Z_mirror_IZR;[ | typeclasses eauto].
 rewrite <- plus_IZR.
-rewrite factorial_factorialz;[ | typeclasses eauto].
+rewrite factorial_factorial_Z_mirror;[ | typeclasses eauto].
 rewrite !IRZ_IZR.
 match goal with |- context [IZR ?v] =>
   let y := eval vm_compute in v in change v with y
