@@ -268,52 +268,46 @@ a mapping from functions on real numbers to functions on integers.  A command
 `R_compute` is described in file `R_compute.v`.  Examples of usage are
 presented in `rec_def_examples.v`
 
-As a first stage, it is possible to provide computation facility without
+As a first stage, it is possible to provide this computation facility without
 formal guarantees, where the educator provides a `Z` function for each
 `R` function and no equivalence theorem.  This immediately provides the
-possibility to compute values, but not to use these computation in proofs.
+possibility to compute values, but not to use such a computation in proofs.
 The pairs of functions are simply stored in a table and a symbolic
-manipulation simply transforms the formula to compute into a formula where
-the proof assistant's conversion mechanism can reduced the `Z` functions.
+manipulation transforms the formula to compute (of type R) into a formula
+(of type Z) where the proof assistant's conversion mechanism can reduce
+the `Z` functions.
 
 Here is an example.  The system comes with the following pairs already
 recorded : `(Rplus, Z.add)`, `(Rminus, Z.sub)`, `(Ropp, Z.opp)`, and each
 number for instance the number `42` is automatically in correspondence with
 the same number `42` in type Z.  The educator provides definitions for
-the `fib` sequence and the `factorial` function and the corresponding
-`fibz` and `factorialz` (in a more advanced revision of this work, these
-will be generated automatically).  The computation of a formula containing
-both a factorial and the Fibonacci sequence becomes possible (this can
-generate huge results, but since we are using integers, it can go quite far).
+the `fib` sequence and the `factorial` function using the recursive
+definition command developed for this purpose.  The function
+`fib_Z_mirror` and `factorial_Z_mirror` are generated automatically using
+another command described in file `R_compute.v` and automatically added
+in the database.
 
 ```
 Recursive (def fib such that fib 0 = 0 /\ fib 1 = 1 /\
   (forall n, Rnat (n - 2) -> fib (n - 2) = fib (n - 2) + fib (n - 1))).
 
-Definition fibz (n : Z) : Z :=
-  nth 0 (nat_rect (fun _ => list Z) (0 :: 1 :: nil)%Z
-    (fun k l => nth 1 l 0%Z :: (nth 0 l 0 + nth 1 l 0)%Z :: nil)
-   (Z.abs_nat n)) 0%Z.
+Elpi mirror_recursive_definition fib.
 
 Recursive (def factorial such that factorial 0 = 1 /\
   forall n, Rnat (n - 1) -> factorial n = n * factorial (n - 1)).
 
-Definition factorialz (n : Z) :=
-  nth 0 (nat_rect (fun _ => list Z) (1 :: nil)%Z
-    (fun n l => ((1 + Z.of_nat n) * nth 0 l 0)%Z :: nil) (Z.abs_nat n)) 0%Z.
-
-Elpi add_computation fib fibz.
-Elpi add_computation factorial factorialz.
+Elpi mirror_recursive_definition factorial.
 
 Elpi R_compute (42 + fib (factorial 4)).
 ```
-This work by replacing the formula
+
+Under the hood, this work by replacing the formula
 ```
 Rplus (IZR 42) (fib (factorial (IZR 4)))
 ```
 with the following formula:
 ```
-IZR (Z.add 42 (fibz (factorialz 5)))
+IZR (Z.add 42 (fib_Z_mirror (factorial_Z_mirror 5)))
 ```
 There is a single `IZR` instance in this new formula and its argument
 is a formula that the proof assistant's conversion capability can
@@ -398,8 +392,8 @@ a sense, `f` is undefined outside the subset of natural numbers.
 
 ## binomial function
 
-The factorial function can be defined either by relying as the product of
-the sequence of the n first positive integers or as an example of recursive
+The factorial function can be defined either as the product of
+the sequence of the n first positive integers or as a recursive
 sequence of integers.  Once the factorial function is provided, the binomial
 of `n` and `m` can be defined using the ratio of factorials.
 
