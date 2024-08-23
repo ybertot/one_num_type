@@ -214,7 +214,7 @@ assert (phi'_root : Rpow phi' 2 = phi' + 1).
   field.
 intros nnat.
 enough (fib n = (Rpow phi n - Rpow phi' n) / sqrt 5 /\
-        fib> (n + 1) = (Rpow phi (n + 1) - Rpow phi' (n + 1)) / sqrt 5).
+        fib (n + 1) = (Rpow phi (n + 1) - Rpow phi' (n + 1)) / sqrt 5).
   now tauto.
 induction nnat as [ | p pnat Ih].
   split.
