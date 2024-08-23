@@ -107,6 +107,21 @@ rewrite Rnat_rec_succ;[ | assumption].
 now apply fn.
 Qed.
 
+Lemma Rnat_rec_nat' (l0 : list R) (f : R -> list R -> list R) :
+  (forall k, Rnat (nth k l0 0)) ->
+  (forall n l, (forall k, Rnat (nth k l 0)) ->
+     Rnat n -> (forall k, Rnat (nth k (f n l) 0))) ->
+  forall n, Rnat n -> (forall k, Rnat (nth k (Rnat_rec l0 f n) 0)).
+Proof.
+intros l0nat fnat m mnat.
+induction mnat as [ | n nnat Ih].
+  unfold Rnat_rec; rewrite IRN0.
+  exact l0nat.
+rewrite Rnat_rec_succ;[ | assumption].
+apply fnat;[ | assumption].
+exact Ih.
+Qed.
+
 Lemma IZR_map2 : forall opr opz,
   (forall a b, opr (IZR a) (IZR b) = IZR (opz a b)) ->
   forall a b c d, a = IZR c -> b = IZR d ->
