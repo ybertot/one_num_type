@@ -78,15 +78,17 @@ rewrite vq, IRZ_IZR.
 apply Nat2Z.is_nonneg.
 Qed.
 
-Lemma nat_rect_list_IZR (l0 : list Z) (f : nat -> list Z -> list Z)
+Lemma nat_rect_list_IZR (l0 : list Z) 
+  (l' : list R) (f : nat -> list Z -> list Z)
   (f' : nat -> list R -> list R)
   (n : nat) :
+  l' = map IZR l0 ->
   (forall k lR lZ, lR = map IZR lZ ->
         f' k lR = map IZR (f k lZ)) ->
-  nat_rect (fun _ => list R) (map IZR l0) f' n =
+  nat_rect (fun _ => list R) l' f' n =
   map IZR (nat_rect (fun _ => list Z) l0 f n).
 Proof.
-intros ff'; induction n as [ | n Ih].
+intros ll' ff'; induction n as [ | n Ih].
   easy.
 simpl.
 apply ff'.
@@ -103,6 +105,24 @@ induction 1 as [ | n nnat Ih].
   now rewrite Rnat_rec0.
 rewrite Rnat_rec_succ;[ | assumption].
 now apply fn.
+Qed.
+
+Lemma IZR_map2 : forall opr opz,
+  (forall a b, opr (IZR a) (IZR b) = IZR (opz a b)) ->
+  forall a b c d, a = IZR c -> b = IZR d ->
+  opr a b = IZR (opz c d).
+Proof.
+intros opr opz morph a b c d ac bd.
+now rewrite ac, bd, morph.
+Qed.
+
+Lemma nth_map {A B : Type} (da : A) (db : B) (f : A -> B) (la : list A)
+  (lb : list B) (k : nat):
+  db = f da ->
+  lb = map f la ->
+  nth k lb db = f (nth k la da).
+Proof.
+intros dq lq; rewrite dq, lq; apply map_nth.
 Qed.
 
 End private.
@@ -420,9 +440,9 @@ shift_real Order N N_plus_Order,
 pred find_uses i:term, o:term, o:term.
 
 find_uses (fun N Ty Bo) R Order_Z :-
-  pi f\
-    decl f N Ty => % let one call the pretty printer and type checker inside
-    find_uses_of f (Bo f) R Order_Z. 
+  pi arg\
+    decl arg N Ty => % let one call the pretty printer and type checker inside
+    find_uses_of arg (Bo arg) R Order_Z. 
                               % R does not use f recursively, but rather
                               % the value of its recursion history at depth
                               % Order_Z (which must be a cic term of type Z)
@@ -481,7 +501,7 @@ std.do! [
 ].
 
 main _L :-
-  coq.error [] "Usage: Recursive name equation_1 .. equation_n".
+  coq.error [] "Usage: Recursive name equation_1 /\ .. /\ equation_n".
 
 }}.
 

@@ -19,37 +19,28 @@ Elpi mirror_recursive_definition fib.
 
 Elpi R_compute (fib (fib 9 + 2)).
 
-(* This is the proof that fib_Z_mirror is correct.  *)
+(* This is the proof that fib_Z_mirror is correct.  This hand-made proof
+  is structural and should serve as a pattern for an automatically generated
+  proof, relying on theorems from the private section, and already
+  established proofs for called functions. *)
 Lemma fib_Z_mirror_IZR n : Rnat n -> fib n = IZR (fib_Z_mirror (IRZ n)).
 Proof.
 intros nnat.
-unfold fib, Rnat_rec, fib_Z_mirror.
-set (fr := nat_rect (fun _ : nat => list R) _ _ _).
-set (fz := nat_rect (fun _ : nat => list Z) _ _ _).
-enough (pr : fr = map IZR fz).
-  destruct fr as [ | r0 tr].
-    destruct fz as [ | z0 tz]; try discriminate.
-    easy.
-  destruct fz as [ | z0 tz]; try discriminate.
-  simpl in pr; injection pr as r0q _.
-  easy.
-unfold fr, fz.
-apply (private.nat_rect_list_IZR (0 :: 1 :: nil)%Z).
-intros k lR lZ lq; simpl.
-destruct lR as [ | r0 [ | r1 tr]].
-    destruct lZ as [ | z0 tz]; try discriminate.
-    now simpl; rewrite <- plus_IZR.
-  destruct lZ as [ | z0 [ | z1 tz]]; try discriminate.
-  simpl.
-  now injection lq as r0q; rewrite r0q, <- plus_IZR.
-destruct lZ as [ | z0 [ | z1 tz]]; try discriminate.
-simpl; injection lq as r0q r1q tq; rewrite r0q, r1q, <- plus_IZR.
-easy.
+destruct (Rnat_exists_nat n) as [k nq].
+unfold fib, Rnat_rec, INR, fib_Z_mirror.
+apply private.nth_map;[reflexivity | ].
+apply private.nat_rect_list_IZR;[reflexivity | ].
+intros m lR lZ lq; simpl.
+apply f_equal2;[apply private.nth_map;[reflexivity | exact lq] | ].
+apply f_equal2;[ | reflexivity].
+apply (private.IZR_map2 _ _ (fun x y => eq_sym (plus_IZR x y))).
+  apply private.nth_map;[reflexivity | assumption].
+apply private.nth_map;[reflexivity | assumption].
 Qed.
 
 (* A proof that Rnat is stable for fib, using only tactics that can be
   shown to students.  There is a clever trick here, which is the technique
-  of proving the required property the every pair of successive natural
+  of proving the required property for every pair of successive natural
   numbers.  Maybe a proof based on course of value induction would be more
   suitable. *)
 Lemma student_fib_nat n : Rnat n -> Rnat (fib n).
@@ -73,31 +64,41 @@ ring_simplify (p + 1 + 1 - 2).
 assumption.
 Qed.
 
-(* An attempt to develop a proof that is more automatable.  *)
-Lemma fib_nat n : Rnat n -> Rnat (fib n).
+Lemma cov_fib_nat n : Rnat n -> Rnat (fib n).
 Proof.
+destruct fib_eqn as [fib0 [fib1 fib_suc]].
 intros nnat.
-enough (main : Forall Rnat (Rnat_rec (0 :: 1 :: nil)
-  (fun _ l => nth 1 l 0 :: nth 0 l 0 + nth 1 l 0 :: nil) n)).
-  inversion main as [v0 | x ys xnat ysnat vs].
-    unfold fib; rewrite <- v0; simpl; typeclasses eauto.
-  now unfold fib; rewrite <- vs; simpl.
-apply private.Rnat_rec_nat.
-    repeat constructor; typeclasses eauto.
-  intros k l _ lnat.
-  assert (Rnat (nth 0 l 0) /\ Rnat (nth 1 l 0)) as [nat_at_0 nat_at_1].
-    inversion lnat as [v0 | x l' nx nl lq].
-      now simpl; repeat constructor.
-    inversion nl as [v1 | y l2 ny nl2 l'q].
-      now simpl; repeat constructor.
-    now simpl; repeat constructor.
-  repeat constructor.
-    easy.
+apply (course_of_value_induction (fun n => Rnat (fib n)));[ | assumption].
+clear n nnat.
+intros n nnat Ih.
+Search (_ < _ \/ _ = _).
+assert (nge0 : 0 <= n) by now apply Rnat_ge0.
+destruct (Rle_lt_or_eq _ _ nge0) as [ngt0 | neq0].
+  assert (nge1 : 1 <= n).
+    assert (tmp := Rnat_le_lt _ _ ngt0).
+    lra.
+  destruct (Rle_lt_or_eq _ _ nge1) as [ngt1 | neq1].
+    assert (nge2 : 2 <= n).
+      assert (tmp := Rnat_le_lt _ _ ngt1).
+      lra.
+    assert (nm2nat: Rnat (n - 2)).
+      apply Rnat_sub.
+          assumption. (* proving Rnat n *)
+        typeclasses eauto. (* proving Rnat 2 *)
+      lra. (* proving 2 <= n*)
+    rewrite fib_suc;[ | assumption].
+    apply Rnat_add.
+      apply Ih;[assumption | lra].
+    apply Ih;[ | lra].
+    replace (n - 1) with ((n - 2) + 1) by ring.
+    typeclasses eauto.
+  rewrite <- neq1.
+  rewrite fib1.
   typeclasses eauto.
-easy.
+rewrite <- neq0.
+rewrite fib0.
+typeclasses eauto.
 Qed.
-
-(* Thanks to this command, we know that the result is 14930352 *)
 
 (* this is one way to keep the result in a theorem, without using the
   fact that the computation has already been done.  However, this is
@@ -208,35 +209,35 @@ end.
 *)
 Qed.
 
+Lemma IZR_map2 : forall opr opz,
+  (forall a b, opr (IZR a) (IZR b) = IZR (opz a b)) ->
+  forall a b c d, a = IZR c -> b = IZR d ->
+  opr a b = IZR (opz c d).
+Proof.
+intros opr opz morph a b c d ac bd.
+now rewrite ac, bd, morph.
+Qed.
+
 Lemma factorial_factorial_Z_mirror n : Rnat n ->
   factorial n = IZR (factorial_Z_mirror (IRZ n)).
 Proof.
 intros nnat.
-unfold factorial, Rnat_rec, factorial_Z_mirror.
-set (fr := nat_rect (fun _ => list R) _ _ _).
-set (fz := nat_rect (fun _ => list Z) _ _ _).
-enough (main : fr = map IZR fz).
-  destruct fr as [ | r0 tl].
-    destruct fz as [ | z0 tl]; try discriminate.
-    easy.
-  destruct fz as [ | z0 tlz]; try discriminate.
-  now injection main as r0q _; rewrite r0q.
-unfold fr, fz.
-apply (private.nat_rect_list_IZR (1 :: nil)%Z).
-intros k lR lZ lq.
-destruct lR as [ | r0 tr].
-  destruct lZ as [ | z0 tz]; try discriminate.
-  cbn [map].
-  rewrite mult_IZR.
-  rewrite plus_IZR.
-  rewrite INR_IZR_INZ.
-  easy.
-destruct lZ as [ | z0 tz]; try discriminate.
-injection lq as r0q _; rewrite r0q.
-cbn [nth map].
-rewrite mult_IZR, plus_IZR.
-rewrite INR_IZR_INZ.
-easy.
+destruct (Rnat_exists_nat n) as [k nq].
+rewrite nq.
+unfold factorial, Rnat_rec, IRN, factorial_Z_mirror.
+rewrite IRZ_IZR, Zabs2Nat.id.
+apply private.nth_map;[easy | ].
+apply private.nat_rect_list_IZR.
+  reflexivity.
+intros m lr lz lq.
+cbn [map].
+apply f_equal2;[ | easy].
+apply (private.IZR_map2 _ _ (fun x y => eq_sym (mult_IZR x y))).
+  apply (private.IZR_map2 _ _ (fun x y => eq_sym (plus_IZR x y))).
+    reflexivity.
+  apply INR_IZR_INZ.
+  Check private.nth_map.
+exact (private.nth_map _ _ _ _ _ _ eq_refl lq).
 Qed.
 
 Elpi R_compute (42 + fib (factorial 5)).

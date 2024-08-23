@@ -336,3 +336,40 @@ rewrite <- Nat2Z.inj_add.
 rewrite !Zabs2Nat.id.
 ring.
 Qed.
+
+Lemma Rnat_IZR_nneg n: Rnat n -> (0 <= IRZ n)%Z.
+Proof.
+intros nnat.
+destruct (Rnat_exists_nat n) as [n' nq].
+rewrite nq, IRZ_IZR.
+now apply Nat2Z.is_nonneg.
+Qed.
+
+Lemma course_of_value_induction (P : R -> Prop) :
+  (forall y, Rnat y -> (forall x, Rnat x -> (x < y) -> P x) -> P y) ->
+  (forall n, Rnat n -> P n).
+Proof.
+intros Ih n nnat.
+enough (main : forall m, (m <= n) -> Rnat m -> P m).
+  now apply main; [apply Rle_refl | assumption].
+induction nnat as [ | n nat Ihn].
+intros m mle0 mnat.
+assert (mge0 : 0 <= m) by now apply Rnat_ge0.
+assert (m0 : m = 0) by lra.
+rewrite m0.
+  apply Ih.
+    typeclasses eauto.
+  intros x xnat xlt0.
+  assert (xge0 : 0 <= x) by now apply Rnat_ge0.
+  lra.
+intros m mlen1 mnat.
+destruct (Rle_lt_or_eq _ _ mlen1) as [mltn1 | meqn1]; cycle 1.
+  apply Ih; [assumption | ].
+  intros x xnat xltm.
+  assert (tmp := Rnat_le_lt x m xltm).
+  apply Ihn;[ | assumption].
+  lra.
+assert (tmp := Rnat_le_lt m (n + 1) mltn1).
+apply Ihn;[ | assumption].
+lra.
+Qed.
