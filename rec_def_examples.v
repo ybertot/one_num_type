@@ -8,14 +8,94 @@ Definition Zsqr (x : Z) := (x * x)%Z.
 (* This command should only be used and seen by library developers *)
 Elpi add_computation Rsqr Zsqr.
 
+Ltac rec_Rnat fun_name :=
+(* This tactic is only meant to be used on statements of the form:
+  Rnat x -> Rnat (fun_name x)
+  where fun_name was defined using the Recursive command.  It succeeds
+  if all operations that appear in the body of the definition are
+  known to preserve membership in Rnat. *)
+  let Nnat := fresh "nnat" in
+  let M := fresh "m" in
+  let L := fresh "l" in
+  let Lnat := fresh "lnat" in
+  let Mnat := fresh "mnat" in
+  intros nnat;
+  unfold fun_name;
+  apply private.Rnat_rec_nat';[
+    repeat ((intro; apply Rnat0)||(
+             intros [ | k];[typeclasses eauto | revert k; cbn [nth]]
+    )) |
+    intros M L Lnat Mnat;
+     repeat ((intro; apply Rnat0)||(
+             intros [ | k];[typeclasses eauto | revert k; cbn [nth]]
+    )) | assumption].
+
 Recursive (def simple_example such that simple_example 0 = 0 /\
    forall n, Rnat (n - 1) -> simple_example n = simple_example (n - 1) + 1).
 
+Lemma simple_example_Rnat n : Rnat n -> Rnat (simple_example n).
+Proof.
+rec_Rnat simple_example.
+Qed.
+
+(* This is the proof that is done automatically in rec_nat
+intros nnat; unfold fib.
+apply private.Rnat_rec_nat'; [ | | assumption ].
+  intros [ | [ | [ | k]]]; cbn [nth]; typeclasses eauto.
+intros m l lnat mnat [ | [ | [ | k]]]; typeclasses eauto.
+Qed.
+*)
+
 Recursive (def fib such that fib 0 = 0 /\ fib 1 = 1 /\
     forall n : R, Rnat (n - 2) -> fib n = fib (n - 2) + fib (n - 1)).
-Inspect 2.
 
 Elpi mirror_recursive_definition fib.
+
+Recursive (def monster such that monster 0 = 1 /\
+  forall n, Rnat (n - 1) -> monster n = fib (monster (n - 1) + n)).
+
+Elpi mirror_recursive_definition monster.
+
+Lemma monster2 : monster 2 = 2.
+Proof.
+destruct monster_eqn as [monster0 monster_suc].
+destruct fib_eqn as [fib0 [fib1 fib_suc]].
+rewrite monster_suc; ring_simplify (2 - 1); [ | typeclasses eauto].
+rewrite monster_suc; ring_simplify (1 - 1); [ | typeclasses eauto].
+rewrite monster0.
+rewrite (fib_suc (1 + 1)); ring_simplify (1 + 1 - 2); [ | typeclasses eauto].
+ring_simplify (1 + 1 - 1).
+rewrite fib0, fib1.
+rewrite fib_suc; ring_simplify (0 + 1 + 2 - 2);[ | typeclasses eauto].
+rewrite fib1.
+ring_simplify (0 + 1 + 2 - 1).
+rewrite fib_suc; ring_simplify (2 - 2);[ | typeclasses eauto].
+ring_simplify (2 - 1).
+rewrite fib0, fib1.
+ring.
+Qed.
+
+Lemma monster3 : monster 3 = 5.
+Proof.
+destruct monster_eqn as [monster0 monster_suc].
+destruct fib_eqn as [fib0 [fib1 fib_suc]].
+rewrite monster_suc; ring_simplify (3 - 1);[ | typeclasses eauto].
+rewrite monster2.
+rewrite fib_suc; ring_simplify (2 + 3 - 2);[ | typeclasses eauto].
+ring_simplify (2 + 3 - 1).
+rewrite (fib_suc 4); ring_simplify (4 - 2);[ | typeclasses eauto].
+ring_simplify (4 - 1).
+rewrite (fib_suc 3); ring_simplify (3 - 2);[ | typeclasses eauto].
+ring_simplify (3 - 1).
+rewrite (fib_suc 2); ring_simplify (2 - 2);[ | typeclasses eauto].
+ring_simplify (2 - 1).
+rewrite fib1, fib0.
+ring.
+Qed.
+
+(* monster grows very fast after that.  monster 4 = 34,
+  monster 5 = 63245986 *)
+Elpi R_compute (monster 5).
 
 Elpi R_compute (fib (fib 9 + 2)).
 
@@ -25,17 +105,27 @@ Elpi R_compute (fib (fib 9 + 2)).
   established proofs for called functions. *)
 Lemma fib_Z_mirror_IZR n : Rnat n -> fib n = IZR (fib_Z_mirror (IRZ n)).
 Proof.
+(* This line is specific to factorial. *)
+unfold fib, fib_Z_mirror.
+(* what follows is generic. *)
+unfold Rnat_rec, IRN.
 intros nnat.
 destruct (Rnat_exists_nat n) as [k nq].
-unfold fib, Rnat_rec, INR, fib_Z_mirror.
-apply private.nth_map;[reflexivity | ].
-apply private.nat_rect_list_IZR;[reflexivity | ].
-intros m lR lZ lq; simpl.
-apply f_equal2;[apply private.nth_map;[reflexivity | exact lq] | ].
-apply f_equal2;[ | reflexivity].
+rewrite nq; rewrite IRZ_IZR, Zabs2Nat.id.
+apply private.nth_map;[easy | ].
+apply private.nat_rect_list_IZR.
+  reflexivity.
+intros m lr lz lq.
+cbn [map].
+repeat (apply f_equal2;[apply private.nth_map;[reflexivity | exact lq] | ]).
+apply f_equal2;[ | easy].
+(* end of the generic part. *)
+(* We now enter specific ground. *)
+(* The left hand side is nth 0 lr 0 + nth 1 lr 0, so there is a
+  an addition amd recirsove calls. *)
 apply (private.IZR_map2 _ _ (fun x y => eq_sym (plus_IZR x y))).
-  apply private.nth_map;[reflexivity | assumption].
-apply private.nth_map;[reflexivity | assumption].
+  exact (private.nth_map _ _ _ _ _ _ eq_refl lq).
+exact (private.nth_map _ _ _ _ _ _ eq_refl lq).
 Qed.
 
 (* A proof that Rnat is stable for fib, using only tactics that can be
@@ -71,7 +161,6 @@ intros nnat.
 apply (course_of_value_induction (fun n => Rnat (fib n)));[ | assumption].
 clear n nnat.
 intros n nnat Ih.
-Search (_ < _ \/ _ = _).
 assert (nge0 : 0 <= n) by now apply Rnat_ge0.
 destruct (Rle_lt_or_eq _ _ nge0) as [ngt0 | neq0].
   assert (nge1 : 1 <= n).
@@ -99,6 +188,74 @@ rewrite <- neq0.
 rewrite fib0.
 typeclasses eauto.
 Qed.
+
+(* This is the automated proof. *)
+Lemma fib_nat n : Rnat n -> Rnat (fib n).
+Proof.
+rec_Rnat fib.
+Qed.
+
+Existing Instance fib_nat.
+
+Lemma monster_nat n : Rnat n -> Rnat (monster n).
+Proof.
+rec_Rnat monster.
+Qed.
+
+Existing Instance monster_nat.
+About private.IZR_map2.
+Check private.nth_map.
+Check add_compute.
+
+Check (fun (_ : nat) (lr : list R) (lz : list Z) (h : lr = map IZR lz) =>
+            (f_equal2 (@cons R)
+              (private.nth_map 0%Z 0 IZR _ _ 1 eq_refl h)
+              (f_equal2 (@cons R)
+                 (private.IZR_map2 Rplus Z.add
+                    add_compute
+        (nth 0 lr 0) (nth 1 lr 0)
+        (nth 0 lz 0%Z) (nth 1 lz 0%Z)
+          (private.nth_map 0%Z 0 IZR lz lr 0 eq_refl h)
+          (private.nth_map 0%Z 0 IZR _ _ 1 eq_refl h)) 
+          (eq_refl : nil = nil)) )).
+
+Check (fun (lr : list R) (lz : list Z) (h : lr = map IZR lz) =>
+      private.IZR_map2 Rplus Z.add
+        (fun x y => eq_sym (plus_IZR x y))
+        (nth 0 lr 0) (nth 1 lr 0)
+        (nth 0 lz 0%Z) (nth 1 lz 0%Z)
+          (private.nth_map 0%Z 0 IZR _ _ 0 eq_refl h)
+          (private.nth_map 0%Z 0 IZR _ _ 1 eq_refl h)).
+About f_equal2.
+Check fun lr lz (h : lr = map IZR lz)=> f_equal2 (@cons R)
+    (private.nth_map 0%Z 0 IZR _ _ 1 eq_refl h)
+      (f_equal2 (@cons R)
+       (private.IZR_map2 Rplus Z.add
+        (fun x y => eq_sym (plus_IZR x y))
+        (nth 0 lr 0) (nth 1 lr 0)
+        (nth 0 lz 0%Z) (nth 1 lz 0%Z)
+          (private.nth_map 0%Z 0 IZR _ _ 0 eq_refl h)
+          (private.nth_map 0%Z 0 IZR _ _ 1 eq_refl h)) 
+          (eq_refl : nil = nil)).
+
+
+Check fun (n : R) (k : nat) (nq : n = INR k) =>
+        private.nat_rect_list_IZR (0%Z :: 1%Z :: nil) (0 :: 1 :: nil)
+          (fun _ : nat => fun l 
+            => (nth 1 l 0 :: nth 0 l 0 + nth 1 l 0 :: nil)%Z)
+          (fun _ : nat => fun l => nth 1 l 0 :: nth 0 l 0 + nth 1 l 0 :: nil) 
+          k eq_refl
+          (fun (_ : nat) (lr : list R) (lz : list Z) (h : lr = map IZR lz) =>
+            (f_equal2 (@cons R)
+              (private.nth_map 0%Z 0 IZR _ _ 1 eq_refl h)
+              (f_equal2 (@cons R)
+                 (private.IZR_map2 Rplus Z.add
+                    (fun x y => eq_sym (plus_IZR x y))
+        (nth 0 lr 0) (nth 1 lr 0)
+        (nth 0 lz 0%Z) (nth 1 lz 0%Z)
+          (private.nth_map 0%Z 0 IZR _ _ 0 eq_refl h)
+          (private.nth_map 0%Z 0 IZR _ _ 1 eq_refl h)) 
+          (eq_refl : nil = nil)) )).
 
 (* this is one way to keep the result in a theorem, without using the
   fact that the computation has already been done.  However, this is
@@ -164,7 +321,7 @@ Elpi R_compute (test3 10).
 Recursive (def factorial such that factorial 0 = 1 /\
   forall n, Rnat (n - 1) -> factorial n = n * factorial (n - 1)).
 
-Lemma factorial_nat n : Rnat n -> Rnat (factorial n).
+Lemma student_factorial_nat n : Rnat n -> Rnat (factorial n).
 Proof.
 destruct factorial_eqn as [factorial0 factorial_suc].
 intros nnat; induction nnat as [ | p pnat Ih].
@@ -173,6 +330,11 @@ intros nnat; induction nnat as [ | p pnat Ih].
 rewrite factorial_suc; ring_simplify (p + 1 - 1).
 typeclasses eauto.
 assumption.
+Qed.
+
+Lemma factorial_nat n : Rnat n -> Rnat (factorial n).
+Proof.
+rec_Rnat factorial.
 Qed.
 
 Existing Instance factorial_nat.
@@ -209,34 +371,32 @@ end.
 *)
 Qed.
 
-Lemma IZR_map2 : forall opr opz,
-  (forall a b, opr (IZR a) (IZR b) = IZR (opz a b)) ->
-  forall a b c d, a = IZR c -> b = IZR d ->
-  opr a b = IZR (opz c d).
-Proof.
-intros opr opz morph a b c d ac bd.
-now rewrite ac, bd, morph.
-Qed.
-
 Lemma factorial_factorial_Z_mirror n : Rnat n ->
   factorial n = IZR (factorial_Z_mirror (IRZ n)).
 Proof.
+(* This line is specific to factorial. *)
+unfold factorial, factorial_Z_mirror.
+(* what follows is generic. *)
+unfold Rnat_rec, IRN.
 intros nnat.
 destruct (Rnat_exists_nat n) as [k nq].
-rewrite nq.
-unfold factorial, Rnat_rec, IRN, factorial_Z_mirror.
-rewrite IRZ_IZR, Zabs2Nat.id.
+rewrite nq; rewrite IRZ_IZR, Zabs2Nat.id.
 apply private.nth_map;[easy | ].
 apply private.nat_rect_list_IZR.
   reflexivity.
 intros m lr lz lq.
 cbn [map].
+repeat (apply f_equal2;[apply private.nth_map;[reflexivity | exact lq] | ]).
 apply f_equal2;[ | easy].
+(* end of the generic part. *)
+(* We now enter specific ground. *)
+(* The left hand side is (1 + INR m) * nth 0 lr 0, so there is a
+  multipliation followed by an addition, a constant, and
+  the injection of the current natural number. *)
 apply (private.IZR_map2 _ _ (fun x y => eq_sym (mult_IZR x y))).
   apply (private.IZR_map2 _ _ (fun x y => eq_sym (plus_IZR x y))).
     reflexivity.
   apply INR_IZR_INZ.
-  Check private.nth_map.
 exact (private.nth_map _ _ _ _ _ _ eq_refl lq).
 Qed.
 
@@ -255,7 +415,7 @@ unfold fct15.
 reflexivity.
 Qed.
 
-Derive huge_val SuchThat (huge_val = 42 + fib (factorial 5)) As uge_val_eq.
+Derive huge_val SuchThat (huge_val = 42 + fib (factorial 5)) As huge_val_eq.
 Proof.
 rewrite fib_Z_mirror_IZR;[ | typeclasses eauto].
 rewrite <- plus_IZR.
@@ -267,7 +427,6 @@ end.
 unfold huge_val.
 reflexivity.
 Qed.
-
 
 (* This example puts the user interface under stress (if one uses an input
   higher that 14), as it returns

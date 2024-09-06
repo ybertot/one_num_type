@@ -122,6 +122,14 @@ apply fnat;[ | assumption].
 exact Ih.
 Qed.
 
+Lemma IZR_map1 : forall opr opz,
+  (forall a, opr (IZR a) = IZR (opz a)) ->
+  forall a b, a = IZR b -> opr a = IZR (opz b).
+Proof.
+intros opr opz morph a b ab.
+now rewrite ab, morph.
+Qed.
+
 Lemma IZR_map2 : forall opr opz,
   (forall a b, opr (IZR a) (IZR b) = IZR (opz a b)) ->
   forall a b c d, a = IZR c -> b = IZR d ->
@@ -138,6 +146,17 @@ Lemma nth_map {A B : Type} (da : A) (db : B) (f : A -> B) (la : list A)
   nth k lb db = f (nth k la da).
 Proof.
 intros dq lq; rewrite dq, lq; apply map_nth.
+Qed.
+
+Lemma IRN_Z_abs_nat n z : n = IZR z -> IRN n = Z.abs_nat z.
+Proof.
+now intros nzq; unfold IRN; rewrite nzq, IRZ_IZR.
+Qed.
+
+Lemma INR_Z_abs_nat n z : Rnat n -> n = IZR z -> n = INR (Z.abs_nat z).
+Proof.
+intros nnat nzq; rewrite <- (IRN_Z_abs_nat _ _ nzq).
+now rewrite INR_IRN.
 Qed.
 
 End private.
