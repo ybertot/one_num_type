@@ -130,6 +130,36 @@ intros opr opz morph a b ab.
 now rewrite ab, morph.
 Qed.
 
+Lemma IZR_map1_abs : forall opr opz,
+  (forall x y, Rnat x -> x = IZR y -> opr x = IZR (opz y)) ->
+  (forall x, opz (Z.abs x) = opz x) ->
+  forall a b, a = IZR b -> opr (Rabs a) = IZR (opz b).
+Proof.
+intros opr opz pmorph absP a b ab.
+assert (absPab : Rabs a = IZR (Z.abs b)).
+  now rewrite abs_IZR, ab.
+assert (IZRbge0 : 0 <= Rabs (IZR b)).
+  now apply Rabs_pos.
+assert (natabs : Rnat (Rabs a)).
+  rewrite ab.
+  apply Rint_Rnat;[ | easy].
+  destruct (Z.le_gt_cases 0 b) as [bge0 | blt0].
+    rewrite Rabs_pos_eq.
+      typeclasses eauto.
+    now apply (IZR_le 0).
+  rewrite Rabs_left, <-opp_IZR.
+    typeclasses eauto.
+  now apply (IZR_lt b 0).
+rewrite (pmorph _ (Z.abs b) natabs absPab).
+now rewrite absP.
+Qed.
+
+Lemma Zabs_nat_Zabs_involutive (f : nat -> Z) z :
+  f (Z.abs_nat (Z.abs z)) = f (Z.abs_nat z).
+Proof.
+now unfold Z.abs, Z.abs_nat; destruct z.
+Qed.
+
 Lemma IZR_map2 : forall opr opz,
   (forall a b, opr (IZR a) (IZR b) = IZR (opz a b)) ->
   forall a b c d, a = IZR c -> b = IZR d ->

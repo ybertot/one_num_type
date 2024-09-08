@@ -52,7 +52,7 @@ Recursive (def fib such that fib 0 = 0 /\ fib 1 = 1 /\
 Elpi mirror_recursive_definition fib.
 
 Recursive (def monster such that monster 0 = 1 /\
-  forall n, Rnat (n - 1) -> monster n = fib (monster (n - 1) + n)).
+  forall n, Rnat (n - 1) -> monster n = fib (Rabs (monster (n - 1) + n))).
 
 Elpi mirror_recursive_definition monster.
 
