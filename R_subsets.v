@@ -55,6 +55,13 @@ Proof.  now replace 2 with (1 + 1) by ring; typeclasses eauto. Qed.
 (* #[export]
 Hint Resolve Rint2 : rnat. *)
 
+Instance Rint_abs p {pint : Rint p} : Rint (Rabs p).
+Proof.
+destruct (Rle_or_gt 0 p).
+  rewrite Rabs_right;[easy | lra].
+rewrite Rabs_left;[typeclasses eauto | lra].
+Qed.
+
 Instance Rint_pos p : Rint (IZR (Z.pos p)).
 Proof.
 induction p as [ p' Ih | p' Ih | ].
@@ -205,6 +212,12 @@ Proof.
 induction xnat as [ | x xnat Ih].
   now rewrite Rmult_0_l; intros; apply Rnat0.
 replace ((x + 1) * y) with (x * y + y) by ring.
+typeclasses eauto.
+Qed.
+
+Instance Rnat_abs x {xint: Rint x} : Rnat (Rabs x).
+Proof.
+apply Rint_Rnat;[ | apply Rabs_pos].
 typeclasses eauto.
 Qed.
 

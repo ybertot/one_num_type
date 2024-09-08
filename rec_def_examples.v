@@ -63,9 +63,11 @@ destruct fib_eqn as [fib0 [fib1 fib_suc]].
 rewrite monster_suc; ring_simplify (2 - 1); [ | typeclasses eauto].
 rewrite monster_suc; ring_simplify (1 - 1); [ | typeclasses eauto].
 rewrite monster0.
+rewrite (Rabs_right (1 + 1));[ | lra].
 rewrite (fib_suc (1 + 1)); ring_simplify (1 + 1 - 2); [ | typeclasses eauto].
 ring_simplify (1 + 1 - 1).
 rewrite fib0, fib1.
+rewrite (Rabs_right (0 + 1 + 2));[ | lra].
 rewrite fib_suc; ring_simplify (0 + 1 + 2 - 2);[ | typeclasses eauto].
 rewrite fib1.
 ring_simplify (0 + 1 + 2 - 1).
@@ -81,6 +83,7 @@ destruct monster_eqn as [monster0 monster_suc].
 destruct fib_eqn as [fib0 [fib1 fib_suc]].
 rewrite monster_suc; ring_simplify (3 - 1);[ | typeclasses eauto].
 rewrite monster2.
+rewrite Rabs_right;[ | lra].
 rewrite fib_suc; ring_simplify (2 + 3 - 2);[ | typeclasses eauto].
 ring_simplify (2 + 3 - 1).
 rewrite (fib_suc 4); ring_simplify (4 - 2);[ | typeclasses eauto].
@@ -95,38 +98,9 @@ Qed.
 
 (* monster grows very fast after that.  monster 4 = 34,
   monster 5 = 63245986 *)
-Elpi R_compute (monster 5).
+Elpi R_compute (monster (Rabs 5)).
 
-Elpi R_compute (fib (fib 9 + 2)).
-
-(* This is the proof that fib_Z_mirror is correct.  This hand-made proof
-  is structural and should serve as a pattern for an automatically generated
-  proof, relying on theorems from the private section, and already
-  established proofs for called functions. *)
-Lemma fib_Z_mirror_IZR n : Rnat n -> fib n = IZR (fib_Z_mirror (IRZ n)).
-Proof.
-(* This line is specific to factorial. *)
-unfold fib, fib_Z_mirror.
-(* what follows is generic. *)
-unfold Rnat_rec, IRN.
-intros nnat.
-destruct (Rnat_exists_nat n) as [k nq].
-rewrite nq; rewrite IRZ_IZR, Zabs2Nat.id.
-apply private.nth_map;[easy | ].
-apply private.nat_rect_list_IZR.
-  reflexivity.
-intros m lr lz lq.
-cbn [map].
-repeat (apply f_equal2;[apply private.nth_map;[reflexivity | exact lq] | ]).
-apply f_equal2;[ | easy].
-(* end of the generic part. *)
-(* We now enter specific ground. *)
-(* The left hand side is nth 0 lr 0 + nth 1 lr 0, so there is a
-  an addition amd recirsove calls. *)
-apply (private.IZR_map2 _ _ (fun x y => eq_sym (plus_IZR x y))).
-  exact (private.nth_map _ _ _ _ _ _ eq_refl lq).
-exact (private.nth_map _ _ _ _ _ _ eq_refl lq).
-Qed.
+Elpi R_compute (fib (Rabs (fib (Rabs 9) + 2))).
 
 (* A proof that Rnat is stable for fib, using only tactics that can be
   shown to students.  There is a clever trick here, which is the technique
@@ -203,59 +177,6 @@ rec_Rnat monster.
 Qed.
 
 Existing Instance monster_nat.
-About private.IZR_map2.
-Check private.nth_map.
-Check add_compute.
-
-Check (fun (_ : nat) (lr : list R) (lz : list Z) (h : lr = map IZR lz) =>
-            (f_equal2 (@cons R)
-              (private.nth_map 0%Z 0 IZR _ _ 1 eq_refl h)
-              (f_equal2 (@cons R)
-                 (private.IZR_map2 Rplus Z.add
-                    add_compute
-        (nth 0 lr 0) (nth 1 lr 0)
-        (nth 0 lz 0%Z) (nth 1 lz 0%Z)
-          (private.nth_map 0%Z 0 IZR lz lr 0 eq_refl h)
-          (private.nth_map 0%Z 0 IZR _ _ 1 eq_refl h)) 
-          (eq_refl : nil = nil)) )).
-
-Check (fun (lr : list R) (lz : list Z) (h : lr = map IZR lz) =>
-      private.IZR_map2 Rplus Z.add
-        (fun x y => eq_sym (plus_IZR x y))
-        (nth 0 lr 0) (nth 1 lr 0)
-        (nth 0 lz 0%Z) (nth 1 lz 0%Z)
-          (private.nth_map 0%Z 0 IZR _ _ 0 eq_refl h)
-          (private.nth_map 0%Z 0 IZR _ _ 1 eq_refl h)).
-About f_equal2.
-Check fun lr lz (h : lr = map IZR lz)=> f_equal2 (@cons R)
-    (private.nth_map 0%Z 0 IZR _ _ 1 eq_refl h)
-      (f_equal2 (@cons R)
-       (private.IZR_map2 Rplus Z.add
-        (fun x y => eq_sym (plus_IZR x y))
-        (nth 0 lr 0) (nth 1 lr 0)
-        (nth 0 lz 0%Z) (nth 1 lz 0%Z)
-          (private.nth_map 0%Z 0 IZR _ _ 0 eq_refl h)
-          (private.nth_map 0%Z 0 IZR _ _ 1 eq_refl h)) 
-          (eq_refl : nil = nil)).
-
-
-Check fun (n : R) (k : nat) (nq : n = INR k) =>
-        private.nat_rect_list_IZR (0%Z :: 1%Z :: nil) (0 :: 1 :: nil)
-          (fun _ : nat => fun l 
-            => (nth 1 l 0 :: nth 0 l 0 + nth 1 l 0 :: nil)%Z)
-          (fun _ : nat => fun l => nth 1 l 0 :: nth 0 l 0 + nth 1 l 0 :: nil) 
-          k eq_refl
-          (fun (_ : nat) (lr : list R) (lz : list Z) (h : lr = map IZR lz) =>
-            (f_equal2 (@cons R)
-              (private.nth_map 0%Z 0 IZR _ _ 1 eq_refl h)
-              (f_equal2 (@cons R)
-                 (private.IZR_map2 Rplus Z.add
-                    (fun x y => eq_sym (plus_IZR x y))
-        (nth 0 lr 0) (nth 1 lr 0)
-        (nth 0 lz 0%Z) (nth 1 lz 0%Z)
-          (private.nth_map 0%Z 0 IZR _ _ 0 eq_refl h)
-          (private.nth_map 0%Z 0 IZR _ _ 1 eq_refl h)) 
-          (eq_refl : nil = nil)) )).
 
 (* this is one way to keep the result in a theorem, without using the
   fact that the computation has already been done.  However, this is
@@ -265,14 +186,12 @@ Proof.
   (*  It is difficult to make this succession of computation
     steps automatic, because they should rather be done inside
     out. *)
-rewrite (fib_Z_mirror_IZR 9); try typeclasses eauto.
-rewrite IRZ_IZR.
+rewrite (fib_Z_prf 9 _ _ eq_refl); try typeclasses eauto.
 rewrite <- plus_IZR.
 match goal with |- context [IZR ?x] =>
   let v := eval compute in x in change x with v
 end.
-rewrite fib_Z_mirror_IZR; try typeclasses eauto.
-rewrite IRZ_IZR.
+rewrite (fib_Z_prf _ _ _ eq_refl); try typeclasses eauto.
 match goal with |- context [IZR ?x] =>
   let v := eval compute in x in change x with v
 end.
@@ -316,7 +235,7 @@ Recursive (fun  test3 : R -> R => test3 0 = 0 /\ test3 1 = 1 /\
 
 Elpi mirror_recursive_definition test3.
 
-Elpi R_compute (test3 10).
+Elpi R_compute (test3 (Rabs 10)).
 
 Recursive (def factorial such that factorial 0 = 1 /\
   forall n, Rnat (n - 1) -> factorial n = n * factorial (n - 1)).
@@ -341,7 +260,7 @@ Existing Instance factorial_nat.
 
 Elpi mirror_recursive_definition factorial.
 
-Elpi R_compute (factorial 6).
+Elpi R_compute (factorial (Rabs 6)).
 
 (* lra is usable in the automatic step here because each multiplication instance is
   actually multiplciation by an integer constant. *)
@@ -371,41 +290,11 @@ end.
 *)
 Qed.
 
-Lemma factorial_factorial_Z_mirror n : Rnat n ->
-  factorial n = IZR (factorial_Z_mirror (IRZ n)).
-Proof.
-(* This line is specific to factorial. *)
-unfold factorial, factorial_Z_mirror.
-(* what follows is generic. *)
-unfold Rnat_rec, IRN.
-intros nnat.
-destruct (Rnat_exists_nat n) as [k nq].
-rewrite nq; rewrite IRZ_IZR, Zabs2Nat.id.
-apply private.nth_map;[easy | ].
-apply private.nat_rect_list_IZR.
-  reflexivity.
-intros m lr lz lq.
-cbn [map].
-repeat (apply f_equal2;[apply private.nth_map;[reflexivity | exact lq] | ]).
-apply f_equal2;[ | easy].
-(* end of the generic part. *)
-(* We now enter specific ground. *)
-(* The left hand side is (1 + INR m) * nth 0 lr 0, so there is a
-  multipliation followed by an addition, a constant, and
-  the injection of the current natural number. *)
-apply (private.IZR_map2 _ _ (fun x y => eq_sym (mult_IZR x y))).
-  apply (private.IZR_map2 _ _ (fun x y => eq_sym (plus_IZR x y))).
-    reflexivity.
-  apply INR_IZR_INZ.
-exact (private.nth_map _ _ _ _ _ _ eq_refl lq).
-Qed.
-
-Elpi R_compute (42 + fib (factorial 5)).
+Elpi R_compute (42 + fib (Rabs (factorial (Rabs 5)))).
 
 Derive fct15 SuchThat (fct15 = factorial 15) As fct15_eq.
 Proof.
-rewrite factorial_factorial_Z_mirror; try typeclasses eauto.
-rewrite IRZ_IZR.
+rewrite (factorial_Z_prf _ _ _ eq_refl); try typeclasses eauto.
 match goal with
  |- context[IZR ?v0] =>
    let v := eval compute in v0 in
@@ -417,10 +306,9 @@ Qed.
 
 Derive huge_val SuchThat (huge_val = 42 + fib (factorial 5)) As huge_val_eq.
 Proof.
-rewrite fib_Z_mirror_IZR;[ | typeclasses eauto].
+rewrite (factorial_Z_prf _ _ _ eq_refl).
+rewrite (fib_Z_prf _ _ _ eq_refl).
 rewrite <- plus_IZR.
-rewrite factorial_factorial_Z_mirror;[ | typeclasses eauto].
-rewrite !IRZ_IZR.
 match goal with |- context [IZR ?v] =>
   let y := eval vm_compute in v in change v with y
 end.
