@@ -178,15 +178,24 @@ Proof.
 intros dq lq; rewrite dq, lq; apply map_nth.
 Qed.
 
-Lemma IRN_Z_abs_nat n z : n = IZR z -> IRN n = Z.abs_nat z.
+Lemma IRN_Z_abs_nat n z : n = IZR z -> IRN (Rabs n) = Z.abs_nat z.
 Proof.
-now intros nzq; unfold IRN; rewrite nzq, IRZ_IZR.
+intros nzq; unfold IRN.
+destruct (Rle_or_lt 0 n).
+  rewrite Rabs_right;[ | lra].
+  now rewrite nzq, IRZ_IZR.
+rewrite Rabs_left;[ | lra].
+rewrite nzq, <- opp_IZR, IRZ_IZR.
+now destruct z.
 Qed.
 
-Lemma INR_Z_abs_nat n z : Rnat n -> n = IZR z -> n = INR (Z.abs_nat z).
+Lemma INR_Z_abs_nat n z : n = IZR z -> Rabs n = INR (Z.abs_nat z).
 Proof.
-intros nnat nzq; rewrite <- (IRN_Z_abs_nat _ _ nzq).
-now rewrite INR_IRN.
+intros nzq.
+rewrite nzq.
+rewrite <- abs_IZR.
+rewrite INR_IZR_INZ.
+now rewrite Nat2Z.inj_abs_nat.
 Qed.
 
 End private.

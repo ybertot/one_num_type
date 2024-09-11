@@ -57,16 +57,14 @@ thm_table {{Ropp}} {{Z.opp}} {{opp_compute}}.
 % 1/ a function f from R -> R
 % 2/ a function fz from Z -> Z
 % 3/ a theorem f_prf with statement
-%   forall x y, Rnat x -> x = IZR y -> f x = IZR (fz y)
-% 4/ a theorem f_abs with statement
-%  forall x, fz (Z.abs x) = fz x
+%   forall x y, Rnat x -> x = IZR y -> f (Rabs x) = IZR (fz y)
 %  This reflect that recursive definitions are mirrored
 % by function that first perform a Z.abs_nat operation 
 % to obtain the integer that will feed the recursive
 % computation
 % This table is used by R_compute, and its elements
 % are produced by mirror_recursive_definition
-pred nat_thm_table o:term, o:term, o:term, o:term.
+pred nat_thm_table o:term, o:term, o:term.
 
 }}.
 
@@ -90,14 +88,21 @@ translate (app [Fr, A, B]) (app [Fz, A1, B1]) :-
 
 translate (app [Fr, {{Rabs lp:A}}]) (app [Fz, A1]) :-
   std.do! [
-    nat_thm_table Fr Fz _ _,
+    nat_thm_table Fr Fz _,
     translate A A1
   ].
 
+translate (app [Fr, {{IZR 0}}]) (app [Fz, {{0%Z}}]) :-
+  nat_thm_table Fr Fz _, !.
+
+translate (app [Fr, {{IZR (Z.pos lp:V)}}])
+  (app [Fz, {{Z.pos lp:V}}]) :-
+  nat_thm_table Fr Fz _, !.
+
 translate (app [Fr, _]) _ :-
-  nat_thm_table Fr _ _ _,!,
+  nat_thm_table Fr _ _,!,
   Msg is "The argument of " ^ {coq.term->string Fr} ^ 
-    "should be a call to Rabs",
+    " should be a call to Rabs or a non-negative constant",
   coq.error Msg.
 
 translate (app [Fr, A]) (app [Fz, A1]) :-
@@ -179,10 +184,10 @@ translate_prf {{cons lp:A lp:L}} {{cons lp:A1 lp:L1}}
 translate_prf {{IZR lp:A}} {{lp:A}} {{eq_refl: IZR lp:A = IZR lp:A}}.
 
 translate_prf (app [F, {{Rabs lp:A}}]) (app [F1, A1])
-  {{private.IZR_map1_abs lp:F lp:F1 lp:PFF1 lp:PRFabs lp:A lp:A1 lp:PFRA}} :-
+  {{lp:PFF1 lp:A lp:A1 lp:PRFA}} :-
   std.do![
-    nat_thm_table F F1 PFF1 PRFabs,
-    translate_prf A A1 PFRA
+    nat_thm_table F F1 PFF1,
+    translate_prf A A1 PRFA
   ].
 
 translate_prf (app [F, A]) (app [F1, A1]) 
@@ -200,16 +205,19 @@ translate_prf (app [F, A, B]) (app [F1, A1, B1])
   translate_prf B B1 PFRB
   ].
 
-main_translate_prf
-  {{fun (x : Z) => 
-    nth 0 (nat_rect (fun _ => list R) lp:L lp:F (Z.abs_nat x)) 0}}
-  {{fun (x : Z) => 
-    nth 0 (nat_rect (fun _ => list Z) lp:L1 lp:F1 (Z.abs_nat x)) 0%Z}}
-  {{fun N : R => fun K : nat => fun Hnk : N = INR K =>
+pred main_translate_prf1 i:term i:term o:term o:term o:term.
+
+main_translate_prf1
+  L F L1 F1
+  {{fun N : R => fun z : Z =>
      private.nth_map 0%Z 0 IZR _ _ 0 eq_refl
-      (private.nat_rect_list_IZR lp:L1 lp:L lp:F1 lp:F K eq_refl lp:FPRF)}} :-
-  std.do! [translate L L1,
-  translate_prf F F1 FPRF].
+     (private.nat_rect_list_IZR lp:L1 lp:L lp:F1 lp:F
+       (Z.abs_nat z) eq_refl lp:FPRF)}} :-
+    std.do! [
+      translate_prf L L1 _,
+      translate_prf F F1 FPRF
+    ].
+
 
 main_translate_prf
   {{fun (n : R) =>
@@ -217,24 +225,21 @@ main_translate_prf
   F Prf1 :-
   Frstep0 = (fun _ {{R}} Frstep),
   Fnstep = (fun _ {{nat}} c \ (Frstep {{INR lp:c}})),
-  MainF = {{fun (x : Z) =>
-         nth 0 (nat_rect (fun _ => list R) lp:L
-           lp:Fnstep (Z.abs_nat x)) 0}},
-% It is not sure that the next step is necessary
-% It was useful as a debugging prop
-  std.assert-ok! (coq.typecheck MainF
-     _) "failed to typecheck step func",
-  main_translate_prf MainF F Prf,
-  F = (fun _ _ Zbo),
-  (sigma c \ Zbo c = {{nth _ (nat_rect _ lp:Lz lp:Fz _) _}}),
+  main_translate_prf1 L Fnstep Lz Fz Prf,
+  F = {{fun (x : Z) =>
+         nth 0 (nat_rect (fun _ => list Z) lp:Lz
+           lp:Fz (Z.abs_nat x)) 0%Z}},
+  std.assert-ok! (coq.typecheck F {{Z->Z}})
+    "failed to typecheck mirror function",
   Prf1 = 
-    {{fun (n : R) (z : Z) (nnat : Rnat n) (nzq : n = IZR z) =>
+    {{fun (n : R) (z : Z) (nzq : n = IZR z) =>
        eq_ind_r
          (fun x : nat => 
-           nth 0 (nat_rect _ lp:L (fun m => lp:Frstep0 (INR m)) x) 0 =
+           nth 0 (nat_rect _ lp:L lp:Fnstep x) 0 =
            IZR (nth 0 (nat_rect _ lp:Lz lp:Fz (Z.abs_nat z)) 0%Z))
-        (lp:Prf n (Z.abs_nat z)
-          (private.INR_Z_abs_nat _  _ nnat nzq))
+        (lp:Prf n z
+           (* (private.INR_Z_abs_nat _  _ nzq) *)
+          )
           (private.IRN_Z_abs_nat _ _ nzq)}}.
 
 
@@ -282,7 +287,7 @@ translate {{IZR lp:V}} V.
 
 translate (app [F, {{Rabs lp:V}}])
   (app [F1, V1]) :-
-  nat_thm_table F F1 _ _, !,
+  nat_thm_table F F1 _, !,
   translate V V1.
 
 translate (app [F | L]) (app [F1 | L1]) :-
@@ -331,24 +336,17 @@ std.do! [
   F_mirror is F ^ "_Z_mirror",
   coq.env.add-const F_mirror T1 Ty @transparent! C,
   Fterm = global (const C),
-  Stmt = {{forall n z, Rnat n -> n = IZR z ->
-         lp:{{(global (const FGR))}} n =
+  Stmt = {{forall n z, n = IZR z ->
+         lp:{{(global (const FGR))}} (Rabs n) =
          IZR (lp:Fterm z)}},
   std.assert-ok! (coq.typecheck Prf Stmt)
          "Anomaly: generating an incorrect proof",
   F_prf is F ^ "_Z_prf",
   coq.env.add-const F_prf Prf Stmt @opaque! Cprf,
-  Stmt_abs = {{forall z : Z,  lp:Fterm (Z.abs z) = lp:Fterm z}},
-  make_abs_involution_proof T1 Prf2,
-  std.assert-ok! (coq.typecheck Prf2 Stmt_abs)
-    "failed to prove the invariance with respect to absolute values",
-  F_Z_abs is F ^ "_Z_abs_prf",
-  coq.env.add-const F_Z_abs Prf2 Stmt_abs @opaque! CPrfabs,
   coq.elpi.accumulate _ "R_compute.db"
     (clause _ _ (nat_thm_table (global (const FGR))
                    (global (const C))
-                   (global (const Cprf))
-                   (global (const CPrfabs))))                 
+                   (global (const Cprf))))                 
 ].
 
 main L :-
@@ -356,3 +354,18 @@ main L :-
 }}.
 
 Elpi Typecheck.
+
+Recursive (def fib such that
+  (fib 0 = 0 /\ fib 1 = 1 /\
+   (forall n, Rnat (n - 2) ->
+     fib n = fib (n - 2) + fib (n - 1)))).
+
+Recursive (def monster such that 
+  monster 0 = 1 /\
+  forall n, Rnat (n - 1) -> monster n = fib (Rabs (monster (n - 1) + 2))).
+
+Elpi Query lp:{{ main [str "fib"] }}.
+Elpi Query lp:{{ main [str "monster"]}}.
+
+Elpi R_compute (fib 6).
+Elpi R_compute (monster (Rabs (fib 5 + 1))).
