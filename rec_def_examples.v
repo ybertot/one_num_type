@@ -186,12 +186,15 @@ Proof.
   (*  It is difficult to make this succession of computation
     steps automatic, because they should rather be done inside
     out. *)
-rewrite (fib_Z_prf 9 _ _ eq_refl); try typeclasses eauto.
+
+replace 9 with (Rabs 9);[ | rewrite Rabs_pos_eq; lra].
+rewrite (fib_Z_prf 9 _ eq_refl).
 rewrite <- plus_IZR.
 match goal with |- context [IZR ?x] =>
   let v := eval compute in x in change x with v
 end.
-rewrite (fib_Z_prf _ _ _ eq_refl); try typeclasses eauto.
+replace 36 with (Rabs 36);[ | rewrite Rabs_pos_eq; lra].
+rewrite (fib_Z_prf _ _ eq_refl); try typeclasses eauto.
 match goal with |- context [IZR ?x] =>
   let v := eval compute in x in change x with v
 end.
@@ -294,7 +297,8 @@ Elpi R_compute (42 + fib (Rabs (factorial (Rabs 5)))).
 
 Derive fct15 SuchThat (fct15 = factorial 15) As fct15_eq.
 Proof.
-rewrite (factorial_Z_prf _ _ _ eq_refl); try typeclasses eauto.
+replace 15 with (Rabs 15);[ | rewrite Rabs_pos_eq; lra].
+rewrite (factorial_Z_prf _ _ eq_refl).
 match goal with
  |- context[IZR ?v0] =>
    let v := eval compute in v0 in
@@ -306,14 +310,22 @@ Qed.
 
 Derive huge_val SuchThat (huge_val = 42 + fib (factorial 5)) As huge_val_eq.
 Proof.
-rewrite (factorial_Z_prf _ _ _ eq_refl).
-rewrite (fib_Z_prf _ _ _ eq_refl).
+replace 5 with (Rabs 5);[ | apply Rabs_pos_eq; lra].
+rewrite (factorial_Z_prf _ _ eq_refl).
+replace (IZR (factorial_Z_mirror 5)) with
+ (Rabs (IZR (factorial_Z_mirror 5)));[ | shelve].
+rewrite (fib_Z_prf _ _ eq_refl).
 rewrite <- plus_IZR.
 match goal with |- context [IZR ?v] =>
   let y := eval vm_compute in v in change v with y
 end.
 unfold huge_val.
 reflexivity.
+Unshelve.
+match goal with |- context [IZR ?v] =>
+  let y := eval vm_compute in v in change v with y
+end.
+apply Rabs_pos_eq; lra.
 Qed.
 
 (* This example puts the user interface under stress (if one uses an input
