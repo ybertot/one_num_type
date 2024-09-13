@@ -43,6 +43,8 @@ compute_table {{Ropp}} {{Z.opp}}.
 
 compute_table {{Rpower}} {{Z.pow}}.
 
+compute_table {{Rabs}} {{Z.abs}}.
+
 pred thm_table o:term, o:term, o:term.
 
 thm_table {{Rplus}} {{Z.add}} {{add_compute}}.
@@ -53,6 +55,7 @@ thm_table {{Rminus}} {{Z.sub}} {{sub_compute}}.
 
 thm_table {{Ropp}} {{Z.opp}} {{opp_compute}}.
 
+thm_table {{Rabs}} {{Z.abs}} {{abs_compute}}.
 % arguments in a nat_thm_table relation are
 % 1/ a function f from R -> R
 % 2/ a function fz from Z -> Z
@@ -151,7 +154,6 @@ Elpi Accumulate lp:{{
 
 pred translate_list_prf i:list term, o:list term, o:list term.
 pred translate_prf i:term, o:term, o:term.
-pred param_translate_prf i:term, i:term, i:term, o:term, o:term.
 pred main_translate_prf i:term, o:term, o:term.
 
 translate_prf (fun N {{nat}} F) (fun N {{nat}} F1) 
@@ -189,6 +191,16 @@ translate_prf (app [F, {{Rabs lp:A}}]) (app [F1, A1])
     nat_thm_table F F1 PFF1,
     translate_prf A A1 PRFA
   ].
+
+translate_prf {{lp:F (IZR (Zpos lp:P))}}
+  {{lp:Fz (Zpos lp:P)}}
+  {{private.cancel_Rabs_pos lp:F lp:Fz lp:Prf lp:P}} :-
+  nat_thm_table F Fz Prf.
+
+translate_prf (app [F, {{lp:F (IZR 0%Z)}}])
+  {{lp:Fz 0%Z}}
+  {{private.cancel_Rabs_0 lp:F lp:Fz lp:Prf}} :-
+  nat_thm_table F Fz Prf.
 
 translate_prf (app [F, A]) (app [F1, A1]) 
   {{private.IZR_map1 lp:F lp:F1 lp:PFF1 lp:A lp:A1 lp:PFRA}} :-
@@ -304,19 +316,8 @@ translate_list [A | L] [A1 | L1] :-
     translate_list L L1
   ].
 
-
 translate A _ :-
   coq.error "unexpected term in translation" A.
-
-pred make_abs_involution_proof i:term, o:term.
-
-make_abs_involution_proof Fbody
- {{private.Zabs_nat_Zabs_involutive
-    (fun n => nth 0 
-      (nat_rect (fun _ => list Z) lp:L1 lp:F1 n) 0%Z)}} :-
-  Fbody = (fun _ _ Bo),
-  (sigma c \ Bo c = {{@nth _ _ lp:W _}}),
-  W = {{nat_rect _ lp:L1 lp:F1 _}}.
 
 main [str F] :-
 std.do! [
@@ -360,6 +361,33 @@ Recursive (def fib such that
    (forall n, Rnat (n - 2) ->
      fib n = fib (n - 2) + fib (n - 1)))).
 
+(* The following experiment prefigures what can be done
+   so that R_compute returns not only the value but also
+   the proof that this value is correct. *)
+Elpi Query lp:{{
+  sigma CF CM GP F PRF Stmt \
+  (
+  main [str "fib"],!,
+  coq.locate "fib" CF,
+  coq.locate "fib_Z_mirror" CM,
+  coq.locate "fib_Z_prf" CP,
+  nat_thm_table (global CF) (global CM) (global CP) =>
+    (F0 = {{fib 9}},
+     translate_prf F0 F PRF,
+     coq.reduction.vm.norm F {{Z}} V,
+     Stmt = {{lp:F0 = IZR lp:V}},
+     coq.typecheck PRF Stmt Diag,
+     coq.term->string Stmt S
+    )
+  )
+}}.
+
+(*
+Recursive (def fib such that
+  (fib 0 = 0 /\ fib 1 = 1 /\
+   (forall n, Rnat (n - 2) ->
+     fib n = fib (n - 2) + fib (n - 1)))).
+
 Recursive (def monster such that 
   monster 0 = 1 /\
   forall n, Rnat (n - 1) -> monster n = fib (Rabs (monster (n - 1) + 2))).
@@ -369,3 +397,4 @@ Elpi Query lp:{{ main [str "monster"]}}.
 
 Elpi R_compute (fib 6).
 Elpi R_compute (monster (Rabs (fib 5 + 1))).
+*)
