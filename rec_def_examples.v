@@ -56,27 +56,14 @@ Recursive (def monster such that monster 0 = 1 /\
 
 Elpi mirror_recursive_definition monster.
 
+Elpi R_compute (monster 2) m2_eqn.
+
 Lemma monster2 : monster 2 = 2.
 Proof.
-destruct monster_eqn as [monster0 monster_suc].
-destruct fib_eqn as [fib0 [fib1 fib_suc]].
-rewrite monster_suc; ring_simplify (2 - 1); [ | typeclasses eauto].
-rewrite monster_suc; ring_simplify (1 - 1); [ | typeclasses eauto].
-rewrite monster0.
-rewrite (Rabs_right (1 + 1));[ | lra].
-rewrite (fib_suc (1 + 1)); ring_simplify (1 + 1 - 2); [ | typeclasses eauto].
-ring_simplify (1 + 1 - 1).
-rewrite fib0, fib1.
-rewrite (Rabs_right (0 + 1 + 2));[ | lra].
-rewrite fib_suc; ring_simplify (0 + 1 + 2 - 2);[ | typeclasses eauto].
-rewrite fib1.
-ring_simplify (0 + 1 + 2 - 1).
-rewrite fib_suc; ring_simplify (2 - 2);[ | typeclasses eauto].
-ring_simplify (2 - 1).
-rewrite fib0, fib1.
-ring.
+exact m2_eqn.
 Qed.
 
+(* An example of making the proofs step by step with the specifications. *)
 Lemma monster3 : monster 3 = 5.
 Proof.
 destruct monster_eqn as [monster0 monster_suc].
@@ -98,9 +85,9 @@ Qed.
 
 (* monster grows very fast after that.  monster 4 = 34,
   monster 5 = 63245986 *)
-Elpi R_compute (monster (Rabs 5)).
+Elpi R_compute (monster 5) m5_eqn.
 
-Elpi R_compute (fib (Rabs (fib (Rabs 9) + 2))).
+Elpi R_compute (fib (Rabs (fib (Rabs 9) + 2))) ff9_eqn.
 
 (* A proof that Rnat is stable for fib, using only tactics that can be
   shown to students.  There is a clever trick here, which is the technique
@@ -263,7 +250,7 @@ Existing Instance factorial_nat.
 
 Elpi mirror_recursive_definition factorial.
 
-Elpi R_compute (factorial (Rabs 6)).
+Elpi R_compute (factorial 6).
 
 (* lra is usable in the automatic step here because each multiplication instance is
   actually multiplciation by an integer constant. *)
@@ -295,55 +282,31 @@ Qed.
 
 Elpi R_compute (42 + fib (Rabs (factorial (Rabs 5)))).
 
-Derive fct15 SuchThat (fct15 = factorial 15) As fct15_eq.
-Proof.
-replace 15 with (Rabs 15);[ | rewrite Rabs_pos_eq; lra].
-rewrite (factorial_Z_prf _ _ eq_refl).
-match goal with
- |- context[IZR ?v0] =>
-   let v := eval compute in v0 in
-     change v0 with v
-end.
-unfold fct15.
-reflexivity.
-Qed.
+Elpi R_compute (factorial 15) fact15_eqn.
 
+(* The following two lines are preparatory lines for the next interactive  *)
+(* proof.  We want to establish the value of 42 + fib (factorial 5) but    *)
+(* the computation tool only accepts formulas where calls of recursive     *)
+(* function on values that are guaranteed to be positive (using Rabs).     *)
+(* So we call the computation tool on the patched formula, and we will     *)
+(* to show that the absolute value instances are useless.                  *)
+Elpi R_compute (42 + fib (Rabs (factorial 5))) huge_val_pre_eq.
+
+(* This computation is for the subformula (in the absolute value)          *)
+Elpi R_compute (factorial 5) huge_val_subproof.
+
+(* We can now prove the value for the formula that was initially intended, *)
+(* TODO: make the preliminary steps into tactic steps, withoug the need to *)
+(* define theorems.                                                        *)
 Derive huge_val SuchThat (huge_val = 42 + fib (factorial 5)) As huge_val_eq.
 Proof.
-replace 5 with (Rabs 5);[ | apply Rabs_pos_eq; lra].
-rewrite (factorial_Z_prf _ _ eq_refl).
-replace (IZR (factorial_Z_mirror 5)) with
- (Rabs (IZR (factorial_Z_mirror 5)));[ | shelve].
-rewrite (fib_Z_prf _ _ eq_refl).
-rewrite <- plus_IZR.
-match goal with |- context [IZR ?v] =>
-  let y := eval vm_compute in v in change v with y
-end.
+generalize huge_val_pre_eq.
+assert (0 <= factorial 5).
+  rewrite huge_val_subproof.
+  lra.
+rewrite Rabs_pos_eq; auto.
+intros ->.
 unfold huge_val.
 reflexivity.
-Unshelve.
-match goal with |- context [IZR ?v] =>
-  let y := eval vm_compute in v in change v with y
-end.
-apply Rabs_pos_eq; lra.
 Qed.
 
-(* This example puts the user interface under stress (if one uses an input
-  higher that 14), as it returns
-  a tree of additions, where all the leaves are either 1 or (0 + 1).
-  with the parentheses, this data should take at least 10 k chars. *)
-Lemma fib11 : fib 11 = 89.
-Proof.
-unfold fib.
-unfold Rnat_rec.
-unfold IRN.
-rewrite IRZ_IZR.
-(* If the simpl command is placed alone in a command and its result
-  should be improved, this breaks the outputting machinery of
-  VsCoq2's current version.  Otherwise, just executing the combined
-  simpl; ring command leads to a command that takes 3 seconds to
-  execute. *)
-simpl.
-ring_simplify.
-reflexivity.
-Qed.

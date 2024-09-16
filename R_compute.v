@@ -29,6 +29,73 @@ Proof.
 exact (fun x => eq_sym (abs_IZR x)).
 Qed.
 
+Elpi Db R_translate.db lp:{{
+pred translate_prf i:term, o:term, o:term.
+pred main_translate_prf i:term, o:term, o:term.
+
+translate_prf (fun N {{nat}} F) (fun N {{nat}} F1)
+  (fun N {{nat}} PF) :-
+  (pi CN \
+    translate_prf {{INR lp:CN}} {{Z.of_nat lp:CN}} {{INR_IZR_INZ lp:CN}} =>
+    translate_prf (F CN) (F1 CN) (PF CN)).
+
+translate_prf (fun L {{list R}} F) (fun L {{list Z}} F1)
+  PF0 :-
+  (pi Cl1 Cl2 Hll \
+    translate_prf Cl1 Cl2 Hll =>
+    translate_prf (F Cl1) (F1 Cl2) (PF Cl1 Cl2 Hll)),
+    PF0 = {{fun (lr : list R) (lz : list Z)
+      (h : lr = @map Z R IZR lz :> list R) => lp:(PF lr lz h)}}.
+
+translate_prf {{nth lp:K lp:L 0}} {{nth lp:K lp:Lz 0%Z}}
+  {{private.nth_map 0%Z 0 IZR lp:Lz lp:L lp:K eq_refl lp:H}} :-
+  translate_prf L Lz H.
+
+translate_prf {{@nil R}} {{@nil Z}} {{eq_refl : nil = @map Z R IZR nil}}.
+
+translate_prf {{cons lp:A lp:L}} {{cons lp:A1 lp:L1}}
+  {{f_equal2 (@cons R) lp:Pfa lp:Pfl}}:-
+  std.do! [
+    translate_prf A A1 Pfa,
+    translate_prf L L1 Pfl
+  ].
+
+translate_prf {{IZR lp:A}} {{lp:A}} {{eq_refl: IZR lp:A = IZR lp:A}}.
+
+translate_prf (app [F, {{Rabs lp:A}}]) (app [F1, A1])
+  {{lp:PFF1 lp:A lp:A1 lp:PRFA}} :-
+  std.do![
+    nat_thm_table F F1 PFF1,
+    translate_prf A A1 PRFA
+  ].
+
+translate_prf {{lp:F (IZR (Zpos lp:P))}}
+  {{lp:Fz (Zpos lp:P)}}
+  {{private.cancel_Rabs_pos lp:F lp:Fz lp:Prf lp:P}} :-
+  nat_thm_table F Fz Prf.
+
+translate_prf (app [F, {{lp:F (IZR 0%Z)}}])
+  {{lp:Fz 0%Z}}
+  {{private.cancel_Rabs_0 lp:F lp:Fz lp:Prf}} :-
+  nat_thm_table F Fz Prf.
+
+translate_prf (app [F, A]) (app [F1, A1])
+  {{private.IZR_map1 lp:F lp:F1 lp:PFF1 lp:A lp:A1 lp:PFRA}} :-
+  std.do! [
+  thm_table F F1 PFF1,
+  translate_prf A A1 PFRA
+  ].
+
+translate_prf (app [F, A, B]) (app [F1, A1, B1])
+  {{private.IZR_map2 lp:F lp:F1 lp:PFF1 lp:A lp:B lp:A1 lp:B1 lp:PFRA lp:PFRB}} :-
+  std.do! [
+  thm_table F F1 PFF1,
+  translate_prf A A1 PFRA,
+  translate_prf B B1 PFRB
+  ].
+
+}}.
+
 Elpi Db R_compute.db lp:{{
 
 pred compute_table o:term, o:term.
@@ -76,53 +143,27 @@ Elpi Typecheck.
 Elpi Command R_compute.
 
 Elpi Accumulate Db R_compute.db.
+Elpi Accumulate Db R_translate.db.
+
 Elpi Accumulate lp:{{
-
-pred translate i:term, o:term.
-
-translate {{IZR lp:A}}  A :- !.
-
-translate (app [Fr, A, B]) (app [Fz, A1, B1]) :-
-  std.do! [
-    translate A A1,
-    translate B B1,
-    compute_table Fr Fz
-  ].
-
-translate (app [Fr, {{Rabs lp:A}}]) (app [Fz, A1]) :-
-  std.do! [
-    nat_thm_table Fr Fz _,
-    translate A A1
-  ].
-
-translate (app [Fr, {{IZR 0}}]) (app [Fz, {{0%Z}}]) :-
-  nat_thm_table Fr Fz _, !.
-
-translate (app [Fr, {{IZR (Z.pos lp:V)}}])
-  (app [Fz, {{Z.pos lp:V}}]) :-
-  nat_thm_table Fr Fz _, !.
-
-translate (app [Fr, _]) _ :-
-  nat_thm_table Fr _ _,!,
-  Msg is "The argument of " ^ {coq.term->string Fr} ^ 
-    " should be a call to Rabs or a non-negative constant",
-  coq.error Msg.
-
-translate (app [Fr, A]) (app [Fz, A1]) :-
-  std.do! [
-    translate A A1,
-    compute_table Fr Fz
-  ].
-
-translate (app [Fr | _]) _ :-
-   coq.error "no correspondence for" {coq.term->string Fr}.
 
   main [trm E] :-
     std.do! [
-      translate E E1,
+      translate_prf E E1 _,
       coq.reduction.vm.norm E1 _ E2,
       E3 = {{IZR lp:E2}},
       coq.say " = " {coq.term->string E3}
+    ].
+
+main [trm E, str THM_name] :-
+    std.do! [
+      translate_prf E E1 PRF,
+      coq.reduction.vm.norm E1 _ E2,
+      E3 = {{IZR lp:E2}},
+      coq.say " = " {coq.term->string E3},
+      Stmt = {{lp:E = IZR lp:E2}},
+      coq.typecheck PRF Stmt _,
+      coq.env.add-const THM_name PRF Stmt @opaque! _
     ].
 
 }}.
@@ -149,74 +190,11 @@ Elpi Typecheck.
 
 Elpi Command mirror_recursive_definition.
 Elpi Accumulate Db R_compute.db.
+Elpi Accumulate Db R_translate.db.
 
 Elpi Accumulate lp:{{
 
 pred translate_list_prf i:list term, o:list term, o:list term.
-pred translate_prf i:term, o:term, o:term.
-pred main_translate_prf i:term, o:term, o:term.
-
-translate_prf (fun N {{nat}} F) (fun N {{nat}} F1) 
-  (fun N {{nat}} PF) :-
-  (pi CN \
-    translate_prf {{INR lp:CN}} {{Z.of_nat lp:CN}} {{INR_IZR_INZ lp:CN}} =>
-    translate_prf (F CN) (F1 CN) (PF CN)).
-
-translate_prf (fun L {{list R}} F) (fun L {{list Z}} F1)
-  PF0 :-
-  (pi Cl1 Cl2 Hll \
-    translate_prf Cl1 Cl2 Hll =>
-    translate_prf (F Cl1) (F1 Cl2) (PF Cl1 Cl2 Hll)),
-    PF0 = {{fun (lr : list R) (lz : list Z)
-      (h : lr = @map Z R IZR lz :> list R) => lp:(PF lr lz h)}}.
-
-translate_prf {{nth lp:K lp:L 0}} {{nth lp:K lp:Lz 0%Z}}
-  {{private.nth_map 0%Z 0 IZR lp:Lz lp:L lp:K eq_refl lp:H}} :-
-  translate_prf L Lz H.
-
-translate_prf {{@nil R}} {{@nil Z}} {{eq_refl : nil = @map Z R IZR nil}}.
-
-translate_prf {{cons lp:A lp:L}} {{cons lp:A1 lp:L1}} 
-  {{f_equal2 (@cons R) lp:Pfa lp:Pfl}}:-
-  std.do! [
-    translate_prf A A1 Pfa,
-    translate_prf L L1 Pfl
-  ].
-
-translate_prf {{IZR lp:A}} {{lp:A}} {{eq_refl: IZR lp:A = IZR lp:A}}.
-
-translate_prf (app [F, {{Rabs lp:A}}]) (app [F1, A1])
-  {{lp:PFF1 lp:A lp:A1 lp:PRFA}} :-
-  std.do![
-    nat_thm_table F F1 PFF1,
-    translate_prf A A1 PRFA
-  ].
-
-translate_prf {{lp:F (IZR (Zpos lp:P))}}
-  {{lp:Fz (Zpos lp:P)}}
-  {{private.cancel_Rabs_pos lp:F lp:Fz lp:Prf lp:P}} :-
-  nat_thm_table F Fz Prf.
-
-translate_prf (app [F, {{lp:F (IZR 0%Z)}}])
-  {{lp:Fz 0%Z}}
-  {{private.cancel_Rabs_0 lp:F lp:Fz lp:Prf}} :-
-  nat_thm_table F Fz Prf.
-
-translate_prf (app [F, A]) (app [F1, A1]) 
-  {{private.IZR_map1 lp:F lp:F1 lp:PFF1 lp:A lp:A1 lp:PFRA}} :-
-  std.do! [
-  thm_table F F1 PFF1,
-  translate_prf A A1 PFRA
-  ].
-
-translate_prf (app [F, A, B]) (app [F1, A1, B1]) 
-  {{private.IZR_map2 lp:F lp:F1 lp:PFF1 lp:A lp:B lp:A1 lp:B1 lp:PFRA lp:PFRB}} :-
-  std.do! [
-  thm_table F F1 PFF1,
-  translate_prf A A1 PFRA,
-  translate_prf B B1 PFRB
-  ].
-
 pred main_translate_prf1 i:term i:term o:term o:term o:term.
 
 main_translate_prf1
@@ -229,7 +207,6 @@ main_translate_prf1
       translate_prf L L1 _,
       translate_prf F F1 FPRF
     ].
-
 
 main_translate_prf
   {{fun (n : R) =>
@@ -253,71 +230,6 @@ main_translate_prf
            (* (private.INR_Z_abs_nat _  _ nzq) *)
           )
           (private.IRN_Z_abs_nat _ _ nzq)}}.
-
-
-pred translate_list i:list term, o:list term.
-pred translate i:term, o:term.
-pred main_translate i:term, o:term.
-
-main_translate 
-  {{fun (x : R) => 
-     nth 0 (Rnat_rec lp:L0 lp:F x) 0}}
-  {{fun (x : Z) =>
-     nth 0 (nat_rect (fun _ => list Z) lp:L1 lp:F1 (Z.abs_nat x)) 0%Z}}
-        :-
-  std.do! [
-    translate L0 L1,
-    translate F F1
-  ].
-
-% TODO : add a clause for non recursive definitions, where the body
-% is simply treated using the translate predicate.
-% but mirror_recursive_definition would be a bad name for the command
-
-translate (fun N {{R}} F) (fun N {{nat}} F1) :-
-  (pi Cn \ 
-    (translate Cn {{Z.of_nat lp:Cn}} =>
-      translate (F Cn) (F1 Cn))).
-
-translate (fun L {{list R}} F) (fun L {{list Z}} F1) :-
-  (pi Cl\ 
-    (translate Cl Cl =>
-      translate (F Cl) (F1 Cl))).
-
-translate {{nth lp:K lp:L 0}} {{nth lp:K lp:L1 0%Z}} :-
-  translate L L1.
-
-translate {{nil}} {{nil}}.
-
-translate {{cons lp:A lp:L}} {{cons lp:A1 lp:L1}} :-
-  std.do! [
-    translate A A1,
-    translate L L1
-  ].
-
-translate {{IZR lp:V}} V.
-
-translate (app [F, {{Rabs lp:V}}])
-  (app [F1, V1]) :-
-  nat_thm_table F F1 _, !,
-  translate V V1.
-
-translate (app [F | L]) (app [F1 | L1]) :-
-  std.do! [
-    compute_table F F1,
-    translate_list L L1
-  ].
-
-translate_list [] [].
-
-translate_list [A | L] [A1 | L1] :-
-  std.do! [
-    translate A A1,
-    translate_list L L1
-  ].
-
-translate A _ :-
-  coq.error "unexpected term in translation" A.
 
 main [str F] :-
 std.do! [
@@ -356,14 +268,16 @@ main L :-
 
 Elpi Typecheck.
 
+
+(* The following experiment prefigures what can be done
+   so that R_compute returns not only the value but also
+   the proof that this value is correct.
+
 Recursive (def fib such that
   (fib 0 = 0 /\ fib 1 = 1 /\
    (forall n, Rnat (n - 2) ->
      fib n = fib (n - 2) + fib (n - 1)))).
 
-(* The following experiment prefigures what can be done
-   so that R_compute returns not only the value but also
-   the proof that this value is correct. *)
 Elpi Query lp:{{
   sigma CF CM GP F PRF Stmt \
   (
@@ -382,6 +296,7 @@ Elpi Query lp:{{
   )
 }}.
 
+*)
 (*
 Recursive (def fib such that
   (fib 0 = 0 /\ fib 1 = 1 /\
