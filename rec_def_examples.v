@@ -1,34 +1,15 @@
 Require Import List Reals Lra Lia.
 Require Import R_subsets rec_def R_compute.
-
+From elpi Require Import elpi.
 Open Scope R_scope.
 
 Definition Zsqr (x : Z) := (x * x)%Z.
 
-(* This command should only be used and seen by library developers *)
-Elpi add_computation Rsqr Zsqr.
+Lemma Zsqr_prf x : Rsqr (IZR x) = IZR (Zsqr x).
+Proof. now unfold Zsqr; rewrite mult_IZR. Qed.
 
-Ltac rec_Rnat fun_name :=
-(* This tactic is only meant to be used on statements of the form:
-  Rnat x -> Rnat (fun_name x)
-  where fun_name was defined using the Recursive command.  It succeeds
-  if all operations that appear in the body of the definition are
-  known to preserve membership in Rnat. *)
-  let Nnat := fresh "nnat" in
-  let M := fresh "m" in
-  let L := fresh "l" in
-  let Lnat := fresh "lnat" in
-  let Mnat := fresh "mnat" in
-  intros nnat;
-  unfold fun_name;
-  apply private.Rnat_rec_nat';[
-    repeat ((intro; apply Rnat0)||(
-             intros [ | k];[typeclasses eauto | revert k; cbn [nth]]
-    )) |
-    intros M L Lnat Mnat;
-     repeat ((intro; apply Rnat0)||(
-             intros [ | k];[typeclasses eauto | revert k; cbn [nth]]
-    )) | assumption].
+(* This command should only be used and seen by library developers *)
+Elpi add_computation Rsqr Zsqr Zsqr_prf.
 
 Recursive (def simple_example such that simple_example 0 = 0 /\
    forall n, Rnat (n - 1) -> simple_example n = simple_example (n - 1) + 1).
@@ -46,17 +27,50 @@ intros m l lnat mnat [ | [ | [ | k]]]; typeclasses eauto.
 Qed.
 *)
 
-Recursive (def fib such that fib 0 = 0 /\ fib 1 = 1 /\
-    forall n : R, Rnat (n - 2) -> fib n = fib (n - 2) + fib (n - 1)).
+Recursive (def fib such that 
+    fib 0 = 0 /\ 
+    fib 1 = 1 /\
+    forall n : R, Rnat (n - 2) -> 
+    fib n = fib (n - 2) + fib (n - 1)).
 
 Elpi mirror_recursive_definition fib.
+Check fib_Z_prf.
+R_compute (fib 7 - fib 2).
+R_compute (fib (fib 7 - fib 2)) fib_f7_f2_eqn.
+Check fib_f7_f2_eqn.
 
-Recursive (def monster such that monster 0 = 1 /\
+R_compute (fib (7 + 3)) fib_subproof.
+Check fib_subproof.
+
+R_compute (fib 7) fib_7_eqn.
+
+Lemma example : fib (fib 7 - fib 2) = 144.
+Proof.
+rewrite fib_f7_f2_eqn.
+  easy.
+elpi r_compute (fib 7).
+assert (fib2 : fib 2 = 1).
+  assert (Rnat (2 - 2)).
+    ring_simplify (2 - 2).
+    now solve_Rnat.
+  rewrite (proj2 (proj2 fib_eqn));[ | assumption].
+  ring_simplify (2 - 2).
+  ring_simplify (2 - 1).
+  rewrite (proj1 fib_eqn).
+  rewrite (proj1 (proj2 fib_eqn)).
+  ring.
+rewrite fib_7_eqn.
+rewrite fib2.
+apply Rnat_sub; solve_Rnat; lra.
+Qed.
+
+Recursive (def monster such that 
+  monster 0 = 1 /\
   forall n, Rnat (n - 1) -> monster n = fib (Rabs (monster (n - 1) + n))).
 
 Elpi mirror_recursive_definition monster.
 
-Elpi R_compute (monster 2) m2_eqn.
+R_compute (monster 2) m2_eqn.
 
 Lemma monster2 : monster 2 = 2.
 Proof.
@@ -85,9 +99,9 @@ Qed.
 
 (* monster grows very fast after that.  monster 4 = 34,
   monster 5 = 63245986 *)
-Elpi R_compute (monster 5) m5_eqn.
+R_compute (monster 5) m5_eqn.
 
-Elpi R_compute (fib (Rabs (fib (Rabs 9) + 2))) ff9_eqn.
+R_compute (fib (Rabs (fib (Rabs 9) + 2))) ff9_eqn.
 
 (* A proof that Rnat is stable for fib, using only tactics that can be
   shown to students.  There is a clever trick here, which is the technique
@@ -119,9 +133,7 @@ Lemma cov_fib_nat n : Rnat n -> Rnat (fib n).
 Proof.
 destruct fib_eqn as [fib0 [fib1 fib_suc]].
 intros nnat.
-apply (course_of_value_induction (fun n => Rnat (fib n)));[ | assumption].
-clear n nnat.
-intros n nnat Ih.
+induction nnat as [ n nnat Ih] using course_of_value_induction.
 assert (nge0 : 0 <= n) by now apply Rnat_ge0.
 destruct (Rle_lt_or_eq _ _ nge0) as [ngt0 | neq0].
   assert (nge1 : 1 <= n).
@@ -134,20 +146,20 @@ destruct (Rle_lt_or_eq _ _ nge0) as [ngt0 | neq0].
     assert (nm2nat: Rnat (n - 2)).
       apply Rnat_sub.
           assumption. (* proving Rnat n *)
-        typeclasses eauto. (* proving Rnat 2 *)
+        now solve_Rnat. (* proving Rnat 2 *)
       lra. (* proving 2 <= n*)
     rewrite fib_suc;[ | assumption].
     apply Rnat_add.
       apply Ih;[assumption | lra].
     apply Ih;[ | lra].
     replace (n - 1) with ((n - 2) + 1) by ring.
-    typeclasses eauto.
+    now solve_Rnat.
   rewrite <- neq1.
   rewrite fib1.
-  typeclasses eauto.
+  now solve_Rnat.
 rewrite <- neq0.
 rewrite fib0.
-typeclasses eauto.
+now solve_Rnat.
 Qed.
 
 (* This is the automated proof. *)
@@ -225,7 +237,7 @@ Recursive (fun  test3 : R -> R => test3 0 = 0 /\ test3 1 = 1 /\
 
 Elpi mirror_recursive_definition test3.
 
-Elpi R_compute (test3 (Rabs 10)).
+R_compute (test3 (Rabs 10)).
 
 Recursive (def factorial such that factorial 0 = 1 /\
   forall n, Rnat (n - 1) -> factorial n = n * factorial (n - 1)).
@@ -250,7 +262,7 @@ Existing Instance factorial_nat.
 
 Elpi mirror_recursive_definition factorial.
 
-Elpi R_compute (factorial 6).
+R_compute (factorial 6).
 
 (* lra is usable in the automatic step here because each multiplication instance is
   actually multiplciation by an integer constant. *)
@@ -280,9 +292,9 @@ end.
 *)
 Qed.
 
-Elpi R_compute (42 + fib (Rabs (factorial (Rabs 5)))).
+R_compute (42 + fib (Rabs (factorial (Rabs 5)))).
 
-Elpi R_compute (factorial 15) fact15_eqn.
+R_compute (factorial 15) fact15_eqn.
 
 (* The following two lines are preparatory lines for the next interactive  *)
 (* proof.  We want to establish the value of 42 + fib (factorial 5) but    *)
@@ -290,10 +302,10 @@ Elpi R_compute (factorial 15) fact15_eqn.
 (* function on values that are guaranteed to be positive (using Rabs).     *)
 (* So we call the computation tool on the patched formula, and we will     *)
 (* to show that the absolute value instances are useless.                  *)
-Elpi R_compute (42 + fib (Rabs (factorial 5))) huge_val_pre_eq.
+R_compute (42 + fib (Rabs (factorial 5))) huge_val_pre_eq.
 
 (* This computation is for the subformula (in the absolute value)          *)
-Elpi R_compute (factorial 5) huge_val_subproof.
+R_compute (factorial 5) huge_val_subproof.
 
 (* We can now prove the value for the formula that was initially intended, *)
 (* TODO: make the preliminary steps into tactic steps, withoug the need to *)

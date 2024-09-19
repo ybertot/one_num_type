@@ -311,6 +311,21 @@ destruct (Rint_exists_Z m) as [m' mm'].
 now rewrite mm' in mge0 |- *; rewrite IRZ_IZR.
 Qed.
 
+Definition Rpow (x y : R) := pow x (IRN y).
+
+Lemma Rpow0 x : Rpow x 0 = 1.
+Proof.  unfold Rpow; rewrite IRN0, pow_O; easy. Qed.
+
+Lemma Rpow1 x : Rpow x 1 = x.
+Proof.  unfold Rpow; rewrite IRN1, pow_1; easy. Qed.
+
+Lemma Rpow_add x a b : 
+  Rnat a -> Rnat b -> Rpow x (a + b) = Rpow x a * Rpow x b.
+Proof.
+intros anat bnat.
+unfold Rpow; rewrite IRN_add, pow_add; easy.
+Qed.
+
 (* I don't know if this is important. *)
 Lemma IRN_succ n : Rnat n -> IRN (n + 1) = S (IRN n).
 Proof.

@@ -14,6 +14,8 @@ Check (3 + 5).
   gave it. *)
 
 Definition add5 (x : R) := x + 5.
+(* Parameter add5 : R -> R.
+Axiom add5_def : forall x, add5 x = (x + 5). *)
 
 (* when you use the Check command, you can give a function name to it.  The
   command returns different information than for a number.  Here the information
@@ -61,7 +63,7 @@ Proof.
 (* The proof tool is candid: it knows very little.  In particular, it does not
   know what the function add5 does, so we need to explicitly instruct it to
   unfold the definition. *)
-unfold add5.
+unfold add5. (* rewrite add5_def. *)
 (* On the other hand, once we have a formula that contains only operations
   it already knows, it can berform the computation for us.  The command
   to perform the computation of a subformula in the goal is called 
@@ -73,114 +75,144 @@ ring_simplify (3 * 5 + 5).
 easy.
 Qed.
 
-Recursive (def dd such that dd 0 = 0 /\ forall n, Rnat (n - 1) -> dd n = 2 + dd (n - 1)).
+(* A notion that if often studied in mathematics is the notion of recursive
+  sequences of numbers.  The following command shows how to define such a
+  recursive sequence, where we specify the value of the first element of the
+  sequence (dd 0)  and then we show how to obtain the value for some n by
+  using the value at the previous position.  We call this function dd because
+  it actually returns the double of n. *)
+Recursive
+  (def dd such that dd 0 = 0 /\ 
+   forall n, Rnat (n - 1) -> dd n = 2 + dd (n - 1)).
+
+(* When you use the this command, it constructs the function dd and also
+  provides a theorem that repeats the specification.  This theorem can
+  be used to show properties of the sequence. *)
 
 Check dd_eqn.
 
+(* We shall now write a very simple theorem, which shows how we can use
+  the specification to compute the actual value of dd for a given index.
+  We wish to prove dd 2 = 4 *)
+
+(* Before proving this theorem, let's review a few automatic tools available
+  to us.
+  Commands that are called when a goal needs to be solved are called tactic.
+  When a goal is about comparing two mathematical expressions built with
+  + * - and constants, the command to call is lra.  It will fail if the
+  comparison one wants to prove is not valid.  Here is an example.  *)
+
+Lemma compare_two_formulas : 1 + 2 * 5 < 3 * 4.
+Proof. lra. Qed.
+
+(* When we want to simplify some computation with constants, multiplication,
+  addition, subtraction, and constants, we use a tactic called ring_simplify.
+  *)
+Lemma replace_formula_by_result_of_computation : dd (5 + 2) = dd 7.
+Proof.
+ring_simplify (5 + 2).
+(* Where initially there was (5 + 2) we now have the result of the computation
+*)
+(* Now, when a statement to prove is an equality with the same thing on 
+  both side, we can use an simple automation tactic called "easy". *)
+easy.
+Qed.
+
+Lemma prove_that_a_number_is_a_natural_number : Rnat 4 /\ Rnat 0 /\ Rnat (6 + 7)
+  /\ Rnat (9 - 2) /\ Rnat (5 + (9 - 2)).
+Proof.
+(* Proving a conjunction can be done step by step. *)
+split.
+  (* Proving that a constant like 4 is a natural number is done automatically
+    using a tactic provided by this course. *)
+  solve_Rnat.
+split.
+  solve_Rnat.
+split.
+  solve_Rnat.
+split.
+(* In the present version, the automatic tool does not take of subtractions,
+  but there is a theorem explaining that you only need to check that the
+  two numbers are already natural numbers and the first is larger than the
+  second one.  This theorem is used with a command named "apply". *)
+  apply Rnat_sub.
+      solve_Rnat.
+    solve_Rnat.
+  (* For the comparison we can use the tactic "lra" that we already encountered. *)
+  lra.
+  (* When there is an addition and one of the terms cannot be solved automatically
+    we need to decompose the problem by hand.  A similar theorem can be used here. *)
+apply Rnat_add.
+  solve_Rnat.
+  (* Here we have to do the same proof as before. *)
+apply Rnat_sub.
+    solve_Rnat.
+  solve_Rnat.
+lra.
+Qed.
+
 Lemma dd2 : dd 2 = 4.
 Proof.
+(* The statement of dd_eqn is a conjunction (in other words, an "and" 
+  statement).  We give separate names to the two parts of this conjunction. *)
 destruct dd_eqn as [dd0 dd_suc].
-rewrite dd_suc; ring_simplify (2 - 1);[ |  typeclasses eauto].
-rewrite dd_suc; ring_simplify (1 - 1);[ |  typeclasses eauto].
+(* dd_suc is an equality available under some condition.  We can rewrite
+  with it, but the system will produce an extra goal to check that the
+  condition is satisfied. *)
+rewrite dd_suc.
+  (* Two goals are generated actually, the first one has (dd 2) replace by
+    its value according to the specification, the second has the condition
+    that (2 - 1) should be a natural number. *)
+  ring_simplify (2 - 1).
+(* Now there is another instance of dd, we can rewrite again with dd_suc *)
+(* but this time, we anticipate that it will require us to prove that (1 - 1)
+  is a natural number, so we prove this fact in advance. *)
+assert (nat1 : Rnat (1 - 1)).
+  ring_simplify (1 - 1).
+  solve_Rnat.
+(* Now we can perform the rewrite with dd_suc, but tell directly to the prover
+  to use the fact that we proved in advance for the second generated goal. *)
+rewrite dd_suc;[ | exact nat1].
+ring_simplify (1 - 1).
 rewrite dd0.
 ring.
+(* Now we have to prove the condition that was produced at the first rewrite
+  using dd_suc. *)
+ring_simplify (2 - 1).
+solve_Rnat.
 Qed.
 
 Elpi mirror_recursive_definition dd.
 
-Lemma nat_rect_suc_list (l : list R) (lz : list Z)
-  (fsz : nat -> list Z -> list Z)
-  (fs : nat -> list R -> list R) k :
-  l = map IZR lz ->
-  (forall n l', fs n (map IZR l') = map IZR (fsz n l')) ->
-  nat_rect (fun _ => list R) l fs k =
-  map IZR (nat_rect (fun _ => list Z) lz fsz k).
-Proof.
-intros lq fsq.
-induction k as [ | k Ih].
-  assumption.
-simpl.
-rewrite Ih.
-apply fsq.
-Qed.
+Check fib_eqn.
 
-Check private.nat_rect_list_IZR.
+R_compute (dd 212).
 
-Lemma dd_mirror_proof (z : R) : Rnat z -> dd z = IZR (dd_Z_mirror (IRZ z)).
-Proof.
-intros znat.
-destruct (Rnat_exists_nat z) as [k zq].
-rewrite zq.
-unfold dd, Rnat_rec, IRN, dd_Z_mirror.
-rewrite IRZ_IZR, Zabs2Nat.id.
-rewrite (nat_rect_suc_list _ (0%Z :: nil) 
-   (fun (_ : nat) (v : list Z) => (2 + nth 0 v 0)%Z :: nil)).
-    now rewrite map_nth.
-  reflexivity.
-intros _ l; cbn [map].
-apply (f_equal (fun x => (x :: nil))).
-now rewrite plus_IZR, map_nth.
-Qed.
+R_compute (fib (fib 9)).
 
-Lemma fib_mirror_proof (z : R) : Rnat z -> fib z = IZR (fib_Z_mirror (IRZ z)).
-Proof.
-intros znat.
-destruct (Rnat_exists_nat z) as [k zq].
-rewrite zq.
-unfold fib, Rnat_rec, IRN, fib_Z_mirror.
-rewrite IRZ_IZR, Zabs2Nat.id.
-rewrite (nat_rect_suc_list _ (0 :: 1 :: nil)%Z
-  (fun (_ : nat) (v : list Z) => 
-    nth 1 v 0%Z :: (nth 0 v 0 + nth 1 v 0)%Z :: nil)).
-    now rewrite map_nth.
-  (* This part is usually reflexivity, because we see the same contants
-    on both side.  It would be different if there was a computed value
-    in the base case. *)
-  reflexivity.
-intros _ l; cbn [map].
-(* The first elements of the sequence can all be treated in this manner. *)
-apply f_equal2; [now rewrite map_nth | ].
-(* For the last one, the computation requires a specific proof.  the tail
-  of the sequence is easy because it is nil. *)
-apply f_equal2; [ | easy].
-rewrite plus_IZR.
-(* In this case, teh only values come from recursive calls. *)
-rewrite !map_nth.
-easy.
-Qed.
-
-
-Elpi R_compute (dd 212).
-
-Elpi R_compute (fib (fib 9)).
-
-Fail Elpi R_compute (fib (add5 3)).
+Fail R_compute (fib (add5 3)).
 
 (* TODO: improve R_compute so that mirror functions for simple definitions
   like add5 are also generated automatically. *)
 
 Definition add5Z (x : Z) := (x + 5)%Z.
 
-Elpi add_computation add5 add5Z.
+Lemma add5_Z_prf x : add5 (IZR x) = IZR (add5Z x).
+Proof.
+ now unfold add5Z; rewrite plus_IZR. 
+(* now unfold add5Z; rewrite add5_def, plus_IZR. *)
+Qed.   
+
+add_computation add5 add5Z add5_Z_prf.
 
 Elpi R_compute (add5 3).
 
 Elpi R_compute (fib (add5 3)).
 
-Definition Rpow (x y : R) := pow x (IRN y).
-
-Lemma Rpow0 x : Rpow x 0 = 1.
-Proof.  unfold Rpow; rewrite IRN0, pow_O; easy. Qed.
-
-Lemma Rpow1 x : Rpow x 1 = x.
-Proof.  unfold Rpow; rewrite IRN1, pow_1; easy. Qed.
-
-Lemma Rpow_add x a b : 
-  Rnat a -> Rnat b -> Rpow x (a + b) = Rpow x a * Rpow x b.
-Proof.
-intros anat bnat.
-unfold Rpow; rewrite IRN_add, pow_add; easy.
-Qed.
+(* When we want to prove equalities between formulas,
+  where the operation are addition multiplication 
+  subtraction and division, we use field instead of
+  ring. *)
 
 Lemma Fibonacci_and_golden_number n:
   let phi := (sqrt 5 + 1) / 2 in
@@ -203,7 +235,7 @@ assert (phi_gt0 : 0 < phi).
   replace ((sqrt 5 + 1) / 2 * ((sqrt 5 + 1) / 2)) with
     ((sqrt 5 * sqrt 5 + 2 * sqrt 5 + 1)  / 4) by field.
   rewrite sqrt_sqrt;[ | lra].
-  field.
+  now field.
 assert (phi'_root : Rpow phi' 2 = phi' + 1).
   replace 2 with (1 + 1) by ring.
     rewrite Rpow_add, Rpow1; try typeclasses eauto.
@@ -211,39 +243,55 @@ assert (phi'_root : Rpow phi' 2 = phi' + 1).
   replace ((1 - sqrt 5) / 2 * ((1 - sqrt 5) / 2)) with
     ((sqrt 5 * sqrt 5 - 2 * sqrt 5 + 1)  / 4) by field.
   rewrite sqrt_sqrt; [ | lra].
-  field.
+  now field.
 intros nnat.
-enough (fib n = (Rpow phi n - Rpow phi' n) / sqrt 5 /\
+enough (main : fib n = (Rpow phi n - Rpow phi' n) / sqrt 5 /\
         fib (n + 1) = (Rpow phi (n + 1) - Rpow phi' (n + 1)) / sqrt 5).
-  now tauto.
+  destruct main as [it _]; exact it.
 induction nnat as [ | p pnat Ih].
   split.
+    (* Here we prove the equality at 0. *)
     rewrite 2!Rpow0.
-    replace ((1 - 1) / sqrt 5)with 0; cycle 1.
-      field.
-      lra.
-    assumption.
+    rewrite fib0.
+    field.
+    lra.
+  (* Here we prove the equality at 1. *)
   ring_simplify (0 + 1).
   rewrite fib1.
   rewrite 2!Rpow1.
   unfold phi, phi'.
   field.
   lra.
+(* Here we prove the equality at n + 1 and n + 2,
+  knowing it already works for n and n + 1. *)
 destruct Ih as [Ih1 Ih2].
 split;[ assumption | ].
-rewrite fib_suc; ring_simplify (p + 1 + 1 - 2); ring_simplify (p + 1 + 1 - 1);
-  try typeclasses eauto.
-replace (Rpow phi (p + 1 + 1)) with (Rpow phi (p + 1) + Rpow phi p); cycle 1.
-   rewrite Rpow_add, Rpow1; try typeclasses eauto.
-   ring_simplify (p + 1 + 1).
-   rewrite Rpow_add, phi_root; try typeclasses eauto.
-   ring.
-replace (Rpow phi' (p + 1 + 1)) with (Rpow phi' (p + 1) + Rpow phi' p); cycle 1.
-   rewrite Rpow_add, Rpow1; try typeclasses eauto.
-   ring_simplify (p + 1 + 1).
-   rewrite Rpow_add, phi'_root; try typeclasses eauto.
-   ring.
-rewrite Ih1, Ih2.
+assert (pnat' : Rnat (p + 1 + 1 - 2)).
+  ring_simplify (p + 1 + 1 - 2).
+  assumption.
+rewrite fib_suc; auto. 
+ring_simplify (p + 1 + 1 - 2).
+ring_simplify (p + 1 + 1 - 1).
+rewrite Ih1.
+rewrite Ih2.
+assert (clever: 
+  Rpow phi (p + 1 + 1) = Rpow phi (p + 1) + Rpow phi p).
+  replace (p + 1 + 1) with (p + 2) by ring.
+  rewrite Rpow_add; solve_Rnat.
+  rewrite phi_root.
+  rewrite Rpow_add; solve_Rnat.
+  rewrite Rpow1.
+  ring.
+rewrite clever.
+assert (clever': 
+  Rpow phi'(p + 1 + 1) = Rpow phi' (p + 1) + Rpow phi' p).
+  replace (p + 1 + 1) with (p + 2) by ring.
+  rewrite Rpow_add; solve_Rnat.
+  rewrite phi'_root.
+  rewrite Rpow_add; solve_Rnat.
+  rewrite Rpow1.
+  ring.
+rewrite clever'.
 field.
 lra.
 Qed.

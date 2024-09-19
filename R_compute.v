@@ -29,6 +29,7 @@ Proof.
 exact (fun x => eq_sym (abs_IZR x)).
 Qed.
 
+Ltac solve_Rnat := try typeclasses eauto.
 
 Elpi Db R_translate.db lp:{{
 pred translate_prf i:term, o:term, o:term.
@@ -118,7 +119,7 @@ translate_collect_prf (app [F, A]) (app [F1, A1])
 type marker int -> term.
 
 translate_collect_prf (app [F, A]) (app [F1, A1])
-  {{@private.Rnat_Rabs _ _ lp:PFF1 lp:A lp:A1 lp:Nat_prf lp:PRFA}} L' :-
+  {{private.Rnat_Rabs lp:PFF1 lp:A lp:A1 lp:Nat_prf lp:PRFA}} L' :-
   std.do![
     nat_thm_table F F1 PFF1,
     translate_collect_prf A A1 PRFA L,
@@ -156,7 +157,7 @@ pred abstract_markers i:list (pair int term) i:term i:term
 abstract_markers [] T LHS RHS T1 {{lp:LHS = lp:RHS :> R}} :-
   copy T T1.
 
-abstract_markers [pr N Ty | L] T LHS RHS (fun _ Ty T1) {{lp:TY -> lp:T1TY}}:-
+abstract_markers [pr N Ty | L] T LHS RHS (fun _ Ty T1) {{lp:Ty -> lp:T1TY}}:-
   @pi-decl _ Ty x \
     (
     (copy (marker N) x :- !)
@@ -222,8 +223,8 @@ Elpi Accumulate lp:{{
       coq.reduction.vm.norm E1 _ E2,
       E3 = {{IZR lp:E2}},
       if (OBLS = [])
-        (coq.say " = " {coq.term->string E3})
-        (coq.say "under some obligations = " {coq.term->string E3})
+        (coq.say " =" {coq.term->string E3})
+        (coq.say "(under some obligations) =" {coq.term->string E3})
     ].
 
 main [trm E, str THM_name] :-
@@ -231,8 +232,8 @@ main [trm E, str THM_name] :-
       translate_collect_prf E E1 PRF OBLS,
       coq.reduction.vm.norm E1 _ E2,
       E3 = {{IZR lp:E2}},
-      abstract_markers OBLS PRF PRF1 E E3 Stmt,
-      coq.say " = " {coq.term->string E3},
+      abstract_markers OBLS PRF E E3 PRF1 Stmt,
+      coq.say " =" {coq.term->string E3},
       coq.typecheck PRF1 Stmt _,
       coq.env.add-const THM_name PRF1 Stmt @opaque! _
     ].
@@ -241,23 +242,28 @@ main [trm E, str THM_name] :-
 
 Elpi Typecheck.
 
+Elpi Export R_compute.
+
 Elpi Command add_computation.
 Elpi Accumulate Db R_compute.db.
 Elpi Accumulate lp:{{
 
-  main [str A, str B] :-
+  main [str A, str B, str C] :-
     coq.locate A A1,
     coq.locate B B1,
+    coq.locate C C1,
     coq.say "adding correspondence " {coq.term->string (global A1)}
-      {coq.term->string (global B1)},
+      {coq.term->string (global B1)} "justified by" {coq.term->string (global C1)},
     coq.elpi.accumulate _ "R_compute.db"
-     (clause _ _ (compute_table (global A1) (global B1))).
+     (clause _ _ (thm_table (global A1) (global B1) (global C1))).
 
   main L :-
-    coq.error "Usage: Elpi add_computation Name1 Name2.\n instead received: " L.
+    coq.error "Usage: Elpi add_computation Name1 Name2 Name3.\n instead received: " L.
 }}.
 
 Elpi Typecheck.
+
+Elpi Export add_computation.
 
 Elpi Command mirror_recursive_definition.
 Elpi Accumulate Db R_compute.db.
@@ -338,7 +344,32 @@ main L :-
 }}.
 
 Elpi Typecheck.
+Ltac r_compute_rewrite P := rewrite P.
 
+Elpi Tactic r_compute.
+Elpi Accumulate Db R_compute.db.
+Elpi Accumulate Db R_translate.db.
+Elpi Accumulate lp:{{
+
+solve (goal _ _ _ _ [trm X] as G) GL :-
+  std.do! [
+  coq.say "got here",
+  translate_collect_prf X V PRF OBLS,
+  coq.say "got here2",
+  coq.reduction.vm.norm V _ E2,
+  E3 = {{IZR lp:E2}},
+  abstract_markers OBLS PRF X E3 PRF1 Stmt,
+  coq.say "stmt :" {coq.term->string Stmt},
+  coq.typecheck PRF1 Stmt ok,
+  coq.ltac.call "r_compute_rewrite"
+    [trm {{lp:PRF1 : lp:Stmt}}] G GL
+  ].
+
+solve A B :-
+  coq.say "wrong" A B.
+}}.
+
+Elpi Typecheck.
 
 (* The following experiment prefigures what can be done
    so that R_compute returns not only the value but also
@@ -348,8 +379,6 @@ Recursive (def fib such that
   (fib 0 = 0 /\ fib 1 = 1 /\
    (forall n, Rnat (n - 2) ->
      fib n = fib (n - 2) + fib (n - 1)))).
-
-Ltac solve_Rnat := try typeclasses eauto.
 
 Elpi Query lp:{{
   sigma CF CM GP F0 Stmt P P' F1 PRF CP L\

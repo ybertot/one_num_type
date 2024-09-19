@@ -78,6 +78,14 @@ rewrite vq, IRZ_IZR.
 apply Nat2Z.is_nonneg.
 Qed.
 
+Lemma Rnat_Rabs {f : R -> R} {fz : Z -> Z}
+  (abs_morph : forall n z, n = IZR z -> f (Rabs n) = IZR (fz z))
+  (n : R) (z : Z) (nnat : Rnat n) (nz : n = IZR z) : f n = IZR (fz z).
+Proof.
+rewrite <- (Rabs_right n);[ | assert (tmp := Rnat_ge0 n nnat); lra].
+now apply abs_morph.
+Qed.
+
 Lemma nat_rect_list_IZR (l0 : list Z) 
   (l' : list R) (f : nat -> list Z -> list Z)
   (f' : nat -> list R -> list R)
@@ -559,8 +567,8 @@ std.do![
   coq.ltac.open(coq.ltac.call
     "prove_recursive_specification"
     [trm (global (const C)), trm Order]) G1 [],
-  coq.env.add-const Eqs_N_id Eq_prf _ @opaque! C_eqn,
-  coq.say "Defined" C_eqn].
+  coq.env.add-const Eqs_N_id Eq_prf _ @opaque! _C_eqn,
+  coq.say "Defined" Eqs_N_id].
 
 make_eqn_proof _ _ _ _ :-
   coq.say "proof of equations failed".
@@ -572,7 +580,7 @@ std.do! [
   coq.name->id N N_id,
   
   coq.env.add-const N_id Final Ty @transparent! C,
-  coq.say "Defined" C,
+  coq.say "Defined" N_id,
 
   make_eqn_proof N_id Abs_eqn Order C
 ].
@@ -588,5 +596,28 @@ Elpi Export Recursive.
 
 Notation "'def' id 'such' 'that' bo" := (fun id => bo) 
  (id binder, bo at level 100, at level 1, only parsing).
+
+Ltac rec_Rnat fun_name :=
+(* This tactic is only meant to be used on statements of the form:
+  Rnat x -> Rnat (fun_name x)
+  where fun_name was defined using the Recursive command.  It succeeds
+  if all operations that appear in the body of the definition are
+  known to preserve membership in Rnat. *)
+  let Nnat := fresh "nnat" in
+  let M := fresh "m" in
+  let L := fresh "l" in
+  let Lnat := fresh "lnat" in
+  let Mnat := fresh "mnat" in
+  intros nnat;
+  unfold fun_name;
+  apply private.Rnat_rec_nat';[
+    repeat ((intro; apply Rnat0)||(
+             intros [ | k];[typeclasses eauto | revert k; cbn [nth]]
+    )) |
+    intros M L Lnat Mnat;
+     repeat ((intro; apply Rnat0)||(
+             intros [ | k];[typeclasses eauto | revert k; cbn [nth]]
+    )) | assumption].
+
 
 (* Elpi Trace Browser. *)
