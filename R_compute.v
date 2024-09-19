@@ -29,9 +29,11 @@ Proof.
 exact (fun x => eq_sym (abs_IZR x)).
 Qed.
 
+
 Elpi Db R_translate.db lp:{{
 pred translate_prf i:term, o:term, o:term.
 pred main_translate_prf i:term, o:term, o:term.
+pred translate_collect_prf i:term, o:term, o:term, o:list (pair int term).
 
 translate_prf (fun N {{nat}} F) (fun N {{nat}} F1)
   (fun N {{nat}} PF) :-
@@ -62,6 +64,9 @@ translate_prf {{cons lp:A lp:L}} {{cons lp:A1 lp:L1}}
 
 translate_prf {{IZR lp:A}} {{lp:A}} {{eq_refl: IZR lp:A = IZR lp:A}}.
 
+translate_collect_prf {{IZR lp:A}} {{lp:A}} {{eq_refl: IZR lp:A = IZR lp:A}}
+  [].
+
 translate_prf (app [F, {{Rabs lp:A}}]) (app [F1, A1])
   {{lp:PFF1 lp:A lp:A1 lp:PRFA}} :-
   std.do![
@@ -69,14 +74,31 @@ translate_prf (app [F, {{Rabs lp:A}}]) (app [F1, A1])
     translate_prf A A1 PRFA
   ].
 
+translate_collect_prf (app [F, {{Rabs lp:A}}]) (app [F1, A1])
+  {{lp:PFF1 lp:A lp:A1 lp:PRFA}} L :-
+  std.do![
+    nat_thm_table F F1 PFF1,
+    translate_collect_prf A A1 PRFA L
+  ].
+
 translate_prf {{lp:F (IZR (Zpos lp:P))}}
   {{lp:Fz (Zpos lp:P)}}
   {{private.cancel_Rabs_pos lp:F lp:Fz lp:Prf lp:P}} :-
   nat_thm_table F Fz Prf.
 
+translate_collect_prf {{lp:F (IZR (Zpos lp:P))}}
+  {{lp:Fz (Zpos lp:P)}}
+  {{private.cancel_Rabs_pos lp:F lp:Fz lp:Prf lp:P}} [] :-
+  nat_thm_table F Fz Prf.
+
 translate_prf (app [F, {{lp:F (IZR 0%Z)}}])
   {{lp:Fz 0%Z}}
   {{private.cancel_Rabs_0 lp:F lp:Fz lp:Prf}} :-
+  nat_thm_table F Fz Prf.
+
+translate_collect_prf (app [F, {{lp:F (IZR 0%Z)}}])
+  {{lp:Fz 0%Z}}
+  {{private.cancel_Rabs_0 lp:F lp:Fz lp:Prf}} [] :-
   nat_thm_table F Fz Prf.
 
 translate_prf (app [F, A]) (app [F1, A1])
@@ -86,13 +108,60 @@ translate_prf (app [F, A]) (app [F1, A1])
   translate_prf A A1 PFRA
   ].
 
+translate_collect_prf (app [F, A]) (app [F1, A1])
+  {{private.IZR_map1 lp:F lp:F1 lp:PFF1 lp:A lp:A1 lp:PFRA}} L :-
+  std.do! [
+  thm_table F F1 PFF1,
+  translate_collect_prf A A1 PFRA L
+  ].
+
+type marker int -> term.
+
+translate_collect_prf (app [F, A]) (app [F1, A1])
+  {{@private.Rnat_Rabs _ _ lp:PFF1 lp:A lp:A1 lp:Nat_prf lp:PRFA}} L' :-
+  std.do![
+    nat_thm_table F F1 PFF1,
+    translate_collect_prf A A1 PRFA L,
+    coq.typecheck Hole {{Rnat lp:A}} ok,
+    coq.ltac.collect-goals Hole [G] [],
+    if (coq.ltac.open (coq.ltac.call-ltac1 "solve_Rnat") G [])
+       (Nat_prf = Hole, L' = L)
+       (new_int Fresh,
+        Nat_prf = marker Fresh,
+        L' = [pr Fresh {{Rnat lp:A}} | L])
+  ].
+
 translate_prf (app [F, A, B]) (app [F1, A1, B1])
-  {{private.IZR_map2 lp:F lp:F1 lp:PFF1 lp:A lp:B lp:A1 lp:B1 lp:PFRA lp:PFRB}} :-
+  {{private.IZR_map2 lp:F lp:F1 lp:PFF1 lp:A lp:B lp:A1 lp:B1 lp:PFRA lp:PFRB}}
+  :-
   std.do! [
   thm_table F F1 PFF1,
   translate_prf A A1 PFRA,
   translate_prf B B1 PFRB
   ].
+
+translate_collect_prf (app [F, A, B]) (app [F1, A1, B1])
+  {{private.IZR_map2 lp:F lp:F1 lp:PFF1 lp:A lp:B lp:A1 lp:B1 lp:PFRA lp:PFRB}}
+     LPRF :-
+  std.do! [
+  thm_table F F1 PFF1,
+  translate_collect_prf A A1 PFRA LA,
+  translate_collect_prf B B1 PFRB LB,
+  std.append LA LB LPRF
+  ].
+
+pred abstract_markers i:list (pair int term) i:term i:term
+   i:term o:term o:term.
+
+abstract_markers [] T LHS RHS T1 {{lp:LHS = lp:RHS :> R}} :-
+  copy T T1.
+
+abstract_markers [pr N Ty | L] T LHS RHS (fun _ Ty T1) {{lp:TY -> lp:T1TY}}:-
+  @pi-decl _ Ty x \
+    (
+    (copy (marker N) x :- !)
+      =>
+    abstract_markers L T LHS RHS (T1 x) T1TY).
 
 }}.
 
@@ -149,21 +218,23 @@ Elpi Accumulate lp:{{
 
   main [trm E] :-
     std.do! [
-      translate_prf E E1 _,
+      translate_collect_prf E E1 _ OBLS,
       coq.reduction.vm.norm E1 _ E2,
       E3 = {{IZR lp:E2}},
-      coq.say " = " {coq.term->string E3}
+      if (OBLS = [])
+        (coq.say " = " {coq.term->string E3})
+        (coq.say "under some obligations = " {coq.term->string E3})
     ].
 
 main [trm E, str THM_name] :-
     std.do! [
-      translate_prf E E1 PRF,
+      translate_collect_prf E E1 PRF OBLS,
       coq.reduction.vm.norm E1 _ E2,
       E3 = {{IZR lp:E2}},
+      abstract_markers OBLS PRF PRF1 E E3 Stmt,
       coq.say " = " {coq.term->string E3},
-      Stmt = {{lp:E = IZR lp:E2}},
-      coq.typecheck PRF Stmt _,
-      coq.env.add-const THM_name PRF Stmt @opaque! _
+      coq.typecheck PRF1 Stmt _,
+      coq.env.add-const THM_name PRF1 Stmt @opaque! _
     ].
 
 }}.
@@ -278,24 +349,49 @@ Recursive (def fib such that
    (forall n, Rnat (n - 2) ->
      fib n = fib (n - 2) + fib (n - 1)))).
 
+Ltac solve_Rnat := try typeclasses eauto.
+
 Elpi Query lp:{{
-  sigma CF CM GP F PRF Stmt \
+  sigma CF CM GP F0 Stmt P P' F1 PRF CP L\
   (
   main [str "fib"],!,
   coq.locate "fib" CF,
   coq.locate "fib_Z_mirror" CM,
   coq.locate "fib_Z_prf" CP,
   nat_thm_table (global CF) (global CM) (global CP) =>
-    (F0 = {{fib 9}},
-     translate_prf F0 F PRF,
-     coq.reduction.vm.norm F {{Z}} V,
-     Stmt = {{lp:F0 = IZR lp:V}},
-     coq.typecheck PRF Stmt Diag,
-     coq.term->string Stmt S
+    (F0 = {{fib (fib 3 + fib 4)}}, !,
+     translate_collect_prf F0 F1 P L,
+     coq.reduction.vm.norm F1 _ V,
+     abstract_markers L P P',!,
+     coq.typecheck P' Stmt Diag,
+     coq.say "thm" {coq.term->string Stmt}
     )
   )
 }}.
 
+Lemma fib_nat n : Rnat n -> Rnat (fib n).
+Proof.
+rec_Rnat fib.
+Qed.
+
+Existing Instance fib_nat.
+
+Elpi Query lp:{{
+  sigma CF CM GP F0 Stmt P P' F1 PRF CP L\
+  (
+  coq.locate "fib" CF,
+  coq.locate "fib_Z_mirror" CM,
+  coq.locate "fib_Z_prf" CP,
+  nat_thm_table (global CF) (global CM) (global CP) =>
+    (F0 = {{fib (fib 3 + fib 4)}}, !,
+     translate_collect_prf F0 F1 P L,
+     coq.reduction.vm.norm F1 _ V,
+     abstract_markers L P P',!,
+     coq.typecheck P' Stmt Diag,
+     coq.say "thm" {coq.term->string Stmt}
+    )
+  )
+}}.
 *)
 (*
 Recursive (def fib such that
