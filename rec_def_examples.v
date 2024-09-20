@@ -59,9 +59,15 @@ assert (fib2 : fib 2 = 1).
   rewrite (proj1 fib_eqn).
   rewrite (proj1 (proj2 fib_eqn)).
   ring.
-rewrite fib_7_eqn.
-rewrite fib2.
-apply Rnat_sub; solve_Rnat; lra.
+destruct fib_eqn as [fib0 [fib1 fib_suc]].
+rewrite fib_suc.
+  ring_simplify (2 - 2).
+  ring_simplify (2 - 1).
+  rewrite fib0, fib1.
+  ring_simplify (13 - (0 + 1)).
+  solve_Rnat.
+ring_simplify (2 - 2).
+solve_Rnat.
 Qed.
 
 Recursive (def monster such that 
