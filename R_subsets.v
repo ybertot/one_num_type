@@ -231,6 +231,7 @@ Qed.
 
 (*
 Hint Resolve Rnat_add Rnat_mul : rnat. *)
+Ltac solve_Rnat := try typeclasses eauto.
 
 (* Order properties for natural numbers. *)
 
@@ -324,6 +325,22 @@ Lemma Rpow_add x a b :
 Proof.
 intros anat bnat.
 unfold Rpow; rewrite IRN_add, pow_add; easy.
+Qed.
+
+Lemma Rpow_convert n m : Rnat m ->
+  Rpow n m = pow n (IRN m).
+Proof.
+induction 1 as [ | p pnat Ih].
+  now rewrite Rpow0, IRN0; simpl.
+rewrite Rpow_add, IRN_add, Rpow1, IRN1, pow_add, pow_1; solve_Rnat.
+now rewrite Ih.
+Qed.
+
+Lemma Rpow_nonzero n m : Rnat m ->
+  n <> 0 -> Rpow n m <> 0.
+Proof.
+intros mnat nn0; rewrite Rpow_convert; solve_Rnat.
+now apply pow_nonzero.
 Qed.
 
 (* I don't know if this is important. *)
