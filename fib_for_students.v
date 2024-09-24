@@ -190,60 +190,118 @@ R_compute (dd 212).
 
 R_compute (fib (fib 9)).
 
-Fail R_compute (fib (add5 3)).
-
-(* TODO: improve R_compute so that mirror functions for simple definitions
-  like add5 are also generated automatically. *)
-
-Definition add5Z (x : Z) := (x + 5)%Z.
-
-Lemma add5_Z_prf x : add5 (IZR x) = IZR (add5Z x).
-Proof.
- now unfold add5Z; rewrite plus_IZR. 
-(* now unfold add5Z; rewrite add5_def, plus_IZR. *)
-Qed.   
-
-add_computation add5 add5Z add5_Z_prf.
-
-Elpi R_compute (add5 3).
-
-Elpi R_compute (fib (add5 3)).
-
 (* When we want to prove equalities between formulas,
-  where the operation are addition multiplication 
+  where the operations are addition multiplication
   subtraction and division, we use field instead of
   ring. *)
 
-Lemma Fibonacci_and_golden_number n:
-  let phi := (sqrt 5 + 1) / 2 in
-  let phi' := (1 - sqrt 5) / 2 in
+(* The following proof is taken from a wikipedia page on the Fibonacci
+ sequence and the golden ratio.  The golden ratio is the positive root
+ of the polynomial X ^ 2 - X - 1.  It is easily computed using the known
+ formulas to solve second degree equation. *)
+
+Definition golden_ratio_polynomial (x : R) := Rpow x 2 - x - 1.
+
+Definition phi := (sqrt 5 + 1)/ 2.
+
+Lemma phi_root : golden_ratio_polynomial phi = 0.
+Proof.
+unfold golden_ratio_polynomial, phi.
+(* We need to decompose because field does not about Rpow or sqrt. *)
+replace (Rpow ((sqrt 5 + 1) / 2) 2) with
+  ((Rpow (sqrt 5) 2 + 2 * sqrt 5 + 1) / 4).
+  replace (Rpow (sqrt 5) 2) with 5.
+    field.
+  replace 2 with (1 + 1) by ring.
+  rewrite Rpow_add; solve_Rnat; rewrite Rpow1.
+  rewrite sqrt_sqrt;[ | lra].
+  easy.
+replace 2 with (1 + 1) at 1 4 by ring.
+rewrite !Rpow_add, !Rpow1; solve_Rnat.
+field.
+Qed.
+
+(* lra can solve comparisons with 0 when the members of ocmparisons
+  are only added together and potential multiplied by integer constants.
+  In the present case, lra does not know sqrt 5, but as it that number
+  is positive, this decision procedure can conclude (adding 2 positive
+  numbers, and dividing by an non-zero integer constant). *)
+Lemma phi_n0 : phi <> 0.
+Proof.
+unfold phi.
+assert (0 < sqrt 5).
+  apply sqrt_lt_R0; lra.
+lra.
+Qed.
+
+Definition phi' := -(1/phi).
+
+Lemma phi'_root : golden_ratio_polynomial phi' = 0.
+Proof.
+unfold phi'.
+(* we can multiply by phi ^ 2 *)
+assert (phi_square_n0 : Rpow phi 2 <> 0).
+  apply Rpow_nonzero; solve_Rnat.
+  exact phi_n0.
+destruct (Rmult_integral (Rpow phi 2) (golden_ratio_polynomial (-(1/phi)))) as [ abs | it].
+3: exact it.
+2: now rewrite abs in phi_square_n0; case phi_square_n0.
+replace (Rpow phi 2 * golden_ratio_polynomial (-(1/phi))) with (- (golden_ratio_polynomial phi)).
+  rewrite phi_root.
+  ring.
+unfold golden_ratio_polynomial.
+(* This is unsatisfactory because field does not know about Rpow.   Using
+  Rpow_convert makes natural numbers surface. *)
+replace 2 with (1 + 1) by ring.
+rewrite !Rpow_add, !Rpow1; solve_Rnat.
+field.
+exact phi_n0.
+Qed.
+
+Lemma  phi'_eq : phi' = (1 - sqrt 5) / 2.
+Proof.
+assert (sqrt 5 + 1 <> 0).
+  assert (0 < sqrt 5).
+    apply sqrt_lt_R0.
+    lra.
+  lra.
+unfold phi', phi.
+apply (Rmult_eq_reg_l (sqrt 5 + 1)); try easy.
+(* Here one would be tempted to use field_simplify, but again this makes
+  the type of natural number surface. *)
+replace ((sqrt 5 + 1) * - (1/((sqrt 5 + 1) / 2))) with
+  (- 2) by (field; easy).
+replace ((sqrt 5 + 1) * ((1 - sqrt 5) / 2)) with
+  ((1 - (sqrt 5 * sqrt 5)) / 2) by field.
+replace (sqrt 5 * sqrt 5) with 5.
+  field.
+rewrite sqrt_sqrt.
+  easy.
+lra.
+Qed.
+
+Lemma root_to_fib_sum (x : R) :
+  golden_ratio_polynomial x = 0 -> Rpow x 2 = x + 1.
+Proof.
+intros root_prop.
+rewrite <- (Rminus_0_r (Rpow x 2)), <- root_prop.
+unfold golden_ratio_polynomial.
+ring.
+Qed.
+
+Lemma phi_root' : Rpow phi 2 = phi + 1.
+Proof.  exact (root_to_fib_sum _ phi_root). Qed.
+
+Lemma phi'_root' : Rpow phi' 2 = phi' + 1.
+Proof. exact (root_to_fib_sum _ phi'_root). Qed.
+
+Lemma Fibonacci_and_golden_ratio n:
     Rnat n -> 
     fib n = (Rpow phi n - Rpow phi' n)/ sqrt 5.
 Proof.
 destruct fib_eqn as [fib0 [fib1 fib_suc]].
-intros phi phi'.
-assert (sqrt5gt0 : 0 < sqrt 5).
-  apply sqrt_lt_R0.
-  lra.
-assert (phi_gt0 : 0 < phi).
-  unfold phi.
-  lra.
- assert (phi_root :  Rpow phi 2 = phi + 1).
-  replace 2 with (1 + 1) by ring.
-  rewrite Rpow_add, Rpow1; try typeclasses eauto.
-  unfold phi.
-  replace ((sqrt 5 + 1) / 2 * ((sqrt 5 + 1) / 2)) with
-    ((sqrt 5 * sqrt 5 + 2 * sqrt 5 + 1)  / 4) by field.
-  rewrite sqrt_sqrt;[ | lra].
-  now field.
-assert (phi'_root : Rpow phi' 2 = phi' + 1).
-  replace 2 with (1 + 1) by ring.
-    rewrite Rpow_add, Rpow1; try typeclasses eauto.
-  unfold phi'.
-  replace ((1 - sqrt 5) / 2 * ((1 - sqrt 5) / 2)) with
-    ((sqrt 5 * sqrt 5 - 2 * sqrt 5 + 1)  / 4) by field.
-  rewrite sqrt_sqrt; [ | lra].
-  now field.
+assert (s5gt0 : 0 < sqrt 5).
+  now apply sqrt_lt_R0; lra.
 intros nnat.
 enough (main : fib n = (Rpow phi n - Rpow phi' n) / sqrt 5 /\
         fib (n + 1) = (Rpow phi (n + 1) - Rpow phi' (n + 1)) / sqrt 5).
@@ -259,7 +317,7 @@ induction nnat as [ | p pnat Ih].
   ring_simplify (0 + 1).
   rewrite fib1.
   rewrite 2!Rpow1.
-  unfold phi, phi'.
+  rewrite phi'_eq; unfold phi.
   field.
   lra.
 (* Here we prove the equality at n + 1 and n + 2,
@@ -274,24 +332,14 @@ ring_simplify (p + 1 + 1 - 2).
 ring_simplify (p + 1 + 1 - 1).
 rewrite Ih1.
 rewrite Ih2.
-assert (clever: 
-  Rpow phi (p + 1 + 1) = Rpow phi (p + 1) + Rpow phi p).
+assert (clever : forall x, golden_ratio_polynomial x = 0 ->
+  Rpow x (p + 1 + 1) = Rpow x (p + 1) + Rpow x p).
+  intros x xroot.
   replace (p + 1 + 1) with (p + 2) by ring.
-  rewrite Rpow_add; solve_Rnat.
-  rewrite phi_root.
-  rewrite Rpow_add; solve_Rnat.
-  rewrite Rpow1.
+  rewrite !Rpow_add, Rpow1; solve_Rnat.
+  rewrite (root_to_fib_sum _ xroot).
   ring.
-rewrite clever.
-assert (clever': 
-  Rpow phi'(p + 1 + 1) = Rpow phi' (p + 1) + Rpow phi' p).
-  replace (p + 1 + 1) with (p + 2) by ring.
-  rewrite Rpow_add; solve_Rnat.
-  rewrite phi'_root.
-  rewrite Rpow_add; solve_Rnat.
-  rewrite Rpow1.
-  ring.
-rewrite clever'.
+rewrite (clever _ phi_root), (clever _ phi'_root).
 field.
 lra.
 Qed.
