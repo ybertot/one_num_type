@@ -210,6 +210,17 @@ intros morph; rewrite <- (morph _ _ eq_refl).
 now rewrite <- abs_IZR.
 Qed.
 
+Lemma compute_Rnat (n : R) (z : Z) : n = IZR z ->
+  (0 <=? z)%Z = true -> Rnat n.
+Proof.
+intros nzq cmp.
+apply Rint_Rnat.
+  now rewrite nzq; apply Rint_Z.
+rewrite nzq.
+apply IZR_le.
+now rewrite (Zle_is_le_bool 0).
+Qed.
+
 End private.
 
 Ltac prove_recursive_specification T Order := unfold T;
