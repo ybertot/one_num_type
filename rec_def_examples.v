@@ -36,6 +36,7 @@ Recursive (def fib such that
 Elpi mirror_recursive_definition fib.
 Check fib_Z_prf.
 R_compute (fib 7 - fib 2).
+Fail R_compute (fib (fib 2 - fib 7)).
 R_compute (fib (fib 7 - fib 2)) fib_f7_f2_eqn.
 Check fib_f7_f2_eqn.
 
@@ -43,32 +44,6 @@ R_compute (fib (7 + 3)) fib_subproof.
 Check fib_subproof.
 
 R_compute (fib 7) fib_7_eqn.
-
-Lemma example : fib (fib 7 - fib 2) = 144.
-Proof.
-rewrite fib_f7_f2_eqn.
-  easy.
-elpi r_compute (fib 7).
-assert (fib2 : fib 2 = 1).
-  assert (Rnat (2 - 2)).
-    ring_simplify (2 - 2).
-    now solve_Rnat.
-  rewrite (proj2 (proj2 fib_eqn));[ | assumption].
-  ring_simplify (2 - 2).
-  ring_simplify (2 - 1).
-  rewrite (proj1 fib_eqn).
-  rewrite (proj1 (proj2 fib_eqn)).
-  ring.
-destruct fib_eqn as [fib0 [fib1 fib_suc]].
-rewrite fib_suc.
-  ring_simplify (2 - 2).
-  ring_simplify (2 - 1).
-  rewrite fib0, fib1.
-  ring_simplify (13 - (0 + 1)).
-  solve_Rnat.
-ring_simplify (2 - 2).
-solve_Rnat.
-Qed.
 
 Recursive (def monster such that 
   monster 0 = 1 /\
@@ -86,21 +61,8 @@ Qed.
 (* An example of making the proofs step by step with the specifications. *)
 Lemma monster3 : monster 3 = 5.
 Proof.
-destruct monster_eqn as [monster0 monster_suc].
-destruct fib_eqn as [fib0 [fib1 fib_suc]].
-rewrite monster_suc; ring_simplify (3 - 1);[ | typeclasses eauto].
-rewrite monster2.
-rewrite Rabs_right;[ | lra].
-rewrite fib_suc; ring_simplify (2 + 3 - 2);[ | typeclasses eauto].
-ring_simplify (2 + 3 - 1).
-rewrite (fib_suc 4); ring_simplify (4 - 2);[ | typeclasses eauto].
-ring_simplify (4 - 1).
-rewrite (fib_suc 3); ring_simplify (3 - 2);[ | typeclasses eauto].
-ring_simplify (3 - 1).
-rewrite (fib_suc 2); ring_simplify (2 - 2);[ | typeclasses eauto].
-ring_simplify (2 - 1).
-rewrite fib1, fib0.
-ring.
+elpi r_compute (monster 3).
+reflexivity.
 Qed.
 
 (* monster grows very fast after that.  monster 4 = 34,
@@ -188,27 +150,14 @@ Existing Instance monster_nat.
   not for the eyes of students, because it exposes type Z. *)
 Derive f36 SuchThat (f36 = fib (fib 9 + 2)) As Ex_f_9.
 Proof.
-  (*  It is difficult to make this succession of computation
-    steps automatic, because they should rather be done inside
-    out. *)
-
-replace 9 with (Rabs 9);[ | rewrite Rabs_pos_eq; lra].
-rewrite (fib_Z_prf 9 _ eq_refl).
-rewrite <- plus_IZR.
-match goal with |- context [IZR ?x] =>
-  let v := eval compute in x in change x with v
-end.
-replace 36 with (Rabs 36);[ | rewrite Rabs_pos_eq; lra].
-rewrite (fib_Z_prf _ _ eq_refl); try typeclasses eauto.
-match goal with |- context [IZR ?x] =>
-  let v := eval compute in x in change x with v
-end.
+elpi r_compute (fib (fib 9 + 2)).
 unfold f36.
 reflexivity.
 Qed.
 
 (* Here is a different way to prove equalities, this time using
-  only commands that are available to the student.  Maybe the
+  only the recursive equation, and Ltac "Match goal" to repeat the common
+  step.  Maybe the
   "match goal" construct is too hard, but instances can be
   written by hand.  Even with the automation, this does
   not scale well to f36, but it could be use to motivate *)
@@ -237,17 +186,20 @@ all: match goal with |- fib ?v = _ =>
   end.
 Qed.
 
+(* This is another function that looks like fib, but adds the index argument
+  in the sum. *)
 Recursive (fun  test3 : R -> R => test3 0 = 0 /\ test3 1 = 1 /\
      forall n, Rnat (n - 2) ->
        test3 n = test3 (n - 2) + test3 (n - 1) + n).
 
 Elpi mirror_recursive_definition test3.
 
-R_compute (test3 (Rabs 10)).
+R_compute (test3 10).
 
 Recursive (def factorial such that factorial 0 = 1 /\
   forall n, Rnat (n - 1) -> factorial n = n * factorial (n - 1)).
 
+(* This is a proof that factorial maps natural numbers to natural numbers. *)
 Lemma student_factorial_nat n : Rnat n -> Rnat (factorial n).
 Proof.
 destruct factorial_eqn as [factorial0 factorial_suc].
@@ -259,6 +211,7 @@ typeclasses eauto.
 assumption.
 Qed.
 
+(* The proof can also be done automatically. *)
 Lemma factorial_nat n : Rnat n -> Rnat (factorial n).
 Proof.
 rec_Rnat factorial.
@@ -270,23 +223,24 @@ Elpi mirror_recursive_definition factorial.
 
 R_compute (factorial 6).
 
-(* lra is usable in the automatic step here because each multiplication instance is
+(* This is a computation of factorial 6 by explicit uses of the recursive equation.
+  lra is usable in the automatic step here because each multiplication instance is
   actually multiplciation by an integer constant. *)
 Lemma fact_6 : factorial 6 = 720.
 Proof.
 destruct factorial_eqn as [factorial0 factorial_suc].
 (* hand made proofs. *)
 assert (factorial 1 = 1).
-  rewrite factorial_suc; ring_simplify (1 - 1); try typeclasses eauto; try lra.
+  rewrite factorial_suc; ring_simplify (1 - 1); solve_Rnat; try lra.
 assert (factorial 2 = 2).
-  rewrite factorial_suc; ring_simplify (2 - 1); try typeclasses eauto; try lra.
+  rewrite factorial_suc; ring_simplify (2 - 1); solve_Rnat; try lra.
 assert (factorial 3 = 6).
-  rewrite factorial_suc; ring_simplify (3 - 1); try typeclasses eauto; try lra.
+  rewrite factorial_suc; ring_simplify (3 - 1); solve_Rnat; try lra.
 assert (factorial 4 = 24).
-  rewrite factorial_suc; ring_simplify (4 - 1); try typeclasses eauto; try lra.
+  rewrite factorial_suc; ring_simplify (4 - 1); solve_Rnat; try lra.
 assert (factorial 5 = 120).
-  rewrite factorial_suc; ring_simplify (5 - 1); try typeclasses eauto; try lra.
-rewrite factorial_suc; ring_simplify (6 - 1); try typeclasses eauto; try lra.
+  rewrite factorial_suc; ring_simplify (5 - 1); solve_Rnat; try lra.
+rewrite factorial_suc; ring_simplify (6 - 1); solve_Rnat; try lra.
 (*  The following two lines take advantage of automation and goal pattern matching
   to perform all proofs steps in one go.
 assert (factorial 1 = 1);[ | assert (factorial 2 = 2);[ | assert (factorial 3 = 6);
@@ -298,33 +252,12 @@ end.
 *)
 Qed.
 
-R_compute (42 + fib (Rabs (factorial (Rabs 5)))).
-
-R_compute (factorial 15) fact15_eqn.
-
-(* The following two lines are preparatory lines for the next interactive  *)
-(* proof.  We want to establish the value of 42 + fib (factorial 5) but    *)
-(* the computation tool only accepts formulas where calls of recursive     *)
-(* function on values that are guaranteed to be positive (using Rabs).     *)
-(* So we call the computation tool on the patched formula, and we will     *)
-(* to show that the absolute value instances are useless.                  *)
-R_compute (42 + fib (Rabs (factorial 5))) huge_val_pre_eq.
-
-(* This computation is for the subformula (in the absolute value)          *)
-R_compute (factorial 5) huge_val_subproof.
-
 (* We can now prove the value for the formula that was initially intended, *)
 (* TODO: make the preliminary steps into tactic steps, withoug the need to *)
 (* define theorems.                                                        *)
 Derive huge_val SuchThat (huge_val = 42 + fib (factorial 5)) As huge_val_eq.
 Proof.
-generalize huge_val_pre_eq.
-assert (0 <= factorial 5).
-  rewrite huge_val_subproof.
-  lra.
-rewrite Rabs_pos_eq; auto.
-intros ->.
+elpi r_compute (42 + fib (factorial 5)).
 unfold huge_val.
 reflexivity.
 Qed.
-
