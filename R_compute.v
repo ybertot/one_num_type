@@ -29,8 +29,6 @@ Proof.
 exact (fun x => eq_sym (abs_IZR x)).
 Qed.
 
-Ltac solve_Rnat := try typeclasses eauto.
-
 Elpi Db R_translate.db lp:{{
 pred translate_prf i:term, o:term, o:term.
 pred main_translate_prf i:term, o:term, o:term.
@@ -127,9 +125,22 @@ translate_collect_prf (app [F, A]) (app [F1, A1])
     coq.ltac.collect-goals Hole [G] [],
     if (coq.ltac.open (coq.ltac.call-ltac1 "solve_Rnat") G [])
        (Nat_prf = Hole, L' = L)
-       (new_int Fresh,
-        Nat_prf = marker Fresh,
-        L' = [pr Fresh {{Rnat lp:A}} | L])
+       (
+        Test = {{(0 <=? lp:A1)%Z}},
+        coq.reduction.vm.norm Test _ Tv,
+        if (Tv = {{false}})
+          ( coq.reduction.vm.norm A1 _ V1,
+            coq.term->string {{IZR lp:V1}} V1R,
+            Diagnostic is
+              {coq.term->string F} ^ " has a negative or undefined input "
+              ^ V1R,
+           coq.error Diagnostic)
+          (GPRF = {{private.compute_Rnat lp:A lp:A1 lp:PRFA eq_refl}},
+           Nat_prf = GPRF),
+        L' = L)
+        %new_int Fresh,
+        % Nat_prf = marker Fresh,
+        % L' = [pr Fresh {{Rnat lp:A}} | L])
   ].
 
 translate_prf (app [F, A, B]) (app [F1, A1, B1])
@@ -353,9 +364,7 @@ Elpi Accumulate lp:{{
 
 solve (goal _ _ _ _ [trm X] as G) GL :-
   std.do! [
-  coq.say "got here",
   translate_collect_prf X V PRF OBLS,
-  coq.say "got here2",
   coq.reduction.vm.norm V _ E2,
   E3 = {{IZR lp:E2}},
   abstract_markers OBLS PRF X E3 PRF1 Stmt,
