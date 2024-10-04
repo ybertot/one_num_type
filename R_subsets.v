@@ -247,9 +247,79 @@ destruct (Rnat_Rint y) as [yint yge0].
 apply Rint_Rnat; [ typeclasses eauto | lra].
 Qed.
 
+From elpi Require Import elpi.
+Elpi Tactic solve_Rnat.
+Elpi Accumulate lp:{{
+
+:index (8) % ask davide
+pred proof i:term, o:term.
+
+proof {{ Rnat 0 }} {{ Rnat0 }}.
+proof {{ Rnat (lp:N + 1) }} {{ @Rnat_succ lp:N lp:P }} :-
+  proof {{ Rnat lp:N }} P.
+proof {{ Rnat (IZR (Z.pos lp:X)) }} {{ @Rnat_cst lp:X }}.
+proof {{ Rnat (INR lp:N) }} {{ @Rnat_INR lp:N }}.
+proof {{ Rnat (lp:X + lp:Y) }} {{ @Rnat_add lp:X lp:Y lp:PX lp:PY }} :-
+  proof {{ Rnat lp:X }} PX,
+  proof {{ Rnat lp:Y }} PY.
+proof {{ Rnat (lp:X * lp:Y) }} {{ @Rnat_mul lp:X lp:Y lp:PX lp:PY }} :-
+  proof {{ Rnat lp:X }} PX,
+  proof {{ Rnat lp:Y }} PY.
+proof {{ Rnat (Rabs lp:X) }} {{ @Rnat_abs lp:X lp:PX }} :-
+  proof {{ Rint lp:X }} PX.
+proof {{ Rnat (lp:X - lp:Y) }} {{ @Rnat_sub lp:X lp:Y lp:PX lp:PY lp:PXY }} :-
+  proof {{ Rnat lp:X }} PX,
+  proof {{ Rnat lp:Y }} PY,
+  proof {{ lp:Y <= lp:X }} PXY.
+
+% this is a bit silly since the only entrypoint already knows X is Rnat
+proof {{ 0 <= lp:X }} {{ @Rnat_ge0 lp:X lp:PX }} :- proof {{ Rnat lp:X }} PX.
+
+proof {{ Rint 0 }} {{ Rint0 }}.
+proof {{ Rint 1 }} {{ Rint1 }}.
+proof {{ Rint 2 }} {{ Rint2 }}.
+proof {{ Rint (lp:X - lp:Y) }} {{ @Rint_sub lp:X lp:Y lp:PX lp:PY }} :-
+  proof {{ Rint lp:X }} PX,
+  proof {{ Rint lp:Y }} PY.
+proof {{ Rint (lp:X + lp:Y) }} {{ @Rint_add lp:X lp:Y lp:PX lp:PY }} :-
+  proof {{ Rint lp:X }} PX,
+  proof {{ Rint lp:Y }} PY.
+proof {{ Rint (lp:X * lp:Y) }} {{ @Rint_mul lp:X lp:Y lp:PX lp:PY }} :-
+  proof {{ Rint lp:X }} PX,
+  proof {{ Rint lp:Y }} PY.
+proof {{ Rint (IZR lp:X) }} {{ @Rint_Z lp:X }}.
+proof {{ Rint (Rabs lp:X) }} {{ @Rint_abs lp:X lp:PX }} :-
+  proof {{ Rint lp:X }} PX.
+proof {{ Rint (- lp:X) }} {{ @Rint_opp lp:X lp:PX }} :-
+  proof {{ Rint lp:X }} PX.
+proof {{ Rint lp:X }} {{ Rnat_Rintw lp:X lp:PX }} :-
+  proof {{ Rnat lp:X }} PX.
+
+pred compile-ctx i:goal-ctx, o:list prop.
+compile-ctx [] [].
+compile-ctx [decl H _ P |L] [(proof P H :- !)|L'] :- compile-ctx L L'.
+compile-ctx [def H _ P _|L] [(proof P H :- !)|L'] :- compile-ctx L L'.
+
+pred find-proof i:goal-ctx, i:term, o:term.
+find-proof C A P :-
+  compile-ctx C Rules,
+  Rules => proof A P, !.
+find-proof _ A _ :-
+  coq.ltac.fail _ {calc ("Cannot prove" ^ {coq.term->string A})}.
+
+solve (goal Ctx _ ({{ Rnat _ }} as Ty) _ _ as G) GL :-
+  find-proof Ctx Ty P,
+  std.assert! (refine P G GL) "bad proof".
+solve (goal _ _ Ty _ _) _ :-
+  coq.ltac.fail _  {calc ("Goal outside tactic domain:" ^ {coq.term->string Ty})}.
+
+}}.
+Elpi Typecheck.
+
 (*
 Hint Resolve Rnat_add Rnat_mul : rnat. *)
-Ltac solve_Rnat := try typeclasses eauto.
+(* Ltac solve_Rnat := try typeclasses eauto. *)
+Ltac solve_Rnat := try elpi solve_Rnat.
 
 (* Order properties for natural numbers. *)
 
