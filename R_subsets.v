@@ -3,6 +3,24 @@ Require Import Wellfounded.
 
 Open Scope R_scope.
 
+
+Module Type MyIZR_type.
+
+Parameter MyIZR : Z -> R.
+
+Axiom MyIZR_eq : MyIZR = IZR.
+
+End MyIZR_type.
+
+Module MyIZR : MyIZR_type.
+
+Definition MyIZR := IZR.
+
+Lemma MyIZR_eq : MyIZR = IZR.
+Proof. reflexivity. Qed.
+
+End MyIZR.
+ 
 (* The set of integers in the type of real numbers *)
 (* ============ *)
 (* Definitions.  The beginner users may not need to see that, but
@@ -334,6 +352,53 @@ induction 1 as [ | p pnat Ih].
   now rewrite Rpow0, IRN0; simpl.
 rewrite Rpow_add, IRN_add, Rpow1, IRN1, pow_add, pow_1; solve_Rnat.
 now rewrite Ih.
+Qed.
+
+Lemma Rpow_convert_Z n m : (0 <=? m)%Z = true ->
+  Rpow n (IZR m) = pow n (Z.abs_nat m).
+Proof.
+intros mpos.
+rewrite Rpow_convert, IRN_IZR;[easy | ].
+apply Rint_Rnat;[apply Rint_Z | ].
+apply IZR_le.
+now rewrite <- Z.leb_le.
+Qed.
+
+Definition R_p_t : power_theory 1 Rmult (@eq R)
+  RMicromega.INZ Rpow.
+constructor.
+destruct n.
+  simpl.
+  now rewrite Rpow_convert_Z.
+simpl (RMicromega.INZ (N.pos p)).
+rewrite Rpow_convert_Z;[ | easy].
+change (Z.abs_nat (Z.pos p)) with (N.to_nat (N.pos p)).
+now destruct R_power_theory as [ it]; apply it.
+Qed.
+
+Ltac Rpow_tac1 t :=
+  match t with
+  | IZR Z0 => N0
+  | IZR (Z.pos ?p) =>
+    match isPcst p with
+    | true => constr:(N.pos p)
+    | false => constr:(InitialRing.NotConstant)
+    end
+  | _ => constr:(InitialRing.NotConstant)
+  end.
+
+Example test_ring n :  n ^ 3 = n * n * n.
+Proof.  ring_simplify. easy. Qed.
+
+Add Field RField_w_Rpow : Rfield 
+  (completeness Zeq_bool_complete, constants [IZR_tac],
+   power_tac R_p_t [Rpow_tac1]).
+
+Example test_ring2 n : n ^ 3 = n * n * n.
+Proof.  ring_simplify.
+replace (R1 + (R1 + R1)) with 3 by ring.
+rewrite Rpow_convert;[ | typeclasses eauto].
+now unfold IRN; rewrite IRZ_IZR.
 Qed.
 
 Lemma Rpow_nonzero n m : Rnat m ->
