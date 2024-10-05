@@ -92,6 +92,15 @@ end.
   with two axioms describing the expected properties. *)
  Parameter Rpow : R -> R -> R.
 
+
+Disable Notation "^" := pow.
+
+Set Warnings "-notation-overridden".
+
+Notation "x ^ y" := (Rpow x y) : R_scope.
+
+Set Warnings "+notation-overridden".
+
  Axiom Rpow_convert0 : forall n, Rpow n 0 = 1.
 
  Axiom Rpow_convertp : forall n p, Rpow n (IZR (Z.pos p)) =
@@ -164,7 +173,7 @@ Proof. ring_simplify (3 + 2). easy. Qed.
 (* As expected, the exponents produced in power expressins are not
   protected agains the computation of IZR, so that the formula we obtain
   in uncomfortable to read. *)
-Example test2_2 (n : R) : Rpow n 10 = n * n * n * n * n * n * n * n * n * n.
+Example test2_2 (n : R) : n ^ 10 = n * n * n * n * n * n * n * n * n * n.
 Proof.
 (* ring succeeds in handling powers, but the exponent is unsightly,
   due to excessive simplification of the IZR function. *)
@@ -182,7 +191,7 @@ Example test3_1 : 3 + 2 = 5.
 Proof. ring_simplify (3 + 2). easy. Qed.
 
 (* As expected, ring_simplify does not produce *)
-Example test3_2 (n : R) : Rpow n 10 = n * n * n * n * n * n * n * n * n * n.
+Example test3_2 (n : R) : n ^ 10 = n * n * n * n * n * n * n * n * n * n.
 Proof.
 (* ring succeeds in handling powers, but the exponent is relying on MyIZR,
   with blocked computation. This is readable, but final users will wonder what
@@ -210,7 +219,7 @@ Example test4_1 : 3 + 2 = 5.
 Proof. ring_simplify (3 + 2). easy. Qed.
 
 (* As expected, ring_simplify does not produce *)
-Example test4_2 (n : R) : Rpow n 10 = n * n * n * n * n * n * n * n * n * n.
+Example test4_2 (n : R) : n ^ 10 = n * n * n * n * n * n * n * n * n * n.
 Proof.
 (* The results of ring_simplify are now comfortable for the final user,
   who does not need to see (and to know) that there is an IZR function
