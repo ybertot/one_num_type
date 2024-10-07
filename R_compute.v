@@ -168,12 +168,12 @@ pred abstract_markers i:list (pair int term) i:term i:term
 abstract_markers [] T LHS RHS T1 {{lp:LHS = lp:RHS :> R}} :-
   copy T T1.
 
-abstract_markers [pr N Ty | L] T LHS RHS (fun _ Ty T1) {{lp:Ty -> lp:T1TY}}:-
+abstract_markers [pr N Ty | L] T LHS RHS (fun _ Ty Prf) {{lp:Ty -> lp:T1TY}}:-
   @pi-decl _ Ty x \
     (
     (copy (marker N) x :- !)
       =>
-    abstract_markers L T LHS RHS (T1 x) T1TY).
+    abstract_markers L T LHS RHS (Prf x) T1TY).
 
 }}.
 
@@ -259,6 +259,7 @@ Elpi Command add_computation.
 Elpi Accumulate Db R_compute.db.
 Elpi Accumulate lp:{{
 
+% TODO: check that the proof C really states that B is the mirror of A
   main [str A, str B, str C] :-
     coq.locate A A1,
     coq.locate B B1,
@@ -314,9 +315,7 @@ main_translate_prf
          (fun x : nat => 
            nth 0 (nat_rect _ lp:L lp:Fnstep x) 0 =
            IZR (nth 0 (nat_rect _ lp:Lz lp:Fz (Z.abs_nat z)) 0%Z))
-        (lp:Prf n z
-           (* (private.INR_Z_abs_nat _  _ nzq) *)
-          )
+        (lp:Prf n z)
           (private.IRN_Z_abs_nat _ _ nzq)}}.
 
 main [str F] :-
@@ -347,7 +346,7 @@ std.do! [
   coq.elpi.accumulate _ "R_compute.db"
     (clause _ _ (nat_thm_table (global (const FGR))
                    (global (const C))
-                   (global (const Cprf))))                 
+                   (global (const Cprf))))
 ].
 
 main L :-
