@@ -3,12 +3,11 @@ Require Import Wellfounded.
 
 Open Scope R_scope.
 
-
 Module Type MyIZR_type.
 
 Parameter MyIZR : Z -> R.
 
-Axiom MyIZR_eq : MyIZR = IZR.
+Axiom eq : MyIZR = IZR.
 
 End MyIZR_type.
 
@@ -16,10 +15,16 @@ Module MyIZR : MyIZR_type.
 
 Definition MyIZR := IZR.
 
-Lemma MyIZR_eq : MyIZR = IZR.
+Lemma eq : MyIZR = IZR.
 Proof. reflexivity. Qed.
 
 End MyIZR.
+
+Definition MyINR : N -> R :=
+  fun n => match n with
+  | N0 => 0
+  | N.pos p => MyIZR.MyIZR (Z.pos p)
+  end.
  
 (* The set of integers in the type of real numbers *)
 (* ============ *)
@@ -332,46 +337,43 @@ Qed.
 
 Definition Rpow (x y : R) := pow x (IRN y).
 
-Lemma Rpow0 x : Rpow x 0 = 1.
+#[local]
+Set Warnings "-notation-overridden".
+
+Disable Notation "^" := pow.
+
+Notation "x ^ y" := (Rpow x y).
+
+#[local]
+Set Warnings "+notation-overridden".
+
+Lemma Rpow0 x : x ^ 0 = 1.
 Proof.  unfold Rpow; rewrite IRN0, pow_O; easy. Qed.
 
-Lemma Rpow1 x : Rpow x 1 = x.
+Lemma Rpow1 x : x ^ 1 = x.
 Proof.  unfold Rpow; rewrite IRN1, pow_1; easy. Qed.
 
 Lemma Rpow_add x a b : 
-  Rnat a -> Rnat b -> Rpow x (a + b) = Rpow x a * Rpow x b.
+  Rnat a -> Rnat b -> x ^ (a + b) = x ^ a * x ^ b.
 Proof.
 intros anat bnat.
 unfold Rpow; rewrite IRN_add, pow_add; easy.
 Qed.
 
-Lemma Rpow_convert n m : Rnat m ->
-  Rpow n m = pow n (IRN m).
-Proof.
-induction 1 as [ | p pnat Ih].
-  now rewrite Rpow0, IRN0; simpl.
-rewrite Rpow_add, IRN_add, Rpow1, IRN1, pow_add, pow_1; solve_Rnat.
-now rewrite Ih.
-Qed.
-
-Lemma Rpow_convert_Z n m : (0 <=? m)%Z = true ->
+Lemma Rpow_convert_Z n m :
   Rpow n (IZR m) = pow n (Z.abs_nat m).
 Proof.
-intros mpos.
-rewrite Rpow_convert, IRN_IZR;[easy | ].
-apply Rint_Rnat;[apply Rint_Z | ].
-apply IZR_le.
-now rewrite <- Z.leb_le.
+now unfold Rpow; rewrite IRN_IZR.
 Qed.
 
 Definition R_p_t : power_theory 1 Rmult (@eq R)
-  RMicromega.INZ Rpow.
+  MyINR Rpow.
 constructor.
 destruct n.
   simpl.
   now rewrite Rpow_convert_Z.
-simpl (RMicromega.INZ (N.pos p)).
-rewrite Rpow_convert_Z;[ | easy].
+unfold MyINR; rewrite MyIZR.eq.
+rewrite Rpow_convert_Z.
 change (Z.abs_nat (Z.pos p)) with (N.to_nat (N.pos p)).
 now destruct R_power_theory as [ it]; apply it.
 Qed.
@@ -387,24 +389,25 @@ Ltac Rpow_tac1 t :=
   | _ => constr:(InitialRing.NotConstant)
   end.
 
-Example test_ring n :  n ^ 3 = n * n * n.
+
+Example test_ring n :  pow n 3 = n * n * n.
 Proof.  ring_simplify. easy. Qed.
 
-Add Field RField_w_Rpow : Rfield 
-  (completeness Zeq_bool_complete, constants [IZR_tac],
-   power_tac R_p_t [Rpow_tac1]).
+Add Field RField_w_Rpow : Rfield
+  (completeness Zeq_bool_IZR, morphism R_rm, constants [IZR_tac],
+    postprocess [rewrite 1?MyIZR.eq], power_tac R_p_t [Rpow_tac1]).
+
+Add Ring RRing_w_Rpow : RTheory
+  (morphism R_rm, constants [IZR_tac],
+    postprocess [rewrite 1?MyIZR.eq], power_tac R_p_t [Rpow_tac1]).
 
 Example test_ring2 n : n ^ 3 = n * n * n.
-Proof.  ring_simplify.
-replace (R1 + (R1 + R1)) with 3 by ring.
-rewrite Rpow_convert;[ | typeclasses eauto].
-now unfold IRN; rewrite IRZ_IZR.
-Qed.
+Proof.  ring_simplify. reflexivity. Qed.
 
 Lemma Rpow_nonzero n m : Rnat m ->
   n <> 0 -> Rpow n m <> 0.
 Proof.
-intros mnat nn0; rewrite Rpow_convert; solve_Rnat.
+intros mnat nn0; unfold Rpow.
 now apply pow_nonzero.
 Qed.
 
