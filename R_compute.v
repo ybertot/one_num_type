@@ -132,7 +132,7 @@ translate_collect_prf (app [F, A]) (app [F1, A1])
           ( coq.reduction.vm.norm A1 _ V1,
             coq.term->string {{IZR lp:V1}} V1R,
             Diagnostic is
-              {coq.term->string F} ^ " has a negative or undefined input "
+              {coq.term->string F} ^ " has a negative input "
               ^ V1R,
            coq.error Diagnostic)
           (GPRF = {{private.compute_Rnat lp:A lp:A1 lp:PRFA eq_refl}},
@@ -208,7 +208,7 @@ thm_table {{Rabs}} {{Z.abs}} {{abs_compute}}.
 % 1/ a function f from R -> R
 % 2/ a function fz from Z -> Z
 % 3/ a theorem f_prf with statement
-%   forall x y, Rnat x -> x = IZR y -> f (Rabs x) = IZR (fz y)
+%   forall x y, x = IZR y -> f (Rabs x) = IZR (fz y)
 %  This reflect that recursive definitions are mirrored
 % by function that first perform a Z.abs_nat operation 
 % to obtain the integer that will feed the recursive
