@@ -345,7 +345,7 @@ Set Warnings "-notation-overridden".
 
 Disable Notation "^" := pow.
 
-Notation "x ^ y" := (Rpow x y).
+Notation "x ^ y" := (Rpow x y) : R_scope.
 
 #[local]
 Set Warnings "+notation-overridden".
@@ -383,8 +383,8 @@ Qed.
 
 Ltac Rpow_tac1 t :=
   match t with
-  | IZR Z0 => N0
-  | IZR (Z.pos ?p) =>
+  | MyIZR.IZR Z0 => N0
+  | MyIZR.IZR (Z.pos ?p) =>
     match isPcst p with
     | true => constr:(N.pos p)
     | false => constr:(InitialRing.NotConstant)
@@ -486,4 +486,40 @@ destruct (Rle_lt_or_eq _ _ mlen1) as [mltn1 | meqn1]; cycle 1.
 assert (tmp := Rnat_le_lt m (n + 1) mltn1).
 apply Ihn;[ | assumption].
 lra.
+Qed.
+
+(* Properties of the square root function. *)
+
+Lemma sqrt0 : sqrt 0 = 0.
+Proof. replace 0 with (0 * 0) by ring; rewrite sqrt_square; lra. Qed.
+
+Lemma sqrt1 : sqrt 1 = 1.
+Proof. replace 1 with (1 * 1) by ring; rewrite sqrt_square; lra. Qed.
+
+Lemma pow_2_expand x : x ^ 2 = x * x.
+Proof.
+replace 2 with (1 + 1) by ring.
+rewrite Rpow_add; solve_Rnat.
+now rewrite Rpow1.
+Qed.
+
+Lemma pow_2_sqrt x : 0 <= x -> sqrt x ^ 2 = x.
+Proof.
+now intros xpos; rewrite pow_2_expand, sqrt_sqrt.
+Qed.
+
+Lemma sqrt_pow_2 x : 0 <= x -> sqrt (x ^ 2) = x.
+Proof.
+intros xpos.
+replace (x ^ 2) with (x * x) by ring.
+rewrite sqrt_square; lra.
+Qed.
+
+(* Upon inspection of the type, this lemma makes the positive number type
+  visible.  So it may not be that good after all.  In particular, it
+  it is unclear how this lemma should be documented. *)
+Lemma sqrt_pos_Z x : 0 < sqrt (IZR (Z.pos x)).
+Proof.
+apply sqrt_lt_R0.
+now apply IZR_lt.
 Qed.
