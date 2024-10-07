@@ -382,7 +382,7 @@ replace_rec_call_by_seq_nth L F N V A B :-
     int_to_nat In I,
     coq.locate "nth" Nth,
     coq.locate "R" Rtype,
-    Zero = {{ 0}},
+    Zero = {{0}},
     B = app[global Nth, global Rtype, I, V, Zero]
   ].
 
