@@ -135,6 +135,7 @@ split.
   but there is a theorem explaining that you only need to check that the
   two numbers are already natural numbers and the first is larger than the
   second one.  This theorem is used with a command named "apply". *)
+  Fail progress solve_Rnat.
   apply Rnat_sub.
       solve_Rnat.
     solve_Rnat.
@@ -190,6 +191,8 @@ R_compute (dd 212).
 
 R_compute (fib (fib 9)).
 
+Fail R_compute (fib (-2)).
+
 (* When we want to prove equalities between formulas,
   where the operations are addition multiplication
   subtraction and division, we use field instead of
@@ -207,17 +210,14 @@ Definition phi := (sqrt 5 + 1)/ 2.
 Lemma phi_root : golden_ratio_polynomial phi = 0.
 Proof.
 unfold golden_ratio_polynomial, phi.
-(* We need to decompose because field does not about Rpow or sqrt. *)
+(* We need to decompose because field does not know about sqrt. *)
 replace (((sqrt 5 + 1) / 2) ^ 2) with
-  ((sqrt 5 ^ 2 + 2 * sqrt 5 + 1) / 4).
-  replace ((sqrt 5) ^ 2) with 5.
-    field.
-  replace 2 with (1 + 1) by ring.
-  rewrite Rpow_add; solve_Rnat; rewrite Rpow1.
-  rewrite sqrt_sqrt;[ | lra].
-  easy.
-replace 2 with (1 + 1) at 1 4 by ring.
-rewrite !Rpow_add, !Rpow1; solve_Rnat.
+  ((sqrt 5 ^ 2 + 2 * sqrt 5 + 1) / 4) by field.
+assert (s5q : sqrt 5 ^ 2 = 5).
+  rewrite pow_2_sqrt.
+    easy.
+  lra.
+rewrite s5q.
 field.
 Qed.
 
@@ -243,57 +243,83 @@ unfold phi'.
 assert (phi_square_n0 : phi ^ 2 <> 0).
   apply Rpow_nonzero; solve_Rnat.
   exact phi_n0.
-destruct (Rmult_integral (phi ^ 2) (golden_ratio_polynomial (-(1/phi)))) as [ abs | it].
+destruct (Rmult_integral (phi ^ 2) (golden_ratio_polynomial (-(1/phi))))
+  as [ abs | it].
 3: exact it.
 2: now rewrite abs in phi_square_n0; case phi_square_n0.
-replace (phi ^ 2 * golden_ratio_polynomial (-(1/phi))) with (- (golden_ratio_polynomial phi)).
+(* TODO: understand why field_simplify does not do anything good here.*)
+replace (phi ^ 2 * golden_ratio_polynomial (-(1/phi))) with
+ (- (golden_ratio_polynomial phi)).
   rewrite phi_root.
   ring.
 unfold golden_ratio_polynomial.
-(* This is unsatisfactory because field does not know about Rpow.   Using
-  Rpow_convert makes natural numbers surface. *)
-replace 2 with (1 + 1) by ring.
-rewrite !Rpow_add, !Rpow1; solve_Rnat.
+Fail progress (field_simplify;[ | exact phi_n0]).
 field.
 exact phi_n0.
 Qed.
 
 Lemma  phi'_eq : phi' = (1 - sqrt 5) / 2.
 Proof.
-assert (sqrt 5 + 1 <> 0).
-  assert (0 < sqrt 5).
-    apply sqrt_lt_R0.
-    lra.
-  lra.
 unfold phi', phi.
-apply (Rmult_eq_reg_l (sqrt 5 + 1)); try easy.
-(* Here one would be tempted to use field_simplify, but again this makes
-  the type of natural number surface. *)
-replace ((sqrt 5 + 1) * - (1/((sqrt 5 + 1) / 2))) with
-  (- 2) by (field; easy).
-replace ((sqrt 5 + 1) * ((1 - sqrt 5) / 2)) with
-  ((1 - (sqrt 5 * sqrt 5)) / 2) by field.
-replace (sqrt 5 * sqrt 5) with 5.
+(* sqrt 5 - 1 occurs as the denominator on the left hand side.
+  We first show that this is non-zero, so that the simplifications
+  are licit. *)
+assert (s5gt0 : 0 < sqrt 5).
+  apply sqrt_lt_R0.
+  lra.
+assert (sqrt 5 + 1 <> 0).
+  lra.
+field_simplify (- (1 / ((sqrt 5 + 1) / 2))); auto.
+(* Multiplying the numerator and the denominator of the left hand side
+   quotient by (sqrt 5 - 1), which needs to be non zero. *)
+assert (sqrt 5 - 1 <> 0).
+  enough (1 < sqrt 5) by lra.
+  rewrite <- sqrt1.
+  apply sqrt_lt_1_alt.
+  lra.
+(* The multiplication appears here. *)
+rewrite <- (Rdiv_mult_l_l (sqrt 5 - 1)); auto.
+replace ((sqrt 5 - 1) * (sqrt 5 + 1)) with
+  (sqrt 5 ^ 2 - 1) by ring.
+rewrite pow_2_sqrt.
   field.
-rewrite sqrt_sqrt.
-  easy.
 lra.
 Qed.
 
-Lemma root_to_fib_sum (x : R) :
-  golden_ratio_polynomial x = 0 -> x ^ 2 = x + 1.
+Lemma root_to_fib_sum (x n : R) : Rnat n ->
+  golden_ratio_polynomial x = 0 -> x ^ (n + 2) = x ^ (n + 1) + x ^ n.
 Proof.
-intros root_prop.
-rewrite <- (Rminus_0_r (x ^ 2)), <- root_prop.
-unfold golden_ratio_polynomial.
+intros nnat root_prop.
+assert (xnq : x ^ (n + 1) + x ^ n = x ^ n * (x + 1)).
+  rewrite Rpow_add.
+  ring.
+  1,2: solve_Rnat.
+rewrite Rpow_add.
+rewrite xnq.
+2,3: solve_Rnat.
+assert (golden_step : x ^ 2 = golden_ratio_polynomial x + x + 1).
+  unfold golden_ratio_polynomial.
+  ring.
+rewrite golden_step.
+rewrite root_prop.
 ring.
 Qed.
 
-Lemma phi_root' : phi ^ 2 = phi + 1.
-Proof.  exact (root_to_fib_sum _ phi_root). Qed.
+Lemma phi_fib_rec n : Rnat n -> phi ^ (n + 2) = phi ^ (n + 1) + phi ^ n.
+Proof.
+intros nnat.
+apply root_to_fib_sum.
+  easy.
+exact phi_root.
+Qed.
 
-Lemma phi'_root' : phi' ^ 2 = phi' + 1.
-Proof. exact (root_to_fib_sum _ phi'_root). Qed.
+Lemma phi'_fib_rec n : Rnat n -> phi' ^ (n + 2) = phi' ^ (n + 1) + phi' ^ n.
+Proof.
+intros nnat.
+apply root_to_fib_sum.
+  easy.
+exact phi'_root.
+Qed.
 
 Lemma Fibonacci_and_golden_ratio n:
     Rnat n -> 
@@ -324,24 +350,19 @@ induction nnat as [ | p pnat Ih].
   knowing it already works for n and n + 1. *)
 destruct Ih as [Ih1 Ih2].
 split;[ assumption | ].
+(* To use fib_suc, we need to show that p + 1 + 1 - 2 is a natural number. *)
 assert (pnat' : Rnat (p + 1 + 1 - 2)).
   ring_simplify (p + 1 + 1 - 2).
-  assumption.
-rewrite fib_suc; auto. 
+  easy.
+rewrite fib_suc; solve_Rnat.
 ring_simplify (p + 1 + 1 - 2).
 ring_simplify (p + 1 + 1 - 1).
 rewrite Ih1.
 rewrite Ih2.
-assert (clever : forall x, golden_ratio_polynomial x = 0 ->
-  Rpow x (p + 1 + 1) = Rpow x (p + 1) + Rpow x p).
-  intros x xroot.
-  replace (p + 1 + 1) with (p + 2) by ring.
-  rewrite !Rpow_add, Rpow1; solve_Rnat.
-  rewrite (root_to_fib_sum _ xroot).
-  ring.
-rewrite (clever _ phi_root), (clever _ phi'_root).
+ring_simplify (p + 1 + 1).
+rewrite phi_fib_rec.
+rewrite phi'_fib_rec.
 field.
 lra.
+all: solve_Rnat.
 Qed.
-
-
