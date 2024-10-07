@@ -1,13 +1,6 @@
 Require Import Reals.
-Require Import Field.
 
 Open Scope R_scope.
-
-(*
-Add Field RField : 
-  Rfield (completeness Zeq_bool_complete, morphism R_rm,
-    constants [IZR_tac]).
-*)
 
 Example test0 : 3 + 2 = 5.
  Proof. ring_simplify (3 + 2). easy. Qed.
@@ -29,7 +22,7 @@ Qed.
   are expressed solely using the unit of the ring,
   addition, and multiplication, using a binary number
   structure.
-*)
+  *)
 Add Field RField2 : Rfield
  (completeness Zeq_bool_complete, constants [IZR_tac]).
 
@@ -60,17 +53,17 @@ Qed.
   will not be expanded, but is provably equal to the known IZR.  *)
 Module Type MyIZR_type.
 
-Parameter MyIZR : Z -> R.
+Parameter IZR : Z -> R.
 
-Axiom eq : MyIZR = IZR.
+Axiom eq : IZR = Rdefinitions.IZR.
 
 End MyIZR_type.
 
 Module MyIZR : MyIZR_type.
 
-Definition MyIZR := IZR.
+Definition IZR := Rdefinitions.IZR.
 
-Lemma eq : MyIZR = IZR.
+Lemma eq : IZR = Rdefinitions.IZR.
 Proof. reflexivity. Qed.
 
 End MyIZR.
@@ -85,45 +78,47 @@ Definition MyINR : N -> R :=
 fun n => match n with
 | 0%N => 0
 | N.pos p => IZR (Z.pos p)
-end.
+  end.
 
 Definition MyINR1 : N -> R :=
 fun n => match n with
 | 0%N => 0
-| N.pos p => MyIZR.MyIZR (Z.pos p)
+| N.pos p => MyIZR.IZR (Z.pos p)
+  (* Alternatively: MyIZR.IZR instead of IZR*)
 end.
 
 (* For the experiments in this file, we do no load the file
   R_subset, but assume the existence of the relevant function,
   with two axioms describing the expected properties. *)
  Parameter Rpow : R -> R -> R.
-
-
+ 
 Disable Notation "^" := pow.
 
+#[local]
 Set Warnings "-notation-overridden".
 
 Notation "x ^ y" := (Rpow x y) : R_scope.
 
+#[local]
 Set Warnings "+notation-overridden".
 
- Axiom Rpow_convert0 : forall n, Rpow n 0 = 1.
+ Axiom Rpow_convert0 : forall n, n ^ 0 = 1.
 
- Axiom Rpow_convertp : forall n p, Rpow n (IZR (Z.pos p)) =
+ Axiom Rpow_convertp : forall n p, n ^ (IZR (Z.pos p)) =
    pow n (Pos.to_nat p).
 
 (* the following structure uses MyINR, where the IZR
    function is used, and we will see in experiments that
    the exponents produced by ring_simplify are uncomfortable. *)
-Definition R_p_t : power_theory 1 Rmult (@eq R)
-  MyINR Rpow.
+Definition R_p_t : power_theory 1 Rmult (@eq R) MyINR Rpow.
 constructor.
 destruct n.
   simpl.
   now rewrite Rpow_convert0.
-(* The optional rewrite in the next line is to be robust to the
-  fact that MyINR may call directly IZR or MyIZR.MyIZR instead. *)
+(* The option rewrite in the next line is to be robust to the
+  fact that MyINR may call directly IZR or MyIZR.IZR instead. *)
 unfold MyINR; rewrite ?MyIZR.eq.
+simpl (RMicromega.INZ (N.pos p)).
 rewrite Rpow_convertp.
 change (Pos.to_nat p) with (N.to_nat (N.pos p)).
 (* We use the fact that the correctness property is already proved
@@ -141,7 +136,7 @@ destruct n.
   simpl.
   now rewrite Rpow_convert0.
 (* The option rewrite in the next line is to be robust to the
-  fact that MyINR may call directly IZR or MyIZR.MyIZR instead. *)
+  fact that MyINR may call directly IZR or MyIZR.IZR instead. *)
 unfold MyINR1; rewrite ?MyIZR.eq.
 rewrite Rpow_convertp.
 change (Pos.to_nat p) with (N.to_nat (N.pos p)).
@@ -206,21 +201,24 @@ rewrite MyIZR.eq.
 easy.
 Qed.
 
-(* There should be no failure here. *)
-Example test3_3 x : x ^ 2 - 0 = x ^ 2.
-Proof. Fail progress ring_simplify. rewrite Rminus_0_r. easy. Qed.
+Lemma Rpow_IZR_to_myIZR x y : 
+   x ^ (IZR y) = x ^ (MyIZR.IZR y).
+Proof. now rewrite MyIZR.eq. Qed.
 
-(* We can request that ring_simplify (or field_simplify) performs systematically
-  the rewrite shown above.*)
+Ltac r_simplify_pre :=
+  rewrite ?Rpow_IZR_to_myIZR.
+
+Ltac r_simplify_post := 
+  rewrite ?MyIZR.eq.
+
 Add Field RField5 : Rfield
-  (completeness Zeq_bool_IZR, morphism R_rm, constants [IZR_tac],
-    postprocess [rewrite 1?MyIZR.eq], power_tac R_p_t1 [Rpow_tac1]).
+  (completeness Zeq_bool_IZR, morphism R_rm, constants [IZR_tac], 
+    power_tac R_p_t1 [Rpow_tac1], preprocess [r_simplify_pre],
+    postprocess [r_simplify_post]).
 
-(* It is necessary to perform the Add Ring command hereafter,
-  because Add Field adds a ring declaration for R, but with
-  no postprocess tactic. *)
-Add Ring RRing5 : RTheory (morphism R_rm, constants[IZR_tac],
-  postprocess [rewrite 1?MyIZR.eq], power_tac R_p_t1 [Rpow_tac1]).
+Add Ring RRing5 : RTheory
+  (morphism R_rm, constants [IZR_tac], power_tac R_p_t1 [Rpow_tac1],
+  preprocess [r_simplify_pre], postprocess [r_simplify_post]).
 
 (* Testing the simplification of ground expressions containing
   integers. We recover the correct handling of integers. *)
@@ -238,12 +236,12 @@ ring_simplify.
 easy.
 Qed.
 
-Example test4_3 (x : R) : x ^ 2 - x - 1 = 0 ->
- x ^ 2 = x + 1.
+(* This example does not behave correctly if one does not include the
+  preprocess modifier for the ring tactic. *)
+Example test4_3 (n : R) : n ^ 2 - n - 1 + (1 + n) = n ^ 2 + 0.
 Proof.
-intros pol_cond.
-rewrite <- (Rminus_0_r (x ^ 2)).
-assert (x ^ 2 - 0 = x ^ 2).
-  ring_simplify.
+ring_simplify.
+easy.
+Qed.
 
 
