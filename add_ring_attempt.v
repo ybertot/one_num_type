@@ -244,4 +244,9 @@ ring_simplify.
 easy.
 Qed.
 
-
+Example test4_4 (n : R) : n <> 0 ->
+  n ^ 2 * ( (- 1 / n) ^ 2 - (-1 / n) - 1) =
+   - (n ^ 2 - n - 1).
+Proof.
+intros nn0.
+Fail progress (field_simplify ((-1 / n) ^ 2 - (-1 / n) - 1);[ | auto]).
