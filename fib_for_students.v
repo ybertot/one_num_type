@@ -200,7 +200,7 @@ R_compute (fib (fib 9)).
  of the polynomial X ^ 2 - X - 1.  It is easily computed using the known
  formulas to solve second degree equation. *)
 
-Definition golden_ratio_polynomial (x : R) := Rpow x 2 - x - 1.
+Definition golden_ratio_polynomial (x : R) := x ^ 2 - x - 1.
 
 Definition phi := (sqrt 5 + 1)/ 2.
 
@@ -208,9 +208,9 @@ Lemma phi_root : golden_ratio_polynomial phi = 0.
 Proof.
 unfold golden_ratio_polynomial, phi.
 (* We need to decompose because field does not about Rpow or sqrt. *)
-replace (Rpow ((sqrt 5 + 1) / 2) 2) with
-  ((Rpow (sqrt 5) 2 + 2 * sqrt 5 + 1) / 4).
-  replace (Rpow (sqrt 5) 2) with 5.
+replace (((sqrt 5 + 1) / 2) ^ 2) with
+  ((sqrt 5 ^ 2 + 2 * sqrt 5 + 1) / 4).
+  replace ((sqrt 5) ^ 2) with 5.
     field.
   replace 2 with (1 + 1) by ring.
   rewrite Rpow_add; solve_Rnat; rewrite Rpow1.
@@ -240,13 +240,13 @@ Lemma phi'_root : golden_ratio_polynomial phi' = 0.
 Proof.
 unfold phi'.
 (* we can multiply by phi ^ 2 *)
-assert (phi_square_n0 : Rpow phi 2 <> 0).
+assert (phi_square_n0 : phi ^ 2 <> 0).
   apply Rpow_nonzero; solve_Rnat.
   exact phi_n0.
-destruct (Rmult_integral (Rpow phi 2) (golden_ratio_polynomial (-(1/phi)))) as [ abs | it].
+destruct (Rmult_integral (phi ^ 2) (golden_ratio_polynomial (-(1/phi)))) as [ abs | it].
 3: exact it.
 2: now rewrite abs in phi_square_n0; case phi_square_n0.
-replace (Rpow phi 2 * golden_ratio_polynomial (-(1/phi))) with (- (golden_ratio_polynomial phi)).
+replace (phi ^ 2 * golden_ratio_polynomial (-(1/phi))) with (- (golden_ratio_polynomial phi)).
   rewrite phi_root.
   ring.
 unfold golden_ratio_polynomial.
@@ -281,18 +281,18 @@ lra.
 Qed.
 
 Lemma root_to_fib_sum (x : R) :
-  golden_ratio_polynomial x = 0 -> Rpow x 2 = x + 1.
+  golden_ratio_polynomial x = 0 -> x ^ 2 = x + 1.
 Proof.
 intros root_prop.
-rewrite <- (Rminus_0_r (Rpow x 2)), <- root_prop.
+rewrite <- (Rminus_0_r (x ^ 2)), <- root_prop.
 unfold golden_ratio_polynomial.
 ring.
 Qed.
 
-Lemma phi_root' : Rpow phi 2 = phi + 1.
+Lemma phi_root' : phi ^ 2 = phi + 1.
 Proof.  exact (root_to_fib_sum _ phi_root). Qed.
 
-Lemma phi'_root' : Rpow phi' 2 = phi' + 1.
+Lemma phi'_root' : phi' ^ 2 = phi' + 1.
 Proof. exact (root_to_fib_sum _ phi'_root). Qed.
 
 Lemma Fibonacci_and_golden_ratio n:
