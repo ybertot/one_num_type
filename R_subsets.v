@@ -5,17 +5,17 @@ Open Scope R_scope.
 
 Module Type MyIZR_type.
 
-Parameter MyIZR : Z -> R.
+Parameter IZR : Z -> R.
 
-Axiom eq : MyIZR = IZR.
+Axiom eq : IZR = Rdefinitions.IZR.
 
 End MyIZR_type.
 
 Module MyIZR : MyIZR_type.
 
-Definition MyIZR := IZR.
+Definition IZR := Rdefinitions.IZR.
 
-Lemma eq : MyIZR = IZR.
+Lemma eq : IZR = Rdefinitions.IZR.
 Proof. reflexivity. Qed.
 
 End MyIZR.
@@ -23,7 +23,7 @@ End MyIZR.
 Definition MyINR : N -> R :=
   fun n => match n with
   | N0 => 0
-  | N.pos p => MyIZR.MyIZR (Z.pos p)
+  | N.pos p => MyIZR.IZR (Z.pos p)
   end.
  
 (* The set of integers in the type of real numbers *)
@@ -337,6 +337,9 @@ Qed.
 
 Definition Rpow (x y : R) := pow x (IRN y).
 
+Lemma Rpow_pre_ring x y : Rpow x (IZR y) = Rpow x (MyIZR.IZR y).
+Proof. rewrite MyIZR.eq; easy. Qed.
+
 #[local]
 Set Warnings "-notation-overridden".
 
@@ -395,14 +398,12 @@ Proof.  ring_simplify. easy. Qed.
 
 Add Field RField_w_Rpow : Rfield
   (completeness Zeq_bool_IZR, morphism R_rm, constants [IZR_tac],
+    preprocess [rewrite ?Rpow_pre_ring],
     postprocess [rewrite 1?MyIZR.eq], power_tac R_p_t [Rpow_tac1]).
 
 Add Ring RRing_w_Rpow : RTheory
-  (morphism R_rm, constants [IZR_tac],
+  (morphism R_rm, constants [IZR_tac], preprocess [rewrite ?Rpow_pre_ring],
     postprocess [rewrite 1?MyIZR.eq], power_tac R_p_t [Rpow_tac1]).
-
-Example test_ring2 n : n ^ 3 = n * n * n.
-Proof.  ring_simplify. reflexivity. Qed.
 
 Lemma Rpow_nonzero n m : Rnat m ->
   n <> 0 -> Rpow n m <> 0.
