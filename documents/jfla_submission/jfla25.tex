@@ -108,10 +108,99 @@ satisfaite, et faire la difference entre ces deux types de phrases.
 
 Pour de nombreux étudiants en mathématiques, le langage à utiliser est
 une langue étrangère.  Il faut pratiquer cette langue étrangère
-fréquemment pour progresser.
+fréquemment pour progresser.  En particulier, il faut apprendre à décrire
+des raisonnements en suivant correctement les implications fournies par
+les théorèmes fournis, et en faisant correctement les transformations
+de formules permises par les égalités connues.  En fin de compte,
+l'apprentissage est réussi si l'étudiant est capable de faire un
+raisonnement qui sera considéré comme correct par une lectrice humaine.
+En d'autres termes, il s'agit d'apprendre le langage qui permet de
+s'inclure dans la communauté humaine des mathématiciens.
 
+Un système de preuve interactif est justement conçu pour vérifier que toutes
+les étapes de raisonnement sont effectuées correctement.  Il est donc
+naturel de vouloir explorer l'utilisation d'un tel système de preuve
+pour l'enseignement des mathématiques.  En revanche, il faut éviter
+que ce nouvel outil impose une charge d'apprentissage supplémentaire,
+et finalement contreproducive si l'étudiant passe trop de temps à
+s'adapter au système de preuve, comme une informaticienne apprend un
+langage de programmation, mais n'a plus le temps d'apprendre les
+concepts mathématiques de son cursus.  Il faut éviter que le langage
+mathématique imposé par le système de preuve soit trop éloigné du
+langage usuel pour le niveau d'apprentissage de l'étudiant.
 
+Les nombres naturels, tels que manipulés dans les systèmes de preuve,
+sont fournis comme un type inductif.  La théorie des types inductifs
+fournit la possibilité de définir des fonctions, de telle que sorte
+que les opérations de base peuvent être définies, comme l'addition et
+la multiplication.  On peut également envisager la soustraction et la
+division, mais c'est un point où apparait une dissonance entre les
+mathématiques telle qu'elles apparaissent dans le système de preuve et
+dans la tradition humaine.  Pour pouvoir composer les opérations à
+l'envi, il est préférable que le résultat d'une soustraction de deux
+nombres naturels soit un nombre naturel, le système de preuve impose
+que la fonction soit totale, donc le concepteur de la bibliothèque est
+obligé de donner une valeur à la formule \(3 - 5\).  Le choix fait
+dans tous les systèmes de preuve est que le résultat est le nombre
+\(0\), parce que l'autre valeur envisageable \(-2\) n'est pas un
+entier naturel.
 
+La tradition des mathématiques et d'associer à chaque fonction son
+domaine de définition.  Lorsque l'on écrit une formule composée, on
+doit expliciter le fait que toutes les fonctions sont bien utilisées
+dans leur domaine de définition.  La tradition des mathématiques
+formalisées en théorie des types est que toute fonction doit être
+totale.  Les fonctions donc généralement prolongées avec une valeur
+par défaut aux endroits ou leur correspondantes traditionnelles sont
+non définies.  La modélisation reste fidèle dans la mesure où les
+théorèmes qui permettent de raisonner sur la fonction utilisent
+généralement l'appartenance des arguments au domaine de définition
+comme hypothèse.  Ainsi, une mathématicienne utilisera naturellement
+le raisonnement:
+\[(m - n) + n = m\]
+en reposant sur le fait que la formule de droite a été validée (\(n
+\leq m\)) plus tôt dans le discours.  En revanche, l'outil de preuve
+fournit un théorème avec l'énoncé suivant:
+\begin{verbatim}
+forall m n, n <= m -> (m - n) + n = m
+\end{verbatim}
+Ainsi, la condition de bonne formation de la formule n'est pas
+vérifiée a priori, mais uniquement au moment où l'on veut exploiter
+les propriétés de cette fonction de soustraction.  Les bonnes
+vérifications sont faites, mais au bon moment.
+
+Il reste que l'utilisatrice finale doit mémoriser le fait que
+lorsqu'elle voit l'opération \(m - n\) dans une formule mathématique,
+il ne s'agit pas de la soustraction usuelle, mais de cette
+soustraction si \(n\) est plus petit que \(m\) et 0 sinon.
+
+Le coût pour l'utilisatrice finale n'est pas seulement un coût de
+mémorisation.  Les outils de démonstration (appelés des tactiques)
+fournis dans le système de preuve sont également impactés par la
+présence de cette représentation irrégulière de la soustraction.
+Dans le système Coq, il existe une tactique appelée \texttt{ring}, qui
+est capable de prouver des égalités entre formules polynomiales, en
+exploitant les propriétés des différents opérateurs.  Cette tactique
+est très pratique et son comportement très facile à comprendre, sauf
+qu'elle est ``bloquée'' en présence de soustractions sur les entiers
+naturels.  Par exemple, la formule suivante est une formule évidente à
+l'œil nu que cette tactique ne sait pas résoudre.
+\[(n + m - (m + n)) * n = 0\]
+
+Quand on avance dans les mathématiques, on est de toutes façon amené à
+étudier des ensembles de nombres plus riches que l'ensemble des
+entiers naturels.  Par exemple, si l'on considère la suite de
+Fibonacci \({\mathcal F}\), définie par les équations suivantes:
+\[{\mathcal F}(0) = 0 \qquad {\mathcal F}(1)= 1\qquad {\mathcal F}(n +
+2) = {\mathcal F}(n) + {\mathcal F}(n + 1),\]
+un résultat mathématique connu est donné par la formule suivante:
+\[{\mathcal F} (n) = \frac{\phi ^n - {\frac{-1}{\phi}} ^
+  n}{\sqrt{5}},\]
+où \(\phi\) est le nombre d'or.
+\[\phi = \frac{\sqrt{5} + 1}{2}\]
+La preuve de cette formule requiert des mathématiques plutôt
+élémentaires, mais c'est un résultat qui ne peut évidemment pas s'exprimer
+seulement avec des nombres naturels.
 \section{Consignes générales}
 
 Pour maintenir l'uniformité des actes des JFLA, nous vous demandons de ne
