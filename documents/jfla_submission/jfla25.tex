@@ -201,7 +201,57 @@ où \(\phi\) est le nombre d'or.
 La preuve de cette formule requiert des mathématiques plutôt
 élémentaires, mais c'est un résultat qui ne peut évidemment pas s'exprimer
 seulement avec des nombres naturels.
-\section{Consignes générales}
+
+Nous proposons de développer une libraire d'initiation à la preuve
+mathématique dans laquelle on n'utilise qu'un seul type de nombres,
+pour que les étudiants puissent travailler confortablement avec les
+concepts mathématiques qu'ils doivent apprendre à maitriser.  Ce
+travail est complémentaire des efforts proposés par d'autres
+chercheurs pour fournir un environnement où les étudiants peuvent
+bénéficier d'une approche leur permettant de rédiger leurs preuves
+dans un style de ``langue naturelle controlée'' parce que ces efforts
+visent à améliorer le langage utilisés pour décrire les raisonnements
+logiques, sans modifier le cadre de travail; les faits utilisés
+restent proches de la théorie des types traditionnelle et reposent sur
+plusieurs types de nombres.
+
+Au fur et à mesure que les étudiants acquièrent la maitrise des
+mathématiques et potentiellement des systèmes de preuve interactifs,
+il est probablement justifié de revenir à la présentation usuelle des
+nombres, reposant sur plusieurs types.  En particulier, nous verrons
+que les types inductifs de nombre jouent un rôle crucial dans
+l'implémentation des différents fonctionnalités que nous proposons.
+
+Dans notre bibliothèque, les nombres naturels sont présents, mais
+présentés comme un sous-ensemble des nombres réels.  De même nous
+fournissons un ensemble des nombres entiers (et dans une version plus
+complète de la librarie, nous proposerons certainement aussi un
+ensemble des nombres rationnels).  L'ensemble des nombres naturels est
+décrit par un prédicat inductif de type \({\mathbb R} \rightarrow
+{\mathbb Prop}\).  Ceci nous permet de bénéficier directement des
+fonctionnalités existantes pour les preuves par récurrence.  En
+revanche, cette approche ne nous permet pas de définir des fonctions
+récursives sur les entiers naturels.  Nous fournissons une commande
+pour remplir cette lacune, et nous montrons sur quelques exemples que
+cette commande de retrouver la capacité de raisonner sur des suites
+récurrentes, un sujet qui est souvent abordé dans les premiers de
+cours de mathématiques.
+
+Dans un premier temps, nous décrirons les grandes lignes d'implémentation des
+différentes commandes que nous fournissons pour donner au type des
+nombres réels plusieurs des fonctionalités qui étaient normalement
+réservées aux types inductifs, nous donnons quelques exemples qui
+illustrent les gains que permettent cette approche, en terme de
+simplicité d'utilisation pour un étudiant découvrant à la fois les
+mathématiques et les systèmes de preuve interactifs.
+
+Ensuite nous montrerons comment quelques exercices de mathématiques
+peuvent être réalisés dans ce cadre, en soulignant comment cette
+approche permet aux étudiants de rester proches de l'univers
+mathématiques qui devrait leur être familier.
+\section{Describing subsets of the real numbers}
+\section{Recursive Definitions}
+Inductive types comme naturally with a capability to compute recursively,
 
 Pour maintenir l'uniformité des actes des JFLA, nous vous demandons de ne
 changer ni la police par défaut ni sa taille (10 points).
