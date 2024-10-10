@@ -392,18 +392,60 @@ Ltac Rpow_tac1 t :=
   | _ => constr:(InitialRing.NotConstant)
   end.
 
+Example test_ring n :  pow n 3 + 3 * pow n 2 + 3 * n + 1 =
+  pow (n + 1) 3.
+Proof. ring_simplify. easy. Qed.
 
-Example test_ring n :  pow n 3 = n * n * n.
-Proof.  ring_simplify. easy. Qed.
+(* The following example shows that Rpow is not handled by ring. *)
+Example test_ring2 n : n ^ 3 + 3 * n ^ 2 + 3 * n + 1 =
+  (n + 1) ^ 3.
+Proof.
+Fail ring.
+rewrite !Rpow_convert_Z.
+repeat (match goal with |- context[Z.abs_nat ?n] =>
+          let v := eval compute in (Z.abs_nat n) in
+            change (Z.abs_nat n) with v
+end).
+ring_simplify.
+easy.
+Qed.
 
+Ltac to_pow :=
+  repeat
+    (match goal with |- context [Rpow ?x (IZR (Z.pos ?n))] =>
+      let nN := constr:(Z.abs_nat (Z.pos n)) in
+      let v := eval compute in nN in
+        replace (Rpow x (IZR (Z.pos n))) with (pow x v);
+         [ | rewrite (Rpow_convert_Z x (Z.pos n)); easy]
+    end).
+
+Ltac from_pow :=
+  repeat
+    (match goal with |- context [pow ?x ?n] =>
+      let nZ := constr:(Z.of_nat n) in
+      let v := eval compute in nZ in
+        replace (pow x n) with (Rpow x (IZR v));
+         [ | rewrite (Rpow_convert_Z x v); easy]
+    end).
+
+(* Adding preprocessing and post processing to leverage the knowledge
+  of pow.*)
 Add Field RField_w_Rpow : Rfield
   (completeness Zeq_bool_IZR, morphism R_rm, constants [IZR_tac],
-    preprocess [rewrite ?Rpow_pre_ring],
-    postprocess [rewrite 1?MyIZR.eq], power_tac R_p_t [Rpow_tac1]).
+    preprocess [to_pow],
+    postprocess [from_pow], power_tac R_power_theory [Rpow_tac]).
 
 Add Ring RRing_w_Rpow : RTheory
-  (morphism R_rm, constants [IZR_tac], preprocess [rewrite ?Rpow_pre_ring],
-    postprocess [rewrite 1?MyIZR.eq], power_tac R_p_t [Rpow_tac1]).
+  (morphism R_rm, constants [IZR_tac], preprocess [to_pow],
+    postprocess [from_pow], power_tac R_power_theory [Rpow_tac]).
+
+Example test_ring3 n : n ^ 3 + 3 * n ^ 2 + 3 * n + 1 = (n + 1) ^ 3.
+Proof.
+Fail progress field_simplify ((n + 1) ^ 3).
+to_pow.
+field_simplify.
+easy.
+Qed.
 
 Lemma Rpow_nonzero n m : Rnat m ->
   n <> 0 -> Rpow n m <> 0.

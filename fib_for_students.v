@@ -55,8 +55,8 @@ Check add5 3 * 5.
 Check add5 (3 * 5).
 
 (*  Computing. *)
-(* To compute formulas, one need to start a proof, where one describes explicitly
-   the results that one expect. *)
+(* To compute formulas, one need to start a proof, where one describes
+   explicitly the results that one expect. *)
 
 Example exercise1 : add5 (3 * 5) = 20.
 Proof.
@@ -118,8 +118,8 @@ ring_simplify (5 + 2).
 easy.
 Qed.
 
-Lemma prove_that_a_number_is_a_natural_number : Rnat 4 /\ Rnat 0 /\ Rnat (6 + 7)
-  /\ Rnat (9 - 2) /\ Rnat (5 + (9 - 2)).
+Lemma prove_that_a_number_is_a_natural_number : Rnat 4 /\ Rnat 0 /\
+  Rnat (6 + 7) /\ Rnat (9 - 2) /\ Rnat (5 + (9 - 2)).
 Proof.
 (* Proving a conjunction can be done step by step. *)
 split.
