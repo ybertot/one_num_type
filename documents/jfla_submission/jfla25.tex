@@ -251,12 +251,127 @@ Ensuite nous montrerons comment quelques exercices de mathématiques
 peuvent être réalisés dans ce cadre, en soulignant comment cette
 approche permet aux étudiants de rester proches de l'univers
 mathématiques qui devrait leur être familier.
-\section{Describing subsets of the real numbers}
-\section{Recursive Definitions}
-Inductive types comme naturally with a capability to compute recursively,
+\section{Décrire des sous-ensembles des nombres réels}
+Dans le système de preuve, l'ensemble des nombres réels \(\mathcal R\)
+est représenté par un type dénoté {\tt R}.  Les opérations usuelles
+sur les nombres sont représentées par des fonctions {\tt +}, {\tt -},
+{\tt *}, {\tt /}.  Les constantes entières de type {\tt R} s'écrivent
+directement dans leur représentation décimale.  De cette manière, une
+utilisatrice finale peut se contenter d'écrire le texte suivant:
+\begin{verbatim}
+3 - 5 * 2
+\end{verbatim}
+Nous reviendrons plus tard sur le dispositif qui permet cette
+utilisation de notations décimales, car il repose sur des nombres
+entiers dans un type distinct, d'une façon dont l'utilisatrice ne
+devrait pas avoir conscience.
 
-Pour maintenir l'uniformité des actes des JFLA, nous vous demandons de ne
-changer ni la police par défaut ni sa taille (10 points).
+L'approche usuelle pour définir un ensemble dans le système preuve
+Rocq est d'identifier l'ensemble avec la propriété caractéristique de
+cet ensemble.  Cette propriété caractéristique est une fonction, de
+telle sorte que l'on écrit {\tt Rnat n} pour exprimer que {\tt n} est
+dans l'ensemble {\tt Rnat}.  Le système de preuve est basé sur la
+théorie des types, donc cette fonction doit avoir un type de départ
+(où elle prend ses arguments).  Ici, nous considérons des
+sous-ensembles de \(\mathcal R\) donc la fonction a le type {\tt R ->
+  Prop}.
+
+Les nombres naturels peuvent être décrits comme le sous-ensemble
+minimal de \(\mathcal R\) qui contient \(0\) et qui est stable par
+l'operation d'ajouter \(1\).  Le fait que l'ensemble considéré soit
+minimal donne naturellement l'existence d'un principe de récurrence
+qui s'énonce de la façon suivante: {\em toute propriété qui est vraie
+  pour \(0\) et qui est vraie pour tout nombre de la forme \(n + 1\)
+  si elle est déjà vraie pour \(n\) est vraie pour tous les entiers
+  naturels}.
+
+Dans les systèmes de preuve, une telle propriété défine par minimalité
+peut généralement être construire à l'aide d'une définition inductive.
+Pour les nombres naturels, la voici:
+\begin{verbatim}
+Inductive Rnat : R -> Prop :=
+| Rnat0 : Rnat 0
+| Rnat_suc : forall n, Rnat n -> Rnat (n + 1).
+\end{verbatim}
+
+Grâce à cette définition, on prouve aisément que la somme de deux
+nombres naturels est un nombre naturel (par récurrence sur l'un des
+deux arguments), de même pour le produit.  En revanche la soustraction
+de deux nombres naturels ne satisfait pas nécessairement cette
+propriété.  La différence de deux nombres est un entier relatif, et
+cet entier relatif est un nombre naturel sous une condition d'ordre.
+
+Ceci nous amène naturellement à considérer le sous-ensemble de {\tt R}
+qui contient les entiers relatifs.  Plusieurs façons de définir les
+entiers positifs sont disponibles, nous avons choisi la suivante:
+\begin{verbatim}
+Inductive Rint : R -> Prop :=
+| Rint1 : Rint 1
+| Rint_sub : forall x y, Rint x -> Rint y -> Rint (x - y).
+\end{verbatim}
+Cette définition inductive permet de montrer que la somme de deux
+nombres entiers est un nombre entiers, de même pour le produit et
+la soustraction.
+
+L'utilisatrice finale ne sera probablement pas amenée à utiliser le
+principe de récurrence associé à la définition inductive {\tt Rint}.
+En revanche les preuves par récurrences usuelles d'un cours de
+mathématiques seront habituellement faisable directement avec le
+principe de récurrence associé avec {\tt Rnat}.
+
+Enfin, l'utilisatrice finale ne devra pas le voir, mais en revanche
+l'éducatrice ou la personne en charge de développer la bibliothèque
+fournie à l'utilisatrice finale pourra avoir besoin d'établir une
+correspondance entre l'ensemble {\tt Rnat} et le type inductif {\tt
+  nat}.  Nous aurons besoin de cette corespondance pour définir des
+suites récurrentes de nombres réels.
+
+La bibliothèque standard des nombres réels de Coq fournit une fonction
+récursive {\tt INR} de type {\tt nat -> R}.  Cette fonction est
+définie récursivement, de telle sorte que l'on peut montrer facilement
+que l'image de {\tt INR} coincide avec l'ensemble {\tt Rnat}.  Les
+deux énoncés sont les suivants:
+\begin{verbatim}
+Rnat_INR n : Rnat (INR n).
+
+Rnat_exists_nat x {xnat : Rnat x} :
+  exists n, x = IZR (Z.of_nat n).
+\end{verbatim}
+\section{Définitions Récursives de Fonctions}
+L'une des caractéristques essentielles des types inductifs dans les
+systèmes de preuve est qu'ils permettent de définir des fonctions
+récursives.  En décidant de représenter tous les nombres utilisés dans
+le discours mathématique par des nombres réels, nous perdons cette
+caractéristiques, parce que les nombres réels ne sont pas définis par
+un type inductif (et ils ne peuvent pas l'être).
+
+Pour remédier à cela, nous fournissons une commande qui permet de
+définir des fonctions de {\tt R} dans {\tt R} de telle sorte que leur
+valeur est spécifiée précisément pour tous les nombres naturels par un
+procédé récursif et {\em indéfinie} ailleurs.  Cet usage de valeurs
+indéfinie est très similaire à ce qui se produit pour l'inverse, dont
+la valeur n'est pas définie en 0.  Pour des commodités d'écriture,
+l'inverse de 0 peut être manipulé comme un nombre réel, mais aucune
+propriété ne peut obtenue pour ce nombre réel.
+
+Donnons un exemple de définition obtenue par notre commande:
+\begin{verbatim}
+Recursive (def factorial such that factorial 0 = 1 /\
+  forall n, Rnat (n - 1) -> factorial n = n * factorial (n - 1)).
+\end{verbatim}
+À l'exécution de cette commande, deux nouveaux objets Coq sont
+engendrés, le premier est une fonction nommée {\tt factorial} et le
+deuxième est un théorème qui reprend exactement la conjonction décrite
+ci-dessus.  La définition de {\tt factorial} repose sur des axiomes
+déjà présents dans Coq pour faire de la logique classique.
+
+Il est évident que la spécification donnée ci-dessus ne permet pas de
+décrire la valeur de {\tt factorial} pour l'entrée {\tt 0.5}.  En
+revanche, elle permet bien d'obtenir le résultat que {\tt factorial 3}
+est égal à {\tt 6}, en reposant sur plusieurs appels au deuxième
+membre de la conjonction, et à aux preuves que {\tt 3 - 1}, {3 - 1 -
+  1}, sont des nombres naturels, et à la vérification que 
+{\tt 3 * (3 - 1) * (3 - 1 - 1) * (3 - 1 - 1 - 1) = 6}.
 %
 En particulier, l'usage de paquets comme~\texttt{times} ou~\texttt{libertine}
 est interdit.
