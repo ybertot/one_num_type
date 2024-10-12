@@ -29,13 +29,13 @@
   Nous nous intéressons à l'utilisation des systèmes de preuves basés sur la
   théorie des types pour l'enseignement des mathématiques.  Nous voulons
   remettre en question l'approche répandue qui consiste à introduire
-  d'abord les nombres naturels, puid d'autres types de nombres.
+  d'abord les nombres naturels, puis d'autres types de nombres.
 
   Nous explorons une approche ou le type des nombres réels est le seul type
   utilisé pour toutes les définitions concernant des nombres.  Ceci nous oblige
-  à re-considérer les outils fournis pour définir des fonctions (en particulier
+  à reconsidérer les outils fournis pour définir des fonctions (en particulier
   la récursion), et pour calculer avec ces fonctions.
-  L'une de ces caractéristiques de ce travail est de re-donner de la place à
+  L'une de ces caractéristiques de ce travail est de redonner de la place à
   la notion d'ensemble dans l'univers de travail.
 
   Nous illustrons cette approche avec quelques exercices mêlant suites
@@ -62,7 +62,7 @@ la protection fournie par l'algorithme.
 
 Historiquement, pratiquement tous les systèmes de preuve ont commencé
 par décrire les entiers naturels, en spécifiant un type pour cette
-catégorie de nombres, puis d'autrse types de nombres sont ajoutés au
+catégorie de nombres, puis d'autres types de nombres sont ajoutés au
 fur-et-à-mesure que des concepts de plus en plus avancés sont fournis.
 Dans la présentation des données fournies aux utilisateurs finaux, ces
 nombres naturels apparaissent donc comme la première donnée
@@ -84,15 +84,15 @@ des mathématiques étudiées à l'école et dans les premières années
 universitaires repose sur les nombres réels.  Si l'on veut couvrir
 dans la bibliothèque d'un système de preuve des connaissances
 correspondant à ce programme, on est naturellement amené à écrire des
-formules où nombres naturels et nombre réels se cotoient.
+formules où nombres naturels et nombre réels se côtoient.
 
 L'essor des systèmes de preuve interactifs est tel que l'on peut
 maintenant s'interroger sur leur apport dans l'enseignement des
 mathématiques.  L'apprentissage des mathématiques contient plusieurs
 aspects.  Dans les premières étapes, l'étudiant doit apprendre à
 calculer.  Pendant des générations, les élèves ont dû apprendre à
-maitriser les algorithmes d'addition, de multiplication, et de
-division pour les nombres décimaux avec partie fractionnaire.  Cet
+maîtriser les algorithmes d'addition, de multiplication, et de
+division pour les nombres décimaux avec partie factionnaire.  Cet
 apprentissage a été remis en question dans les dernières décennies à
 cause de l'apparition des machines à calculer.  L'un des effets de
 bord de cette apparition est que les moins courageux des élèves sont
@@ -104,7 +104,7 @@ raisonner.  Pour raisonner, il faut savoir appliquer des
 syllogismes, faire la différence entre les hypothèses et la conclusion
 d'une phrase, comprendre des phrases énonçant l'existence d'un objet
 ou des phrases énonçant qu'une propriété est universellement
-satisfaite, et faire la difference entre ces deux types de phrases.
+satisfaite, et faire la différence entre ces deux types de phrases.
 
 Pour de nombreux étudiants en mathématiques, le langage à utiliser est
 une langue étrangère.  Il faut pratiquer cette langue étrangère
@@ -122,7 +122,7 @@ les étapes de raisonnement sont effectuées correctement.  Il est donc
 naturel de vouloir explorer l'utilisation d'un tel système de preuve
 pour l'enseignement des mathématiques.  En revanche, il faut éviter
 que ce nouvel outil impose une charge d'apprentissage supplémentaire,
-et finalement contreproducive si l'étudiant passe trop de temps à
+et finalement contreproductive si l'étudiant passe trop de temps à
 s'adapter au système de preuve, comme une informaticienne apprend un
 langage de programmation, mais n'a plus le temps d'apprendre les
 concepts mathématiques de son cursus.  Il faut éviter que le langage
@@ -134,7 +134,7 @@ sont fournis comme un type inductif.  La théorie des types inductifs
 fournit la possibilité de définir des fonctions, de telle que sorte
 que les opérations de base peuvent être définies, comme l'addition et
 la multiplication.  On peut également envisager la soustraction et la
-division, mais c'est un point où apparait une dissonance entre les
+division, mais c'est un point où apparaît une dissonance entre les
 mathématiques telle qu'elles apparaissent dans le système de preuve et
 dans la tradition humaine.  Pour pouvoir composer les opérations à
 l'envi, il est préférable que le résultat d'une soustraction de deux
@@ -198,7 +198,7 @@ un résultat mathématique connu est donné par la formule suivante:
   n}{\sqrt{5}},\]
 où \(\phi\) est le nombre d'or.
 \[\phi = \frac{\sqrt{5} + 1}{2}\]
-Alors que le membre gauche de l'égalité fait intervenir une fonction défínie
+Alors que le membre gauche de l'égalité fait intervenir une fonction définie
 seulement par récurrence sur les entiers naturels et en utilisant des
 additions de nombres naturels, la formule de gauche fait intervenir des
 opérations qui ne sont pas stables pour les nombres naturels, les nombres
@@ -207,17 +207,17 @@ entiers relatifs, ou même les nombres rationnels.
 Nous proposons de développer une libraire d'initiation à la preuve
 mathématique dans laquelle on n'utilise qu'un seul type de nombres,
 pour que les étudiants puissent travailler confortablement avec les
-concepts mathématiques qu'ils doivent apprendre à maitriser.  Ce
+concepts mathématiques qu'ils doivent apprendre à maîtriser.  Ce
 travail est complémentaire des efforts proposés par d'autres
 chercheurs pour fournir un environnement où les étudiants peuvent
 bénéficier d'une approche leur permettant de rédiger leurs preuves
-dans un style de ``langue naturelle controlée'' parce que ces efforts
+dans un style de ``langue naturelle contrôlée'' parce que ces efforts
 visent à améliorer le langage utilisés pour décrire les raisonnements
 logiques, sans modifier le cadre de travail; les faits utilisés
 restent proches de la théorie des types traditionnelle et reposent sur
 plusieurs types de nombres.
 
-Au fur et à mesure que les étudiants acquièrent la maitrise des
+Au fur et à mesure que les étudiants acquièrent la maîtrise des
 mathématiques et potentiellement des systèmes de preuve interactifs,
 il est probablement justifié de revenir à la présentation usuelle des
 nombres, reposant sur plusieurs types.  En particulier, nous verrons
@@ -227,7 +227,7 @@ l'implémentation des différents fonctionnalités que nous proposons.
 Dans notre bibliothèque, les nombres naturels sont présents, mais
 présentés comme un sous-ensemble des nombres réels.  De même nous
 fournissons un ensemble des nombres entiers (et dans une version plus
-complète de la librarie, nous proposerons certainement aussi un
+complète de la librairie, nous proposerons certainement aussi un
 ensemble des nombres rationnels).  L'ensemble des nombres naturels est
 décrit par un prédicat inductif de type \({\mathbb R} \rightarrow
 {\mathbb Prop}\).  Ceci nous permet de bénéficier directement des
@@ -241,7 +241,7 @@ cours de mathématiques.
 
 Dans un premier temps, nous décrirons les grandes lignes d'implémentation des
 différentes commandes que nous fournissons pour donner au type des
-nombres réels plusieurs des fonctionalités qui étaient normalement
+nombres réels plusieurs des fonctionnalités qui étaient normalement
 réservées aux types inductifs, nous donnons quelques exemples qui
 illustrent les gains que permettent cette approche, en terme de
 simplicité d'utilisation pour un étudiant découvrant à la fois les
@@ -278,14 +278,14 @@ sous-ensembles de \(\mathcal R\) donc la fonction a le type \texttt{R ->
 
 Les nombres naturels peuvent être décrits comme le sous-ensemble
 minimal de \(\mathcal R\) qui contient \(0\) et qui est stable par
-l'operation d'ajouter \(1\).  Le fait que l'ensemble considéré soit
+l'opération d'ajouter \(1\).  Le fait que l'ensemble considéré soit
 minimal donne naturellement l'existence d'un principe de récurrence
 qui s'énonce de la façon suivante: {\em toute propriété qui est vraie
   pour \(0\) et qui est vraie pour tout nombre de la forme \(n + 1\)
   si elle est déjà vraie pour \(n\) est vraie pour tous les entiers
   naturels}.
 
-Dans les systèmes de preuve, une telle propriété défine par minimalité
+Dans les systèmes de preuve, une telle propriété définie par minimalité
 peut généralement être construire à l'aide d'une définition inductive.
 Pour les nombres naturels, la voici:
 \begin{verbatim}
@@ -323,13 +323,13 @@ Enfin, l'utilisatrice finale ne devra pas le voir, mais en revanche
 l'éducatrice ou la personne en charge de développer la bibliothèque
 fournie à l'utilisatrice finale pourra avoir besoin d'établir une
 correspondance entre l'ensemble \texttt{Rnat} et le type inductif
-\texttt{nat}.  Nous aurons besoin de cette corespondance pour définir des
+\texttt{nat}.  Nous aurons besoin de cette correspondance pour définir des
 suites récurrentes de nombres réels.
 
 La bibliothèque standard des nombres réels de Coq fournit une fonction
 récursive \texttt{INR} de type \texttt{nat -> R}.  Cette fonction est
 définie récursivement, de telle sorte que l'on peut montrer facilement
-que l'image de \texttt{INR} coincide avec l'ensemble \texttt{Rnat}.  Les
+que l'image de \texttt{INR} coïncide avec l'ensemble \texttt{Rnat}.  Les
 deux énoncés sont les suivants:
 \begin{verbatim}
 Rnat_INR n : Rnat (INR n).
@@ -354,7 +354,7 @@ Rnat_sub : forall n m, Rnat n -> Rnat m -> m <= n -> Rnat(n - m)
 \end{verbatim}
 Ce théorème doit souvent être invoqué interactivement.
 \section{Définitions Récursives de Fonctions}
-L'une des caractéristques essentielles des types inductifs dans les
+L'une des caractéristiques essentielles des types inductifs dans les
 systèmes de preuve est qu'ils permettent de définir des fonctions
 récursives.  En décidant de représenter tous les nombres utilisés dans
 le discours mathématique par des nombres réels, nous perdons cette
@@ -378,8 +378,10 @@ Recursive (def factorial such that factorial 0 = 1 /\
 À l'exécution de cette commande, deux nouveaux objets Coq sont
 engendrés, le premier est une fonction nommée \texttt{factorial} de
 type \texttt{R -> R} et le
-deuxième est un théorème qui reprend exactement la conjonction décrite
-ci-dessus.
+deuxième est un théorème appelé \texttt{factorial\_eqn} 
+qui reprend exactement la conjonction décrite ci-dessus.  Ce théorème
+est la preuve que la fonction \texttt{factorial} satisfait bien la
+spécification donnée par l'utilisateur.
 
 Il est évident que la spécification donnée ci-dessus ne permet pas de
 décrire la valeur de \texttt{factorial} pour l'entrée \texttt{0.5}.
@@ -391,11 +393,11 @@ nombres naturels, et à la vérification que \texttt{3 * (3 - 1) * (3 -
   1 - 1) * (3 - 1 - 1 - 1) = 6}.  Cette égalité est prouvée en une
 seule étape par la tactique \texttt{ring}, parce que les nombres
 considérés sont des nombres réels et la tactique \texttt{ring} n'a pas de
-restriction vis-à-vis de la soustraction pour ce type de nombre.
+restriction vis-à-vis de la soustraction pour ce type de nombres.
 
 La commande de définition de suite récurrentes que nous avons conçue permet
 également de définir des suites récurrentes d'ordre arbitrairement élevé
-(mais fini).  Par exemple,  la suite de Fibnoacci peut se définir de la façon
+(mais fini).  Par exemple,  la suite de Fibonacci peut se définir de la façon
 suivante (nous nommons la fonction \texttt{fib} pour gagner de la place).
 
 \begin{verbatim}
@@ -406,14 +408,16 @@ Recursive (def fib such that
     fib n = fib (n - 2) + fib (n - 1)).
 \end{verbatim}
 La personne qui définit une nouvelle fonction récursive peut donc
-mettre autant de case de base qu'elle le désire, et une specification
+mettre autant de cas de base qu'elle le désire, et une spécification
 quantifiée universellement qui utilise un nombre de valeurs
 précédentes égal au nombre de valeurs de base.
 
+\subsection{Calculs et preuves de calcul}
+La spécification 
 \section{Techniques d'implémentation}
 Ce que nous allons décrire dans cette section est la méthode que nous avons
 employée pour concevoir notre commande de définition récursive.
-L'utilisatrice finale n'a pas besoin de connaitre ces détails: les
+L'utilisatrice finale n'a pas besoin de connaître ces détails: les
 seuls éléments mis à sa disposition sont la fonction définie avec son
 type, et le théorème qui collecte la spécification de comportement
 sous forme d'une conjonction d'égalités, dont une est quantifiée
@@ -424,7 +428,164 @@ Puisque l'utilisatrice finale ne voit pas ce code, nous avons le droit
 d'utiliser les nombres naturels, et nous pouvons utiliser un outil de
 méta-programmation pour manipuler la spécification fournie par
 l'utilisateur et construire une définition répondant à la
-sécification.
+spécification.
+
+\subsection{Forme des spécifications récursives}
+Notre commande prend en argument un nom de fonction, disons \texttt{f},
+à définir et une
+proposition qui spécifie le comportement de cette fonction.  Le nom de
+la variable est donc lié dans la spécification, car au moment où la
+fonction est appelée, la fonction n'est pas encore définie.  Notre
+commande n'accepte que des spécifications qui respectent une forme
+syntaxique très précise: il doit s'agir d'une conjonction, dont les
+membres sont de deux formes différentes.  La première forme spécifie
+les valeurs pour les constantes \(0\), jusqu'à \(k - 1\).  La forme
+syntaxique doit donc être \texttt{f i = V}.  Dans la suite, nous
+appellerons ce nombre \(k\) {\em l'ordre de la récursion}.
+La deuxième forme possible
+pour un membre est une quantification universelle sur une variable,
+disons \texttt{n}, le corps doit être une implication, dont la prémisse
+est \texttt{Rnat (n - k)}, la conclusion de cette implication doit être
+une égalité de la forme \texttt{f n = B}.  La formule \texttt{B} doit être
+une expression bien typée dans le contexte où \texttt{f} est une fonction
+de type \texttt{R -> R}.  Nous appellerons cette formule \texttt{B} {\em le
+  corps du pas récursif}.
+Ce corps peut contenir des appels récursifs de
+la forme \texttt{f (n - i)} où \texttt{i} est une constant entière comprise
+  entre \texttt{1} et \texttt{k}.  Il doit y avoir un seul membre de la
+  conjonction avec cette deuxième forme.
+
+\subsection{Analyse des spécifications}
+Un premier parcours récursif de la spécification, paramétré par
+\texttt{f}, permet de retrouver l'ensemble des membres de la première forme
+et de construire une liste de paires \(i, v_i\) où les \(i\) sont des
+constantes entières supérieures égale à 0 et les \(v_i\) sont les
+termes représentant les valeurs spécifiées pour \(\texttt{f}~i\).  Cette
+liste est triée, et on vérifie qu'il n'y a ni duplications ni manques.
+La longueur de cette liste nous donne la valeur de \(k\).  A partir
+de cette liste de paires triée, on construit une seconde liste qui ne
+contient que les valeurs \(v_i\) dans le même ordre.  Nous appellerons
+cette liste {\em la liste des valeurs initiales}.
+
+Un deuxième parcours de la spécification permet de trouver le seul
+membre qui est une quantification universelle sur une valeur \texttt{n}.
+Un parcours récursif du membre droit \texttt{B} de l'égalité en conclusion de
+ce membre droit, paramétré par \texttt{f} et \texttt{n}  permet de retrouver
+l'ensemble des sous-termes de la forme \texttt{f (n - i)} et de
+construire la liste des valeurs \(i\), que nous appellerons {\em la liste des
+décalages d'appels récursifs}.  Pour cette liste, il n'est
+pas nécessaire de montrer l'absence de duplications, mais il est
+nécessaire de vérifier que le maximum est inférieur ou égal à \(k\).
+
+Si nous regardons la définition de \texttt{factorial} fournie dans la
+section précédente, il y a un seul membre de la première forme
+\texttt{factorial 0 = 1}, l'ordre de la récursion est 1,
+la liste des valeurs initiales est \texttt{[1]}, le
+corps du pas récursif est \texttt{n * factorial (n - 1)}, et la liste
+des décalages d'appels récursifs est \texttt{[1]}.
+
+Si nous regardons la définition de \texttt{fib} fournie dans la section
+précédente, les membres de la première forme sont \texttt{fib 0 = 0} et
+\texttt{fib 1 = 1}, l'ordre la récursion est 2, 
+la liste des valeurs initiales est \texttt{[0; 1]},
+le corps du pas récursif est \texttt{fib (n - 2) + fib (n - 1)}, et
+la liste des décalages d'appels récursifs est \texttt{[2,1]}.
+
+\subsection{Utilisation du type \texttt{nat} et son récurseur}
+L'implémentation repose sur le récurseur fourni pour le type
+\texttt{nat}.  Nous allons définir une fonction de type \texttt{nat -> list
+  R}, avec l'intention que la liste retournée pour l'entrée \texttt{n},
+contienne les valeurs \texttt{f n}, \texttt{f (n + 1)} \dots \texttt{f (n + \(k -
+  1\))}.
+
+Le récurseur pour le type \texttt{nat} est une fonction appelée
+\texttt{nat\_rect} avec le type suivant:
+\begin{verbatim}
+nat_rect : forall (A : nat -> Type) (Init : A 0)
+  (step : forall n, A n -> A (n + 1)) (n : nat), A n
+\end{verbatim}
+Dans notre cas, nous utiliseront \texttt{nat\_rect} de façon non
+dépendante, avec \texttt{A = fun \_ => list R}, de telle sorte la
+valeurs \texttt{Init} devra être de type \texttt{list R} et \texttt{step} devra
+être de type \texttt{nat -> list R -> list R}.  La fonction \texttt{step} a
+pour objectif d'expliquer comment construire la valeur retournée pour
+\texttt{n + 1}, lorsque l'on connaît la valeur de \texttt{n} (reçue en argument)
+et la valeur déjà calculée pour \texttt{n}.  La fonction \texttt{step} commencera
+toujours par une abstraction de la forme \texttt{fun n (l : list R) => ...}.
+
+Rappelons ici que la bibliothèque standard de Coq contient une
+fonction \texttt{nth} qui permet de retourner le \(n\)ième élément d'une
+liste une valeur par défaut si la liste a moins de \(n\) éléments.  Il
+y a aussi une fonction \texttt{INR} qui envoie tout nombre naturel vers
+le nombre \texttt{R} qui lui correspond.
+
+Pour la fonction factorielle, on voit que la valeur retournée pur
+\texttt{n + 1} doit être la liste contenant le produit de \texttt{n + 1} avec
+la première valeur trouvée dans la liste, \texttt{nth 0\%nat l 0}.
+\begin{verbatim}
+(INR n + 1) * nth 0%nat l 
+\end{verbatim}
+ceci doit être comparé avec le corps du pas récursif de la
+spécification, qui est :
+\begin{verbatim}
+n * factorial (n - 1)
+\end{verbatim}
+
+Pour la suite de Fibonacci, la valeur retournée doit être une liste à
+deux éléments, où le premier élément doit être la valeur pour \texttt{fib
+  (n + 1)} et le deuxième élément doit la valeur pour \texttt{fib (n +
+    2)}.  La liste reçue en argument contient la valeur pour \texttt{fib
+    n} et la valeur pour \texttt{fib (n + 1)}, la liste retournée doit
+contenir \texttt{fib (n + 1)} et \texttt{fib (n + 2)}.  Le premier
+élément de la liste retournée est tout simplement le deuxième élément
+de la liste reçue en argument, ce qui s'écrit \texttt{nth 1\%nat l 0}.
+Le deuxième élément de la liste retournée n'est pas présent dans la
+liste reçue en argument, mais la spécification nous indique comment
+calculer cette valeur en utilisant les valeurs présentes dans \texttt{l}.
+\begin{verbatim}
+[nth 1\%nat l 0; nth 0\%nat 0 + nth \%nat 1]
+\end{verbatim}
+
+Maintenant que nous avons vu ce que nous voulons sur deux exemples,
+nous pouvons généraliser le traitement au cas d'une fonction
+récurrente d'ordre \(k\) arbitraire.
+\begin{itemize}
+\item La fonction \texttt{step} doit
+alors retourner une liste dont la longueur est l'ordre \(k\),
+\item Les \(k-1\) premiers éléments de la liste retournées doivent
+  être \texttt{nth 0\%nat l 0}, \texttt{nth 1\%nat 0}, jusqu'à \(k - 1\)
+  (dans le cas de la fonction factorielle, il n'y a pas d'éléments de
+  cette forme dans la liste).
+\item Le dernier élément de la liste doit être une copie du corps du
+  pas récursif, modifiée des deux manières suivantes.
+\item Dans le corps du pas récursif, toute instance de \texttt{f (n -
+  \(i\))} doit être remplacée par \texttt{nth (k - i)\%nat l 0}.
+\item Dans le corps du pas récursif, toute instance restante de \texttt{n} doit
+  être remplacée par \texttt{INR n + \(k\)}.
+\end{itemize}
+Il faut noter qu'après les modifications au corps du pas de récursif,
+il ne doit plus rester d'instance de la fonction définie \texttt{f}.  Par
+ailleurs, dans la spécification \texttt{n} a le type \texttt{R}, mais dans
+la fonction \texttt{step}, \texttt{n} a le type \texttt{nat}, c'est pourquoi la
+fonction \texttt{INR} doit être utilisée.  Il est aussi remarquable qu'à
+l'endroit où le corps du pas récursif est utilisé, on est en train de
+définir la valeur pour \texttt{f (n + \(k\))}.
+
+Pour faire ces analyses, nous utilisons le langage de programmation
+\texttt{Elpi}, fourni comme une extension de Coq.  Ce langage est basé
+sur \(\lambda\)-prolog, étendu avec des techniques de résolution de
+contraintes.  Un point qui rend ce langage particulièrement concis
+pour la conception de notre algorithme est que l'unité de base pour la
+programmation est la règle logique, au lieu de la fonction, comme on a
+l'habitude de le voir dans les langages de programmation fonctionnelle
+avec construction filtrage.
+
+Ainsi, une opération de remplacement, comme celles que nous décrivons
+dans les quatrième et cinquième points de l'algorithme peut se décrire
+en disant que l'on prend une fonction de copie de termes, sauf que les
+instance du schéma à remplacé sont traitées par une règle prioritaire,
+qui fait le remplacement au lieur de faire une simple copie à
+l'identique.  De même, le calcul de 
 
 \section{Conditions générales JFLA}
 %
@@ -576,3 +737,5 @@ ligne~\cite{JFLART}.
 \bibliography{jflart}
 
 \end{document}
+
+% LocalWords:  maketitle begin end Agda Rocq Lean
