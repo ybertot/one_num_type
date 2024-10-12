@@ -2,7 +2,9 @@ From elpi Require Import elpi.
 Require Import List Reals ClassicalEpsilon Lia Lra.
 Require Import Wellfounded.
 
+Set Warnings "-notation-overridden".
 Require Import R_subsets.
+Set Warnings "+notation-overridden".
 Require Import Derive.
 
 Open Scope R_scope.
@@ -225,6 +227,7 @@ End private.
 
 Ltac prove_recursive_specification T Order := unfold T;
   repeat split;
+  (* The first now clause attempts to prove the base cases. *)
     (now (rewrite Rnat_rec0 || rewrite private.Rnat_rec_to_nat_rec_p)) ||
     (let N := fresh "n" in let Nnat := fresh "nnat" in
      let Protector := fresh "protect_base" in
@@ -235,10 +238,9 @@ Ltac prove_recursive_specification T Order := unfold T;
      (reflexivity (* useful when N is only used in recursive calls*) ||
        (simpl;
         let Last_eqn := fresh "H" in
-        enough (Last_eqn : IZR Order + INR (IRN (N - IZR Order)) = N)
+        enough (Last_eqn : INR (IRN (N - IZR Order)) + IZR Order = N)
             by (rewrite Last_eqn; reflexivity);
-            rewrite INR_IRN;[try ring | assumption]))).
-
+            rewrite INR_IRN;[ring | assumption]))).
 
 Elpi Command Recursive.
 
@@ -365,27 +367,6 @@ choose_pos_constructor.aux 0 {{xO}} :- !.
 choose_pos_constructor.aux _ _ :-
   coq.error "choose_pos_constructor.aux only accepts 0 or 1 as input".
 
-pred replace_rec_call_by_seq_nth i:int, i:term, i:term, i:term ,i:term,
-  o:term.
-
-% replace (F (N - k)) by (nth (L - k) V 0) everywhere in term A
-% But the subtraction (L - k) is actually computed and a number of type nat,
-% while (N - k) is a term representing a subtraction, where k is a
-% positive integer constant of type R
-
-replace_rec_call_by_seq_nth L F N V A B :-
-  std.do! [
-    coq.locate "Rminus" Rminus,
-    A = app[F, app[global Rminus, N, K]],
-    real_to_int K Kn,
-    In is L - Kn,
-    int_to_nat In I,
-    coq.locate "nth" Nth,
-    coq.locate "R" Rtype,
-    Zero = {{0}},
-    B = app[global Nth, global Rtype, I, V, Zero]
-  ].
-
 pred make_one_spec i:term, i:term, o:pair int term.
 make_one_spec V1 V2 (pr I1 V2) :-
   real_to_int V1 I1,!.
@@ -478,7 +459,7 @@ pred shift_real i:int, i:term, o:term.
 
 shift_real 0 N N.
 
-shift_real K N {{lp:K_as_real + lp:N}}:-
+shift_real K N {{lp:N + lp:K_as_real}}:-
   std.do! [
     0 < K,
     int_to_real K K_as_real].
@@ -498,35 +479,35 @@ eat_implications Order F N (prod _ _ G) R :-
   pi h \ 
    eat_implications Order F N (G h) R.
 
-eat_implications Order F N G R :-
-   std.do! [
-    %$  G = {{_ = lp:RHS}}
-      G = app [_, _, _, RHS],
-      % This should recognize (f (n - k)) and store k in the list
-      (pi A E Op V\
-         %         fold-map (app [F, app[Op, V, E]]) A
-                  %                 (app [F, app[Op, V, E]]) [E | A]
-        fold-map {{lp:F (lp:V - lp:E)}} A
-                 {{lp:F (lp:V - lp:E)}} [E | A])
+eat_implications Order F N {{_ = lp:RHS}} R :-
+  std.do! [
+    % This should recognize (f (n - k)) and store k in the list
+    (pi A E Op V\
+      fold-map {{lp:F (lp:V - lp:E)}} A
+      {{lp:F (lp:V - lp:E)}} [E | A])
         =>
       fold-map RHS [] _ Uses,
-      std.map Uses (real_to_int) Uses_int,
-      list_sort Uses_int Srt_uses,
-% TODO: just take the last element, or avoid sorting
-      list_max Srt_uses L,
-% Need to generate an abstraction that gives the name V to
-% the result of the recursive call
-std.assert! (L = Order)
-  "The number of base values does not match the depth of recursive calls",
-shift_real Order N N_plus_Order,
-     (pi V \
-      ((pi A B \ copy A B :-
-         replace_rec_call_by_seq_nth L F N V A B),
+    std.map Uses (real_to_int) Uses_int,
+    list_max Uses_int L,
+    % Need to generate an abstraction that gives the name L to
+    % the result of the recursive call
+    std.assert! (L =< Order)
+    "The depth of recursive calls exceeds the number of base values",
+    shift_real Order N N_plus_Order,
+    % Now performing the replacement for both the recursive calls
+    % and the numeric value received as argument
+    (pi L \
+      ((pi I I' In In' \ copy {{lp:F (lp:N - lp:I)}} 
+         {{nth lp:I' lp:L 0}} :-
+         !,
+          real_to_int I In,
+          In' is Order - In,
+          int_to_nat In' I'),
        copy N N_plus_Order) =>
-         copy RHS (RHS' V)),
-      L1 is L - 1,
-      make_recursive_step_list RHS' L1 0 RecList,
-     R = (fun `v` {{list R}} RecList)
+    copy RHS (RHS' L)),
+    Order1 is Order - 1,
+    make_recursive_step_list RHS' Order1 0 RecList,
+    R = (fun `v` {{list R}} RecList)
 ].
 
 % The input must have the form:
