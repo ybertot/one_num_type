@@ -378,7 +378,7 @@ Recursive (def factorial such that factorial 0 = 1 /\
 À l'exécution de cette commande, deux nouveaux objets Coq sont
 engendrés, le premier est une fonction nommée \texttt{factorial} de
 type \texttt{R -> R} et le
-deuxième est un théorème appelé \texttt{factorial\_eqn} 
+deuxième est un théorème appelé \texttt{factorial\_eqn}
 qui reprend exactement la conjonction décrite ci-dessus.  Ce théorème
 est la preuve que la fonction \texttt{factorial} satisfait bien la
 spécification donnée par l'utilisateur.
@@ -401,10 +401,10 @@ La commande de définition de suite récurrentes que nous avons conçue permet
 suivante (nous nommons la fonction \texttt{fib} pour gagner de la place).
 
 \begin{verbatim}
-Recursive (def fib such that 
-    fib 0 = 0 /\ 
+Recursive (def fib such that
+    fib 0 = 0 /\
     fib 1 = 1 /\
-    forall n : R, Rnat (n - 2) -> 
+    forall n : R, Rnat (n - 2) ->
     fib n = fib (n - 2) + fib (n - 1)).
 \end{verbatim}
 La personne qui définit une nouvelle fonction récursive peut donc
@@ -486,7 +486,7 @@ des décalages d'appels récursifs est \texttt{[1]}.
 
 Si nous regardons la définition de \texttt{fib} fournie dans la section
 précédente, les membres de la première forme sont \texttt{fib 0 = 0} et
-\texttt{fib 1 = 1}, l'ordre la récursion est 2, 
+\texttt{fib 1 = 1}, l'ordre la récursion est 2,
 la liste des valeurs initiales est \texttt{[0; 1]},
 le corps du pas récursif est \texttt{fib (n - 2) + fib (n - 1)}, et
 la liste des décalages d'appels récursifs est \texttt{[2,1]}.
@@ -520,10 +520,11 @@ y a aussi une fonction \texttt{INR} qui envoie tout nombre naturel vers
 le nombre \texttt{R} qui lui correspond.
 
 Pour la fonction factorielle, on voit que la valeur retournée pur
-\texttt{n + 1} doit être la liste contenant le produit de \texttt{n + 1} avec
-la première valeur trouvée dans la liste, \texttt{nth 0\%nat l 0}.
+\texttt{n + 1} doit être la liste contenant un seul élément,
+le produit de \texttt{n + 1} avec
+la première valeur trouvée dans la liste en entrée, \texttt{nth 0\%nat l 0}.
 \begin{verbatim}
-(INR n + 1) * nth 0%nat l 
+(INR n + 1) * nth 0%nat l
 \end{verbatim}
 ceci doit être comparé avec le corps du pas récursif de la
 spécification, qui est :
@@ -543,7 +544,7 @@ Le deuxième élément de la liste retournée n'est pas présent dans la
 liste reçue en argument, mais la spécification nous indique comment
 calculer cette valeur en utilisant les valeurs présentes dans \texttt{l}.
 \begin{verbatim}
-[nth 1\%nat l 0; nth 0\%nat 0 + nth \%nat 1]
+[nth 1%nat l 0; nth 0%nat 0 + nth 1%nat 0]
 \end{verbatim}
 
 Maintenant que nous avons vu ce que nous voulons sur deux exemples,
@@ -553,13 +554,14 @@ récurrente d'ordre \(k\) arbitraire.
 \item La fonction \texttt{step} doit
 alors retourner une liste dont la longueur est l'ordre \(k\),
 \item Les \(k-1\) premiers éléments de la liste retournées doivent
-  être \texttt{nth 0\%nat l 0}, \texttt{nth 1\%nat 0}, jusqu'à \(k - 1\)
+  être \texttt{nth 0\%nat l 0}, \texttt{nth 1\%nat 0}, et ainsi de suite
+jusqu'à \(k - 1\)
   (dans le cas de la fonction factorielle, il n'y a pas d'éléments de
   cette forme dans la liste).
 \item Le dernier élément de la liste doit être une copie du corps du
   pas récursif, modifiée des deux manières suivantes.
 \item Dans le corps du pas récursif, toute instance de \texttt{f (n -
-  \(i\))} doit être remplacée par \texttt{nth (k - i)\%nat l 0}.
+  \(i\))} doit être remplacée par \texttt{nth \((k - i)\)\%nat l 0}.
 \item Dans le corps du pas récursif, toute instance restante de \texttt{n} doit
   être remplacée par \texttt{INR n + \(k\)}.
 \end{itemize}
@@ -571,6 +573,7 @@ fonction \texttt{INR} doit être utilisée.  Il est aussi remarquable qu'à
 l'endroit où le corps du pas récursif est utilisé, on est en train de
 définir la valeur pour \texttt{f (n + \(k\))}.
 
+\subsection{méta-programmation en \texttt{Elpi}}
 Pour faire ces analyses, nous utilisons le langage de programmation
 \texttt{Elpi}, fourni comme une extension de Coq.  Ce langage est basé
 sur \(\lambda\)-prolog, étendu avec des techniques de résolution de
@@ -583,14 +586,201 @@ avec construction filtrage.
 Ainsi, une opération de remplacement, comme celles que nous décrivons
 dans les quatrième et cinquième points de l'algorithme peut se décrire
 en disant que l'on prend une fonction de copie de termes, sauf que les
-instance du schéma à remplacé sont traitées par une règle prioritaire,
-qui fait le remplacement au lieur de faire une simple copie à
-l'identique.  De même, le calcul de 
+instance du schéma à remplacer sont traitées par une règle prioritaire,
+qui fait le remplacement au lieu de faire une simple copie à
+l'identique.
 
+Le texte suivant montre comment les remplacements sont effectués.  La
+construction \texttt{=>} permet d'ajouter des règles temporaires.
+La première règle est quantifiée universellement sur les variables
+\texttt{I}, \texttt{I'}, \texttt{In} et \texttt{In'} grâce à la construction \texttt{pi},
+Ell exprime qu'au lieu de copier, on va remplace les instances de termes
+où la fonction \texttt{F} est
+appliquée à \texttt{N} moins \texttt{I} par l'instance
+corresspondante construite avec \texttt{nth} \texttt{I'} et la liste de
+valeurs
+\texttt{L}.  Le calcul de \texttt{I'} est exprimé par les lignes de rang 4 à 6 dans
+ce texte, et le point d'exclamation \texttt{!}, exprime que dès que le
+motif est reconnu, il n'y a pas y avoir de retour arrière dans l'exécution.
+
+La ligne de rang 7 décrit comment les instances restantes de \texttt{N} seront
+remplacées par \texttt{N\_plus\_Order}.
+\begin{verbatim}
+      ((pi I I' In In' \ copy {{lp:F (lp:N - lp:I)}}
+         {{nth lp:I' lp:L 0}} :-
+         !,
+          real_to_int I In,
+          In' is Order - In,
+          int_to_nat In' I'),
+       copy N N_plus_Order) =>
+    copy RHS (RHS' L)),
+\end{verbatim}
+Lorsque ce code est exécuté, le terme dans la variable \texttt{RHS} est copié
+dans la variable le terme \texttt{(RHS' L)}.  La variable \texttt{RHS'} est ensuite
+obtenu en {\em abstrayant} par rapport au terme \texttt{L}, ce qui facilitera
+la construction d'une \(\lambda\)-abstraction liant la variable \texttt{l}.
+
+Ce fragment permet également d'illustrer la fonctionnalité de {\em
+  quotation} qui permet d'écrire dirrectement des expressions dans la
+syntaxe usuelle de Rocq.  Ici, le terme
+\begin{center}
+\texttt{\{\{lp:F (lp:N -  lp:I)\}\}}
+\end{center}
+permet de décrire la réprésentation en Elpi d'un terme du
+Rocq comportant l'application d'une fonction à une soustraction de
+nombres réels.
+Lorsque la fonction basée sur \texttt{nat\_rect} est finalement
+construite, on diispose d'une fonction de type \texttt{nat -> list R}, il
+reste deux opérations à effectuer: prendre le premier élément du
+résultat, et fournir la bonne entrée.  Dans l'environnement de travail
+pour l'utilisatrice finale, les seuls nombres sont de type \texttt{R},
+donc nous avons besoin d'une fonction de type \texttt{R -> nat} qui
+associe chaque nombre réel qui est un nombre naturel au nombre
+correspondant de type \texttt{nat}.  Nous définissons une telle fonction
+à l'aide de l'opérateur \texttt{epsilon} fourni par la bibliothèque de
+logique classique.
+
+Plus précisément, nous définissons une fonction \texttt{IRZ} de type
+\texttt{R -> Z} qui associe tout nombre réel du sous-ensemble \texttt{Rint}
+au nombre entier de type \texttt{Z} correspondant, puis nous composons
+cette fonction avec une fonction de valeur absolue et de conversion
+vers \texttt{nat} pour obtenir une fonction \texttt{IRN} de type \texttt{R ->
+  nat} et le théorème de correction suivant:
+\begin{verbatim}
+INR_IRN x {xnat : Rnat x} : INR (IRN x) = x.
+\end{verbatim}
+
+Avec les contraintes que nous avons exprimées sur la spécification
+d'une fonction récursive, il est assez facile de prouver que les
+différents membres de la spécification sont satisfait par la fonction
+obtenue.  Nous avons écrit une tactique de quelques lignes pour cela
+et la preuve est sauvegardée dans un théorème dont le nom est obtenu
+en ajoutant le suffixe \texttt{\_eqn} au nom de la fonction.
+
+\section{Ajouter des capacités de calcul}
+Pour les utilisateurs confirmés de Coq, les nombres de types \texttt{nat} ou
+\texttt{Z} ont l'avantage notable que l'on les utiliser pour faire des calculs
+expérimentaux, surtout les nombres entiers, dont la structure de données
+exploite le codage binaire des nombres et permet donc la représentation
+et le calcul de très grand nombres.  Cette capacité de calcul est perdue pour
+les nombres réels, car certains de ces nombres sont définis de façon inhérente
+comme des limites de processus que l'on ne peut pas aisément décrire en
+un nombre fini d'opération.
+
+Par exemple, la spécification de la fonction \texttt{fib} est
+suffisamment expressive pour prouver la valeur de la fonction sur des
+entrées constantes, mais le procédé devient rapidement pénible.  Pour
+permettre à l'utilisatrice finale de test la fonction définie sur des
+entrées assez grandes, nous avons fourni deux commandes.
+
+La première de ces commandes s'appelle \texttt{R\_compute} et elle
+permet de demandr qu'un calcul soit effectué avec les opérations
+usuelles.  La seconde s'appelle \texttt{mirror\_recursive\_definition}
+et permet d'ajouter les fonctions récursives définies par notre
+première commande parmi les fonctions usuelles.
+
+Nous illustrons la première commande avec cet exemple.
+\begin{verbatim}
+R_compute (3 + (5 * 7)).
+\end{verbatim}
+Le résultat de cette commande est, comme on peut s'y attendre, 38.
+
+Il est possible de donner un second argument à notre commande qui doit
+être un nom.  Si ce second argument est donné, un théorème est créé
+qui exprime une preuve de ce résultat.  Ainsi, si l'on entre la
+commande.
+\begin{verbatim}
+R_compute (3 + (5 * 7)) name1.
+\end{verbatim}
+Le théorème \texttt{name1} est créé par la commande, avec l'énoncé \texttt{3
+  + 5 * 7 = 38}.
+
+Dans l'état courant du développement, la commande \texttt{R\_compute}
+ne fait que des calculs en nombres entiers, pour les opérations
+d'addition, multiplication, soustraction, et opposé.  Le principe est
+de faire les calculs dans \texttt{Z} au lieu de les faire dans \texttt{R},
+en utilisant les correspondances prouvées déjà présentes dans la
+bibliothèque de Coq.  Ainsi la puissance de calcul des nombres
+inductifs est mise en œuvre, mais l'utilisatrice finale ne donne
+entrée que des expressions réelles et ne reçoit en sortie que des
+nombres réelles.
+
+La deuxième commande s'appelle \texttt{mirror\_recursive\_definition}.
+L'objectif de cette commande est d'ajouter à la commande
+\texttt{R\_compute} la possibilité de faire des calculs en utilisant
+les fonctions récursives définies grâce à la commande présentée dans
+la section précédente.  Ainsi, lorsque la fonction \texttt{fib} est
+déjà définie, la séquence de commande suivante se déroule avec succès,
+elle affiche un nombre très grand et ajoute un théorème dans
+l'environnement qui conserve une preuve du calcul.  La réponse vient
+en moins d'une seconde (le calcul est instantané, mais la production
+du théorème prend un peu plus de temps).
+\begin{verbatim}
+mirror_recursive_definition fib.
+
+mirror_recursive_definition factorial.
+
+R_compute (factorial 10 + fib 1000) fact10_fib1000_eq.
+\end{verbatim}
+En pratique, il y a quelques contraintes à respecter, parce que
+l'ensemble des calculs doit pouvoir être accompagné d'une preuve.  La
+contrainte la plus forte est que les fonctions récursives ne doivent
+être appelées que sur des nombres naturels.  L'utilisatrice ne sait
+pas nécessairement à priori si une expression est bien définie, mais
+la commande \texttt{R\_compute} fournit un message d'erreur pour indiquer
+qu'une des fonctions considérées est appelée avec un argument négatif
+losrque c'est le cas.  Aucun résultat n'est retourné dans ce cas, et
+aucun théorème n'est engendré.
+
+\subsection{Réaliser la capacité de calcul}
+La première chose qu'il est nécessaire de savoir, c'est que les
+nombres réels dans Coq ont déjà une relation privilégiée avec les
+nombres entier.  Toute constante entière qui s'écrit sous forme
+décimale est déjà marquée comme l'application d'une fonction appelée
+\texttt{IZR} sur une constante de type \texttt{Z}.  Cette fonction \texttt{IZR}
+est donc déjà présente en plusieurs endroits dans la formule, mais
+elle n'est jamais affichée (on parle de coercion implicite).
+
+Pour effectuer le calcul, le principe est de transformer la formule à
+calculer, qui est de type \texttt{R}, en une formule de type \texttt{Z},
+ de la façon suivante:
+\begin{itemize}
+\item Chaque instance du schéma \texttt{IZR \(v\)} est remplacé par \(v\),
+\item Chaque instance d'une opération élémentaire sur les
+réels (comme \texttt{+}, \texttt{*}, \texttt{-}, \texttt{Rabs}) est remplacée par
+l'opération correspondante sur les entiers.
+\end{itemize}
+Une fois que la formule de type \texttt{Z} est obtenue, il suffit de demander
+son calcul par Coq (on parle aussi de réduction en forme normale).
+Cette réduction retourne une constante entière \(z\) et le résultat
+affiché est le nombre réel \texttt{IZR \(z\)}, mais en accord avec le
+système de coercion implicite, le symbole \texttt{IZR} n'est pas affiché.
+
+En pratique, le remplacement des fonctions élémentaire sur \texttt{R} par
+leur correspondant sur \texttt{Z} est fait en exploitant une table
+comportant des enregistrements à trois champs.
+
+\begin{enumerate}
+\item le premier champ contient une fonction \(f\) sur \texttt{R}
+\item le deuxième champ contient une fonction \(f_z\) sur \texttt{Z}
+\item le trois champ contient un théorème de {\em morphisme},
+  exprimant qhe la fonction \texttt{IZR} est respectée par les deux
+  fonctions \(f\) et \(f_z\):
+\begin{itemize}
+\item si \(f\) est une fonction à un argument le théorème a l'énoncé
+\[\forall x : \texttt{Z}, f~(\texttt{IZR}~x)=\texttt{IZR}(f_z~x)\]
+\item si \(f\) est une fonction à deux arguments le théorème a l'énoncé
+\[\forall x y : \texttt{Z}, f~(\texttt{IZR}~x)~(\texttt{IZR}~y)=\texttt{IZR}(f_z~x~y)\]
+\end{itemize}
+\end{enumerate}
+L'opération de traduction, que nous avons programmée à l'aide d'Elpi,
+prend en entré une expression \(E\) de type \texttt{R} et retourne une
+expression \(E_z\) de type \texttt{Z} et un théorème dont l'énoncé est
+\(E = \texttt{IZR}~E_z\).
 \section{Conditions générales JFLA}
 %
-En particulier, l'usage de paquets comme~\texttt{times} ou~\texttt{libertine}
-est interdit.
+En particulier, l'usage de paquets comme~\texttt{times}
+ou~\texttt{libertine} est interdit.
 %
 Modifier les paramètres typographiques qui régissent l'apparence du code
 informatique ou des formules mathématiques pour faire tenir un contenu trop
