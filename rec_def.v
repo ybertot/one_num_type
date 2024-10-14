@@ -497,7 +497,7 @@ eat_implications Order F N {{_ = lp:RHS}} R :-
     % Now performing the replacement for both the recursive calls
     % and the numeric value received as argument
     (pi L \
-      ((pi I I' In In' \ copy {{lp:F (lp:N - lp:I)}} 
+      ((pi I I' In In' \ copy {{lp:F (lp:N - lp:I)}}
          {{nth lp:I' lp:L 0}} :-
          !,
           real_to_int I In,
