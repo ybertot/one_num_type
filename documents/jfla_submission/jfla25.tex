@@ -495,8 +495,8 @@ la liste des décalages d'appels récursifs est \texttt{[2,1]}.
 L'implémentation repose sur le récurseur fourni pour le type
 \texttt{nat}.  Nous allons définir une fonction de type \texttt{nat -> list
   R}, avec l'intention que la liste retournée pour l'entrée \texttt{n},
-contienne les valeurs \texttt{f n}, \texttt{f (n + 1)} \dots \texttt{f (n + \(k -
-  1\))}.
+contienne les valeurs \texttt{f n}, \texttt{f (n + 1)} \dots
+\texttt{f (n + \(k - 1\))}, où \(k\) est l'ordre de la récursion.
 
 Le récurseur pour le type \texttt{nat} est une fonction appelée
 \texttt{nat\_rect} avec le type suivant:
@@ -519,7 +519,7 @@ liste une valeur par défaut si la liste a moins de \(n\) éléments.  Il
 y a aussi une fonction \texttt{INR} qui envoie tout nombre naturel vers
 le nombre \texttt{R} qui lui correspond.
 
-Pour la fonction factorielle, on voit que la valeur retournée pur
+Pour la fonction factorielle, on voit que la valeur retournée pour
 \texttt{n + 1} doit être la liste contenant un seul élément,
 le produit de \texttt{n + 1} avec
 la première valeur trouvée dans la liste en entrée, \texttt{nth 0\%nat l 0}.
@@ -532,17 +532,16 @@ spécification, qui est :
 n * factorial (n - 1)
 \end{verbatim}
 
-Pour la suite de Fibonacci, la valeur retournée doit être une liste à
-deux éléments, où le premier élément doit être la valeur pour \texttt{fib
-  (n + 1)} et le deuxième élément doit la valeur pour \texttt{fib (n +
-    2)}.  La liste reçue en argument contient la valeur pour \texttt{fib
-    n} et la valeur pour \texttt{fib (n + 1)}, la liste retournée doit
-contenir \texttt{fib (n + 1)} et \texttt{fib (n + 2)}.  Le premier
+Pour la suite de Fibonacci, , la liste retournée doit
+contenir \texttt{fib (n + 1)} et \texttt{fib (n + 2)}.
+La liste reçue en argument contient la valeur pour \texttt{fib
+    n} et la valeur pour \texttt{fib (n + 1)}.  Le premier
 élément de la liste retournée est tout simplement le deuxième élément
 de la liste reçue en argument, ce qui s'écrit \texttt{nth 1\%nat l 0}.
 Le deuxième élément de la liste retournée n'est pas présent dans la
 liste reçue en argument, mais la spécification nous indique comment
 calculer cette valeur en utilisant les valeurs présentes dans \texttt{l}.
+La liste est donc de la forme suivante:
 \begin{verbatim}
 [nth 1%nat l 0; nth 0%nat 0 + nth 1%nat 0]
 \end{verbatim}
@@ -552,9 +551,9 @@ nous pouvons généraliser le traitement au cas d'une fonction
 récurrente d'ordre \(k\) arbitraire.
 \begin{itemize}
 \item La fonction \texttt{step} doit
-alors retourner une liste dont la longueur est l'ordre \(k\),
-\item Les \(k-1\) premiers éléments de la liste retournées doivent
-  être \texttt{nth 0\%nat l 0}, \texttt{nth 1\%nat 0}, et ainsi de suite
+retourner une liste dont la longueur est l'ordre \(k\).
+\item Les \(k-1\) premiers éléments de la liste retournée doivent
+  être \texttt{nth 1\%nat l 0}, \texttt{nth 2\%nat 0}, et ainsi de suite
 jusqu'à \(k - 1\)
   (dans le cas de la fonction factorielle, il n'y a pas d'éléments de
   cette forme dans la liste).
@@ -574,7 +573,8 @@ l'endroit où le corps du pas récursif est utilisé, on est en train de
 définir la valeur pour \texttt{f (n + \(k\))}.
 
 \subsection{méta-programmation en \texttt{Elpi}}
-Pour faire ces analyses, nous utilisons le langage de programmation
+Pour faire les analyses et la génération de code,
+nous utilisons le langage de programmation
 \texttt{Elpi}, fourni comme une extension de Coq.  Ce langage est basé
 sur \(\lambda\)-prolog, étendu avec des techniques de résolution de
 contraintes.  Un point qui rend ce langage particulièrement concis
@@ -594,14 +594,14 @@ Le texte suivant montre comment les remplacements sont effectués.  La
 construction \texttt{=>} permet d'ajouter des règles temporaires.
 La première règle est quantifiée universellement sur les variables
 \texttt{I}, \texttt{I'}, \texttt{In} et \texttt{In'} grâce à la construction \texttt{pi},
-Ell exprime qu'au lieu de copier, on va remplace les instances de termes
+Elle exprime qu'au lieu de copier, on va remplace les instances de termes
 où la fonction \texttt{F} est
 appliquée à \texttt{N} moins \texttt{I} par l'instance
-corresspondante construite avec \texttt{nth} \texttt{I'} et la liste de
+correspondante construite avec \texttt{nth} \texttt{I'} et la liste de
 valeurs
 \texttt{L}.  Le calcul de \texttt{I'} est exprimé par les lignes de rang 4 à 6 dans
 ce texte, et le point d'exclamation \texttt{!}, exprime que dès que le
-motif est reconnu, il n'y a pas y avoir de retour arrière dans l'exécution.
+motif est reconnu, il ne doit pas y avoir de retour arrière dans l'exécution.
 
 La ligne de rang 7 décrit comment les instances restantes de \texttt{N} seront
 remplacées par \texttt{N\_plus\_Order}.
@@ -621,16 +621,16 @@ obtenu en {\em abstrayant} par rapport au terme \texttt{L}, ce qui facilitera
 la construction d'une \(\lambda\)-abstraction liant la variable \texttt{l}.
 
 Ce fragment permet également d'illustrer la fonctionnalité de {\em
-  quotation} qui permet d'écrire dirrectement des expressions dans la
+  quotation} qui permet d'écrire directement des expressions dans la
 syntaxe usuelle de Rocq.  Ici, le terme
 \begin{center}
 \texttt{\{\{lp:F (lp:N -  lp:I)\}\}}
 \end{center}
-permet de décrire la réprésentation en Elpi d'un terme du
+permet de décrire la représentation en Elpi d'un terme du
 Rocq comportant l'application d'une fonction à une soustraction de
 nombres réels.
 Lorsque la fonction basée sur \texttt{nat\_rect} est finalement
-construite, on diispose d'une fonction de type \texttt{nat -> list R}, il
+construite, on dispose d'une fonction de type \texttt{nat -> list R}, il
 reste deux opérations à effectuer: prendre le premier élément du
 résultat, et fournir la bonne entrée.  Dans l'environnement de travail
 pour l'utilisatrice finale, les seuls nombres sont de type \texttt{R},
@@ -670,11 +670,11 @@ un nombre fini d'opération.
 Par exemple, la spécification de la fonction \texttt{fib} est
 suffisamment expressive pour prouver la valeur de la fonction sur des
 entrées constantes, mais le procédé devient rapidement pénible.  Pour
-permettre à l'utilisatrice finale de test la fonction définie sur des
+permettre à l'utilisatrice finale de tester la fonction définie sur des
 entrées assez grandes, nous avons fourni deux commandes.
 
 La première de ces commandes s'appelle \texttt{R\_compute} et elle
-permet de demandr qu'un calcul soit effectué avec les opérations
+permet de demander qu'un calcul soit effectué avec les opérations
 usuelles.  La seconde s'appelle \texttt{mirror\_recursive\_definition}
 et permet d'ajouter les fonctions récursives définies par notre
 première commande parmi les fonctions usuelles.
@@ -729,42 +729,46 @@ contrainte la plus forte est que les fonctions récursives ne doivent
 pas nécessairement à priori si une expression est bien définie, mais
 la commande \texttt{R\_compute} fournit un message d'erreur pour indiquer
 qu'une des fonctions considérées est appelée avec un argument négatif
-losrque c'est le cas.  Aucun résultat n'est retourné dans ce cas, et
-aucun théorème n'est engendré.
+lorsque c'est le cas et aucun théorème n'est engendré.
 
 \subsection{Réaliser la capacité de calcul}
 La première chose qu'il est nécessaire de savoir, c'est que les
 nombres réels dans Coq ont déjà une relation privilégiée avec les
-nombres entier.  Toute constante entière qui s'écrit sous forme
+nombres entiers.  Toute constante entière qui s'écrit sous forme
 décimale est déjà marquée comme l'application d'une fonction appelée
 \texttt{IZR} sur une constante de type \texttt{Z}.  Cette fonction \texttt{IZR}
 est donc déjà présente en plusieurs endroits dans la formule, mais
 elle n'est jamais affichée (on parle de coercion implicite).
 
 Pour effectuer le calcul, le principe est de transformer la formule à
-calculer, qui est de type \texttt{R}, en une formule de type \texttt{Z},
- de la façon suivante:
+calculer \(v\), qui est de type \texttt{R}, en une formule \(w\)
+de type \texttt{Z}, en garantissant que \(v = \texttt{IZR}~w\).  Ceci est
+fait de la façon suivante:
 \begin{itemize}
-\item Chaque instance du schéma \texttt{IZR \(v\)} est remplacé par \(v\),
+\item Chaque instance du schéma \texttt{IZR \(v\)} est remplacée par \(v\),
 \item Chaque instance d'une opération élémentaire sur les
 réels (comme \texttt{+}, \texttt{*}, \texttt{-}, \texttt{Rabs}) est remplacée par
 l'opération correspondante sur les entiers.
 \end{itemize}
 Une fois que la formule de type \texttt{Z} est obtenue, il suffit de demander
 son calcul par Coq (on parle aussi de réduction en forme normale).
-Cette réduction retourne une constante entière \(z\) et le résultat
+Ce calcul retourne une constante entière \(z\) et le résultat
 affiché est le nombre réel \texttt{IZR \(z\)}, mais en accord avec le
 système de coercion implicite, le symbole \texttt{IZR} n'est pas affiché.
 
-En pratique, le remplacement des fonctions élémentaire sur \texttt{R} par
+Pour justifier qu'une constante entière de la form \(\texttt{IZR}~v\)
+doit être traduite en \(v\), il suffit d'utiliser la réflexivité de
+l'égalité, car dans ce cas la garantie à obtenir est simplement
+\(\texttt{IZR}~v = \texttt{IZR}~v\).
+
+En pratique, le remplacement des fonctions élémentaires sur \texttt{R} par
 leur correspondant sur \texttt{Z} est fait en exploitant une table
 comportant des enregistrements à trois champs.
-
 \begin{enumerate}
 \item le premier champ contient une fonction \(f\) sur \texttt{R}
 \item le deuxième champ contient une fonction \(f_z\) sur \texttt{Z}
 \item le trois champ contient un théorème de {\em morphisme},
-  exprimant qhe la fonction \texttt{IZR} est respectée par les deux
+  exprimant que la fonction \texttt{IZR} est compatible avec les deux
   fonctions \(f\) et \(f_z\):
 \begin{itemize}
 \item si \(f\) est une fonction à un argument le théorème a l'énoncé
@@ -773,10 +777,101 @@ comportant des enregistrements à trois champs.
 \[\forall x y : \texttt{Z}, f~(\texttt{IZR}~x)~(\texttt{IZR}~y)=\texttt{IZR}(f_z~x~y)\]
 \end{itemize}
 \end{enumerate}
+
+Pour l'addition et la multiplication, les entrées dans la table ont
+ la forme suivante:
+\begin{verbatim}
+  Rplus Z.add add_compute
+  Rmult Z.mul mul_compute
+\end{verbatim}
+
+Pour utiliser les théorèmes de morphisme, nous les encapsulons dans deux
+théorèmes qui facilitent l'usage récursif sans réécriture, un théorème
+pour les fonctions à un argument et un théorème pour les fonctions à deux
+arguments.  Nous montrons ici le théorème pour les fonctions à deux arguments.
+
+\begin{verbatim}
+private.IZR_map2 :
+forall (opr : R -> R -> R) (opz : Z -> Z -> Z),
+  (forall a b : Z, opr (IZR a) (IZR b) = IZR (opz a b)) ->
+  forall (a b : R) (c d : Z), a = IZR c -> b = IZR d ->
+  opr a b = IZR (opz c d)
+\end{verbatim}
+
 L'opération de traduction, que nous avons programmée à l'aide d'Elpi,
-prend en entré une expression \(E\) de type \texttt{R} et retourne une
+prend en entrée une expression \(E\) de type \texttt{R} et retourne une
 expression \(E_z\) de type \texttt{Z} et un théorème dont l'énoncé est
-\(E = \texttt{IZR}~E_z\).
+\(E = \texttt{IZR}~E_z\).  La règle Elpi qui traite les fonctions à deux
+arguments est la suivante:
+
+\begin{verbatim}
+translate_prf (app [F, A, B]) (app [F1, A1, B1])
+  {{private.IZR_map2 lp:F lp:F1 lp:PFF1 lp:A lp:B lp:A1 lp:B1 lp:PFRA lp:PFRB}}
+  :-
+  std.do! [
+  thm_table F F1 PFF1,
+  translate_prf A A1 PFRA,
+  translate_prf B B1 PFRB
+  ].
+\end{verbatim}
+
+Cette règle exprime que l'expression où \(F\) est appliquée à \(A\) et
+\(B\) est traduite en l'expression où \(F1\) est appliquée à \(A1\) et
+\(B1\), si \(F\) est en correspondance avec \(F1\), et si \(A\) et
+\(B\) sont traduites respectivement en \(A1\) et \(B1\).  La preuve
+que cette traduction est correcte est composée à l'aide de
+ \texttt{private.IZR\_map2}, du théorème de morphisme pour \(F\) et \(F1\),
+ici appelé \(PFF1\), et des preuves pour \(A\) et \(B\).
+
+Lorsque l'on affiche la preuve obtenue pour l'expression \texttt{3 + (5 *
+  7)}, on voit donc le texte suivant.
+\begin{verbatim}
+th38 =
+  private.IZR_map2 Rplus Z.add add_compute 3 (5 * 7) 3 (5 * 7)
+   (eq_refl : 3 = 3)
+   (private.IZR_map2 Rmult Z.mul mul_compute 5 7 5 7 
+     (eq_refl : 5 = 5)
+     (eq_refl : 7 = 7))
+      : 3 + 5 * 7 = 38
+\end{verbatim}
+les nombres qui apparaissent en 6e et 7e argument de
+\texttt{private.IZR\_map2} sont de type \texttt{Z}, mais comme le système de
+preuve sait que des nombres entiers sont attendus à cet endroit, ils
+sont affichés comme les nombres qui précèdent, qui sont de type
+\texttt{R}.
+
+\subsection{Réaliser le calcul pour les fonctions récursives}
+La traduction des expressions peut également être effectuée sur le
+corps de la fonction \texttt{step} utilisée pour le récurseur
+\texttt{nat\_rect}.  Il y a quelques éléments supplémentaires utilisés
+dans le corps de cette fonction: la variable \(n\) de type \texttt{nat}
+et la variable \(l\) de type \texttt{list R}.  
+
+Nous supposons que la valeur \(n\) est seulement utilisée dans des
+appels à \texttt{INR} afin que cette valeur numérique soit utiisée dans
+opérations du type \texttt{R}.  Ces usages de \(n\) doivent être
+remplacés par la valeur \(\texttt{Z.of\_nat}~n\).  Ces remplacements sont
+justifiés par un théorème fourni dans la bibliothèque nommé
+\texttt{INR\_IZR\_INZ}, avec l'énoncé suivant:
+\begin{verbatim}
+forall n : nat, INR n = IZR (Z.of_nat n)
+\end{verbatim}
+
+Dans la version actuelle de notre code, nous supposons que la variable \(l\) est
+seulement utilisée dans des appels à la fonction \texttt{nth}.  Pour ces
+appels, le premier argument qui est un entier naturel doit être laissé
+inchangé, la liste \(l\) également, mais le dernier argument, qui
+décrit la valeur par défault qui serait utilisée si le premier
+argument est supérieur à la longueur de la liste, doit être remplacé
+par une valeur de type \texttt{Z}.
+
+La correction du remplacement est justifiée par le théorème générale
+suivant sur le récurseur, qui se prouve par récurrence sur l'argument
+entier naturel.  L'invariant de la récurrence est que les listes de
+valeurs considérée à chaque étape sont les mêmes modulo application de
+la fonction \texttt{IZR} pour convertir les valeurs numérique à chaque
+rang dans la liste (exprimé par la fonction \texttt{map}.
+
 \section{Conditions générales JFLA}
 %
 En particulier, l'usage de paquets comme~\texttt{times}
@@ -928,4 +1023,7 @@ ligne~\cite{JFLART}.
 
 \end{document}
 
-% LocalWords:  maketitle begin end Agda Rocq Lean
+% LocalWords:  maketitle begin end Agda Rocq Lean texttt mathcal sqrt
+% LocalWords:  qquad mathbb rightarrow Prop Rnat em Rint nat INR eqn
+% LocalWords:  factorial fib subsection récurseur list rect Init nth
+% LocalWords:  itemize Elpi -prolog lp IRZ IRN IZR enumerate forall
