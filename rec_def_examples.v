@@ -1,5 +1,7 @@
 Require Import List Reals Lra Lia.
+Set Warnings "-notation-overridden".
 Require Import R_subsets rec_def R_compute.
+Set Warnings "notation-overridden".
 From elpi Require Import elpi.
 Open Scope R_scope.
 
@@ -19,6 +21,7 @@ Proof.
 rec_Rnat simple_example.
 Qed.
 
+Print simple_example.
 (* This is the proof that is done automatically in rec_nat
 intros nnat; unfold fib.
 apply private.Rnat_rec_nat'; [ | | assumption ].
@@ -199,6 +202,25 @@ R_compute (test3 10).
 Recursive (def factorial such that factorial 0 = 1 /\
   forall n, Rnat (n - 1) -> factorial n = n * factorial (n - 1)).
 
+Example rec_clause_factorial : forall n, Rnat (n - 1) ->
+  factorial n = n * factorial (n - 1).
+Proof.
+(* prove_recursive_specification factorial 1%Z. *)
+unfold factorial.
+intros n nnat.
+unfold Rnat_rec.
+set (protect_base := IRN (n - 1)).
+unfold protect_base.
+rewrite (private.IRN_to_S_top n 1 refl_equal nnat).
+simpl.
+(* this works but the automatic tactic does not do that.
+  rewrite (INR_IRN);[ring | assumption].
+*)
+enough (Last_eqn : INR (IRN (n- 1)) + 1 = n)
+            by (rewrite Last_eqn; reflexivity).
+rewrite INR_IRN;[ring | assumption].
+Qed.
+
 (* This is a proof that factorial maps natural numbers to natural numbers. *)
 Lemma student_factorial_nat n : Rnat n -> Rnat (factorial n).
 Proof.
@@ -260,4 +282,141 @@ Proof.
 elpi r_compute (42 + fib (factorial 5)).
 unfold huge_val.
 reflexivity.
+Qed.
+
+Definition k_among_n (k n : R) :=
+  factorial n / ((factorial k) * factorial (n - k)).
+
+Lemma fact0 : factorial 0 = 1.
+Proof. destruct factorial_eqn as [f0 fs]; auto. Qed.
+
+Lemma fact_suc : forall n, Rnat (n - 1) -> factorial n = n * factorial (n - 1).
+Proof. destruct factorial_eqn as [f0 fs]; auto. Qed.
+
+Lemma factorial_gt0 n : Rnat n -> 0 < factorial n.
+Proof.
+induction 1 as [ | n nnat Ih].
+  rewrite fact0.
+  lra.
+rewrite fact_suc.
+  apply Rmult_lt_0_compat.
+    enough (0 <= n) by lra.
+    apply Rnat_ge0.
+    assumption.
+  ring_simplify (n + 1 - 1).
+  assumption.
+ring_simplify (n + 1 - 1).
+assumption.
+Qed.
+
+Lemma zero_among_n : forall n, Rnat n -> k_among_n 0 n = 1.
+Proof.
+intros n nnat.
+destruct factorial_eqn as [fact0 fact_suc].
+unfold k_among_n.
+ring_simplify (n - 0).
+rewrite fact0.
+field.
+enough (0 < factorial n) by lra.
+apply factorial_gt0.
+assumption.
+Qed.
+
+Lemma n_among_n : forall n, Rnat n -> k_among_n n n = 1.
+Proof.
+intros n nnat.
+destruct factorial_eqn as [fact0 fact_suc].
+unfold k_among_n.
+ring_simplify (n - n).
+rewrite fact0.
+field.
+enough (0 < factorial n) by lra.
+apply factorial_gt0.
+assumption.
+Qed.
+
+
+Lemma k_among_n_suc k n : Rnat k -> Rnat n -> k < n ->
+   k_among_n (k + 1) (n + 1) = k_among_n k n + k_among_n (k + 1) n.
+Proof.
+intros knat nnat kint.
+unfold k_among_n.
+assert (nnat' : Rnat (n + 1 - 1)).
+  ring_simplify (n + 1 - 1).
+  assumption.
+assert (knat' : Rnat (k + 1 - 1)).
+  ring_simplify (k + 1 - 1).
+  assumption.
+rewrite (fact_suc (n + 1)); auto.
+rewrite (fact_suc (k + 1)); auto.
+ring_simplify (n + 1 - 1) (k + 1 - 1) (n + 1 - (k + 1)).
+assert (nmknat: Rnat (n - (k + 1))).
+  apply Rnat_sub; solve_Rnat.
+  apply Rnat_le_lt; solve_Rnat.
+  lra.
+rewrite (fact_suc (n - k)).
+  replace (n - k - 1) with (n - (k + 1)) by ring.
+  field.
+  split.
+    enough (0 < factorial (n - (k + 1))) by lra.
+    apply factorial_gt0.
+    assumption.
+  split.
+    enough (0 < factorial k) by lra.
+    apply factorial_gt0.
+    assumption.
+  assert (0 <= k).
+    apply Rnat_ge0.
+    assumption.
+  lra.
+replace (n - k - 1) with (n - (k + 1)) by ring.
+assumption.
+Qed.
+
+Lemma k_among_n_nat k n : Rnat k -> Rnat n -> k <= n ->
+  Rnat (k_among_n k n).
+Proof.
+intros knat nnat; revert k knat.
+induction nnat as [ | n nnat Ih].
+  intros k knat kle0.
+  enough (it : k_among_n k 0 = 1) by (rewrite it; solve_Rnat).
+  assert (0 <= k).
+    apply Rnat_ge0 in knat.
+    easy.
+  replace k with 0 by lra.
+  rewrite zero_among_n; solve_Rnat.
+  easy.
+intros k knat klenp1.
+destruct (Req_dec k (n + 1)) as [ knp1 | knnp1].
+  rewrite knp1, n_among_n.
+    solve_Rnat.
+  solve_Rnat.
+destruct (Req_dec k 0) as [k0 |kn0].
+  rewrite k0.
+  now rewrite zero_among_n; solve_Rnat.
+assert (kgt0 : 0 < k).
+  enough (0 <= k) by lra.
+  apply Rnat_ge0.
+  assumption.
+assert (1 <= k).
+  replace 1 with (0 + 1) by ring.
+  apply Rnat_le_lt; solve_Rnat.
+  assumption.
+assert (Rnat (k - 1)).
+  apply Rnat_sub; solve_Rnat.
+  assumption.
+assert (k <= n).
+  replace k with ((k - 1) + 1) by ring.
+  apply Rnat_le_lt; solve_Rnat.
+  lra.
+replace k with ((k - 1) + 1) by ring.
+rewrite k_among_n_suc; solve_Rnat.
+  apply Rnat_add.
+    apply Ih.
+      assumption.
+    lra.
+  apply Ih.
+    solve_Rnat.
+  lra.
+lra.
 Qed.

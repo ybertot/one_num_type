@@ -1,6 +1,7 @@
 \documentclass[draft]{jflart}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
+\usepackage{alltt}
 
 % Numéro et année des JFLAs visées par l'article, obligatoire.
 \jfla{36}{2025}
@@ -20,6 +21,7 @@
 
 % Une commande définie par l'utilisateur
 \newcommand{\cmd}[1]{\texttt{\textbackslash {#1}}}
+\newcommand{\mathcomp}{\textsc{Mathematical Components}}
 
 \begin{document}
 
@@ -412,9 +414,7 @@ mettre autant de cas de base qu'elle le désire, et une spécification
 quantifiée universellement qui utilise un nombre de valeurs
 précédentes égal au nombre de valeurs de base.
 
-\subsection{Calculs et preuves de calcul}
-La spécification 
-\section{Techniques d'implémentation}
+\subsection{Techniques d'implémentation}
 Ce que nous allons décrire dans cette section est la méthode que nous avons
 employée pour concevoir notre commande de définition récursive.
 L'utilisatrice finale n'a pas besoin de connaître ces détails: les
@@ -430,7 +430,7 @@ méta-programmation pour manipuler la spécification fournie par
 l'utilisateur et construire une définition répondant à la
 spécification.
 
-\subsection{Forme des spécifications récursives}
+\subsubsection{Forme des spécifications récursives}
 Notre commande prend en argument un nom de fonction, disons \texttt{f},
 à définir et une
 proposition qui spécifie le comportement de cette fonction.  Le nom de
@@ -455,7 +455,7 @@ la forme \texttt{f (n - i)} où \texttt{i} est une constant entière comprise
   entre \texttt{1} et \texttt{k}.  Il doit y avoir un seul membre de la
   conjonction avec cette deuxième forme.
 
-\subsection{Analyse des spécifications}
+\subsubsection{Analyse des spécifications}
 Un premier parcours récursif de la spécification, paramétré par
 \texttt{f}, permet de retrouver l'ensemble des membres de la première forme
 et de construire une liste de paires \(i, v_i\) où les \(i\) sont des
@@ -491,7 +491,7 @@ la liste des valeurs initiales est \texttt{[0; 1]},
 le corps du pas récursif est \texttt{fib (n - 2) + fib (n - 1)}, et
 la liste des décalages d'appels récursifs est \texttt{[2,1]}.
 
-\subsection{Utilisation du type \texttt{nat} et son récurseur}
+\subsubsection{Utilisation du type \texttt{nat} et son récurseur}
 L'implémentation repose sur le récurseur fourni pour le type
 \texttt{nat}.  Nous allons définir une fonction de type \texttt{nat -> list
   R}, avec l'intention que la liste retournée pour l'entrée \texttt{n},
@@ -572,7 +572,7 @@ fonction \texttt{INR} doit être utilisée.  Il est aussi remarquable qu'à
 l'endroit où le corps du pas récursif est utilisé, on est en train de
 définir la valeur pour \texttt{f (n + \(k\))}.
 
-\subsection{méta-programmation en \texttt{Elpi}}
+\subsubsection{méta-programmation en \texttt{Elpi}}
 Pour faire les analyses et la génération de code,
 nous utilisons le langage de programmation
 \texttt{Elpi}, fourni comme une extension de Coq.  Ce langage est basé
@@ -657,7 +657,7 @@ obtenue.  Nous avons écrit une tactique de quelques lignes pour cela
 et la preuve est sauvegardée dans un théorème dont le nom est obtenu
 en ajoutant le suffixe \texttt{\_eqn} au nom de la fonction.
 
-\section{Ajouter des capacités de calcul}
+\subsection{Ajouter des capacités de calcul}
 Pour les utilisateurs confirmés de Coq, les nombres de types \texttt{nat} ou
 \texttt{Z} ont l'avantage notable que l'on les utiliser pour faire des calculs
 expérimentaux, surtout les nombres entiers, dont la structure de données
@@ -731,7 +731,7 @@ la commande \texttt{R\_compute} fournit un message d'erreur pour indiquer
 qu'une des fonctions considérées est appelée avec un argument négatif
 lorsque c'est le cas et aucun théorème n'est engendré.
 
-\subsection{Réaliser la capacité de calcul}
+\subsubsection{Réaliser la capacité de calcul}
 La première chose qu'il est nécessaire de savoir, c'est que les
 nombres réels dans Coq ont déjà une relation privilégiée avec les
 nombres entiers.  Toute constante entière qui s'écrit sous forme
@@ -840,7 +840,7 @@ preuve sait que des nombres entiers sont attendus à cet endroit, ils
 sont affichés comme les nombres qui précèdent, qui sont de type
 \texttt{R}.
 
-\subsection{Réaliser le calcul pour les fonctions récursives}
+\subsubsection{Réaliser le calcul pour les fonctions récursives}
 La traduction des expressions peut également être effectuée sur le
 corps de la fonction \texttt{step} utilisée pour le récurseur
 \texttt{nat\_rect}.  Il y a quelques éléments supplémentaires utilisés
@@ -865,139 +865,235 @@ décrit la valeur par défault qui serait utilisée si le premier
 argument est supérieur à la longueur de la liste, doit être remplacé
 par une valeur de type \texttt{Z}.
 
-La correction du remplacement est justifiée par le théorème générale
+La correction du remplacement est justifiée par le théorème général
 suivant sur le récurseur, qui se prouve par récurrence sur l'argument
 entier naturel.  L'invariant de la récurrence est que les listes de
 valeurs considérée à chaque étape sont les mêmes modulo application de
 la fonction \texttt{IZR} pour convertir les valeurs numérique à chaque
 rang dans la liste (exprimé par la fonction \texttt{map}.
 
+\begin{verbatim}
+private.nat_rect_list_IZR
+     : forall (l0 : list Z) (l' : list R) 
+         (f : nat -> list Z -> list Z)
+         (f' : nat -> list R -> list R) (n : nat),
+       l' = List.map IZR l0 ->
+       (forall (k : nat) (lR : list R) (lZ : list Z),
+        lR = List.map IZR lZ -> f' k lR = List.map IZR (f k lZ)) ->
+       nat_rect (fun _ : nat => list R) l' f' n =
+       List.map IZR (nat_rect (fun _ : nat => list Z) l0 f n)
+\end{verbatim}
+La cinquième ligne de cet énoncé exprime que l'une des conditions utilisée
+est que la liste initiale de valeur est la même (modulo application
+d'\texttt{IZR}).
+La sizième ligne et la septième ligne exprime que les fonctions
+utilisées pour pour l'étape récursive transforment des les listes
+égales en des listes égales (à nouveau modulo application
+d'\texttt{IZR}).
+
+Une difficulté apparait si la fonction récursive que l'on veut traiter
+fait appel à une autre fonction récursive avec un argument qui n'est
+pas de façon évidente un nombre naturel.  Il est possible que
+l'utilisatrice qui définit cette fonction ait des connaissances
+précises sur l'algorithme et puisse en déduire que la valeur passée
+en argument soit toujours un nombre naturel.  Notre traducteur impose
+que dans ce cas, un appel à la fonction \texttt{Rabs} soit inséré sur
+l'argument de l'appel à cette autre fonction récursive.
+
+Les fonctions définies par \texttt{nat\_rect} sont essentiellement
+conçues pour recevoir des arguments d type \texttt{nat}, mais les
+fonctions utilisées dans les formules calculées doivent prendre en
+entrée des nombres de \texttt{Z}.  Pour concilier les deux, les fonctions
+que notre commande définit commencent par convertir le nombre entier en
+un nombre naturel en faisant une valeur absolue (mais le maxiumum
+entre 0 et le nombre en entrée aurait pu fonctionner également).  Au
+final, la correspondance entre le code le calcul en nombre réel et le
+calcul en nombre entier n'est garantie que pour les nombres naturels.
+La commande \texttt{mirror\_recursive\_definition} créée une nouvelle
+fonction dont le nom est obtenu en accolant le suffixe
+\texttt{\_Z\_mirror} au nom de la fonction donnée en argument et un théorème
+de correction dont le nom est obtenu en accolant le suffixe
+\texttt{\_Z\_prf} avec l'énoncé de la forme suivante:
+\begin{alltt}
+forall x y, x = IZR y -> \(f\) (Rabs x) = IZR (\(f\)_Z_mirror y)
+\end{alltt}
+
+Ce théorème n'a pas la même forme que les théorème de morphismes
+utilisés pour les opérations usuelles.  Premièrement il prend
+directement la forme d'un théorème transformant une égalité sur les
+entrées en une égalité sur les sorties.  Deuxièmement, il contient
+un appel à la valeur absolue sur l'argument de la valeur réelle.
+Puisque \texttt{x} est l'image de \texttt{y} par la fonction \texttt{IZR} nous
+savons que c'est un entier et que \texttt{(Rabs x)} est un nombre
+naturel.
+
+Pour accepter quand même des formules dans lesquelles la fonction
+récursive n'est pas appelée sur le résultat d'une valeur absolue, nous
+utilisons le théorème de conversion suivant:
+\begin{verbatim}
+private.Rnat_Rabs : forall {f : R -> R} {fz : Z -> Z} :
+   (forall (n : R) (z : Z), n = IZR z -> f (Rabs n) = IZR (fz z)) ->
+   forall (n : R) (z : Z), Rnat n -> n = IZR z -> f n = IZR (fz z)
+\end{verbatim}
+Ce théorème a une hypothèse supplémentaire, qui demande de vérifier
+que que l'argument de la fonction sur \texttt{R} est bien dans
+\texttt{Rnat}.  Dans la commande \texttt{R\_compute} cette vérification peut
+être faite à la volée en calculant simplement l'argument et en vérifiant
+qu'il est positif.  Lorsque la preuve de correction est utilisée dans
+\texttt{mirror\_recursive\_definition}, seule le théorème
+{\(f\)\texttt{\_Z\_prf}} est utilisé.
+
+Il y a également une tactique équivalente à \texttt{R\_compute} qui fait
+le calcul et le remplacement d'une formule dans un but en cours de
+preuve, sans sauvegarder le théorème d'égalité dans un théorème, mais
+en incluant la preuve dans le terme en cours au moyen d'une réécriture.
+
+\section{Sequences d'entiers naturels et grandes opérations}
+Un idiome supplémentaire qui utilise des entiers naturels est celui
+des séquences finies d'objets.  Par exemple, une famille linéaire de
+vecteurs, un vecteur de \texttt{R \^ n}.  Pour rendre ce type d'objets
+pratique à utiiser, nous proposons d'introduire une fonction avec
+une notation intuitive pour décrire une telle séquence, de fournir
+des notations spécifiques pour une collection d'opérations des listes
+vers les listes, en s'inspirant de la bibliothèque \mathcomp{} et
+de reposer sur des {\em grandes opérations}, sommes itérées ou
+produits itérés pour les opérations qui demanderaient normalement de
+la programmation récursive.
+
+A un niveau intermédiaire pour l'audience finale, ou pour un public
+également formé à l'informatique, le cours pourrait également contenir
+une introduction à la programmation récursive, mais seulement sur les
+listes.  Il faudrait alors étendre l'outil de calcul pour fournir une
+simulation calculatoire également pour les listes de nombres réels.
+Commencer par la programmation récursive sur les listes présente un
+avantage certain, car l'utilisation de la construction filtrage est
+plus facile à comprendre sur les schémas de constructeurs des listes
+que sur les schémas des nombres naturels.
+
+\subsection{Séquences d'entiers naturels}
+Nous proposons de fournir la fonction \texttt{Rseq} à deux arguments
+\(n\) et \(m\)
+pour désigner la séquence de nombres réels de longueur \(m\) et
+contenant les nombres \(n\), \(n + 1\), \dots.
+Comme pour les fonctions récursives, cette notation
+n'est bien définie que si \(m\) est un nombre naturel.  Cette séquence
+peut bien sûr être définie à l'aide d'un schéma récursif, cmmme nous le
+faisons précédemment pour les suites récurrentes, mais il s'agit ici
+d'une fonction produisant des listes.
+
+Cette fonction sert à introduire dans notre bibliothèque les usages
+de la fonction \texttt{seq} de la librairie standard des listes et de la
+fonction \texttt{iota} de la librairie \mathcomp{}.  Pour déterminer
+quels théorèmes, doivent être fournis pour décrire le comportement de
+cette fonction, il est important de fournir deux théorèmes exprimant
+le comportement calculatoire de ces fonctions récursives, plus des
+théorèmes de décomposition, exprimés essentiellement à l'aide des
+constructeurs du type des listes et la concaténation.
+\begin{verbatim}
+Rseq0 : forall n 0 : R, Rseq n 0 = nil
+
+Rseq_suc : forall n m : R, Rnat m ->
+  Rseq n (m + 1) = n :: Rseq (n + 1) m.
+\end{verbatim}
+A l'usage, le théorème \texttt{Rseq\_suc} n'est pas toujours pratique à
+utiliser, car il demande de préparer la formule sur laquelle on
+travaille pour faire apparaitre l'expression de la forme \texttt{\(n\) +
+  1} avant de permettre l'utilisation.  La forme suivante est souvent
+plus facile à mettre en œuvre.
+\begin{verbatim}
+Rseq_suc' : forall n m : R, Rnat (m - 1) ->
+  Rseq n m = n :: Rseq (n + 1) (m - 1).
+\end{verbatim}
+La présentation donnée jusqu'ici n'impose pas que le premier argument
+de \texttt{Rseq} soit un entier naturel.  Il y a donc un gain par rapport
+à l'approche reposant sur le type \texttt{nat}, puisque l'on peut
+utiliser la même et le même jeu de notations pour des listes de
+nombres réels et pour des listes de nombres naturels.  A ce stade
+préliminaire de nos expériences, ce gain est peut-être illusoire,
+parce qu'il est plus difficile d'exprimer que si le premier argument
+de \texttt{Rseq} est un entier naturel, alors tous les éléments de la
+séquence sont des entiers naturels (une propriété qui était donnée
+naturellement par le typage sur les entiers naturels).
+
+Il apparait que les séequences, comme celles produites par
+\texttt{Rseq} sont aussi utilisées comme des ensembles.  En théorie des
+types, beaucoup d'ensembles sont simplement représentés comme des
+types et l'appartenance à ces ensembles est représentée par le typage.
+D'autres ensembles sont présentés comme des sous-ensembles de types à
+l'aide de prédicats, et maintenant nous avons les listes qui sont
+plutôt des ensembles décrits par énumération des éléments.  Dans la
+bibliothèque des listes de Coq, le prédicat \texttt{In} fournit la
+passerelle pour voir une liste comme un ensemble décrit par un prédicat.
+L'inclusion d'une liste dans un
+ensemble décrit comme un prédicat est fourni par le prédicat
+\texttt{Forall}.  Dans la bibliothèque \mathcomp{}, une notion générique
+de sous-ensembles d'un type est fournie pour que les mêmes notations
+d'appartenance et d'inclusion soient utilisées.  Il serait bon de
+disposer d'un ensemble de notations et d'outils d'élaboration qui
+permettent de manipuler de façon uniforme ces differents point de vues
+sur les ensembles, mais cela dépasse le cadre de cet article.
+\subsection{Grands opérateurs}
+Les grands opérateurs apparaissent fréquemment dans les mathématiques
+sous deux formes.  Soit il s'agit de présentations avec ellipses, où
+la séquence de plusieurs nombres est présentée, mais séparés par un
+opérateur binaire:
+\[1 + \cdots + n  \qquad 1 ^ 2 + \cdots + n ^ 2 \]
+Soit on utilise une notation avec variable liée et un symbole
+conventionnel (parfois un version agrandie de l'opérateur binaire,
+parfois un symbole ad hoc connu de tous), la notation mathématique
+ressemble à ceci:
+\[\sum_{i=0}^{n} f(i)\]
+Dans \mathcomp{}, la deuxième présentation est préférée, en utilisant
+des notations qui s'inspirent de ce que l'on doit écrire en \LaTeX{}
+pour obtenir la présentation ci-dessus.  Nous voulons nous inspirer de
+\mathcomp{}, mais en réduisant le nombre de possibilités.  Ce grand
+nombre de possibilités fait la puissance de la bibliothèque, mais il
+est également source de confusion pour les novices.
+
+Nous proposons de réduire l'usage des grands opérateurs aux deux
+opérateurs d'addition (notation \cmd{sum} ou \cmd{prod}).
+au seul cas où
+l'indice parcourt les entiers compris entre \({m}\) et \({n - 1}\),
+en utilisant la notation \texttt{\(m\) <= \(i\) < \(n\)}.  Cette
+notation exprime que le domaine sur lequel s'applique l'opération
+itérée est vide si \(n \leq m\).
+
+
+
+\section{La fonction binomiale}
+La fonction binomiale est une autre fonction souvent définie
+récusivement sur entiers naturels, dans les librairies de
+mathématiques formelles.  Dans un cours de mathématique, elle peut
+également être définie par une fraction de nombres entiers (pour
+laquelle il n'est pas directement evident que le résultat est un
+entier).  Nous proposons d'utiliser cette définition:
+\begin{verbatim}
+Definition k_among_n (k n : R) :=
+  factorial n / (factorial (n - k) * (factorial k)).
+\end{verbatim}
+
+Cette définition pose quelques problèmes.  Le premier est celui du
+domaine de définition.  La valeur \texttt{k\_among\_n \(k\) \(n\)} n'est bien
+définie que si \(n\) et \(k\) sont des nombres naturels, et \(k \leq n\).
+Le deuxième problème est que la valeur obtenue n'est pas visiblement
+entière.
+
+Pour montrer que la valeur est bien entière, nous pouvons montrer les
+différents lemmes suivants:
+\begin{verbatim}
+zero_among_n : forall n, Rnat n -> k_among_n 0 n = 1
+
+n_among_n : forall n, Rnat n -> k_among_n n n = 1
+
+k_among_n_suc k n : Rnat k -> Rnat n -> k < n ->
+   k_among_n (k + 1) (n + 1) = k_among_n k n + k_among_n (k + 1) n
+\end{verbatim}
+Ces lemmes sont très similaires aux règle de réduction donnée pour
+la définition de la fonction \texttt{binomial} par récursion sur le type
+inductif \texttt{nat} comme on le trouve dans la bibliothèque
+\mathcomp{}.
+
 \section{Conditions générales JFLA}
-%
-En particulier, l'usage de paquets comme~\texttt{times}
-ou~\texttt{libertine} est interdit.
-%
-Modifier les paramètres typographiques qui régissent l'apparence du code
-informatique ou des formules mathématiques pour faire tenir un contenu trop
-dense dans une zone trop étroite est également de mauvais aloi.
-
-L'usage des commandes de positionnement et d'espacement explicites,
-notamment~\cmd{vspace} et ses cousines, doit être minimisé.
-%
-La commande~\cmd{sloppy} ne doit être utilisée qu'en ultime recours,
-lorsqu'aucune reformulation du texte n'est possible.
-
-L'option~\texttt{draft} doit impérativement être utilisée lors de la production
-de la version soumise pour relecture.
-%
-Elle devra être remplacée par l'option~\texttt{final} pour la version finale.
-
-\section{Options de la classe}
-
-\paragraph{Option~\texttt{english}.}
-
-La classe suppose par défaut un article rédigé en langue française.
-%
-Cette option est à utiliser si l'article est rédigé en langue anglaise.
-
-\paragraph{Option~\texttt{draft}.}
-
-Cette option rajoute les numéros de lignes dans la marge.
-
-\paragraph{Option~\texttt{final}.}
-
-L'option~\texttt{final} prépare l'article à l'inclusion dans les actes de la
-conférence.
-
-\section{Paquets chargés par défaut}
-
-La classe~\texttt{jflart.cls} charge un certain nombre de paquets par défaut.
-%
-\begin{itemize}
-\item
-  %
-  Le paquet~\texttt{babel} pour la prise en charge de la langue française ou
-  anglaise.
-
-\item
-  %
-  Les paquets~\texttt{color} et~\texttt{graphicx}, pour permettre l'usage de
-  couleurs et l'inclusion d'images.
-
-\item
-  %
-  Le paquet~\texttt{hyperref}, pour l'ajout des hyperliens.
-  %
-  Ceux-ci, par défaut, ne sont pas mis en surbrillance afin de préserver le gris
-  typographique du texte.
-
-\item
-  %
-  Les paquets de l'\emph{American Mathematical Society}, à
-  savoir~\texttt{amsmath}, \texttt{amssymb} et~\texttt{amsthm}.
-  %
-  Nous recommandons vivement l'usage des environnements proposés par ces paquets
-  pour énoncer théorèmes, lemmes et définitions (voir plus bas), ainsi que pour
-  aligner d'éventuelles équations et
-  formules~(environnements~\texttt{align},~\texttt{aligned},~\texttt{cases},
-  etc.).
-
-\item
-  %
-  Le paquet~\texttt{marthpartir} de D.~Rémy, qui propose un support natif pour
-  les mathématiques en mode paragraphe ainsi qu'une commande pour les règles
-  d'inférence.
-
-\end{itemize}
-
-\section{Divers}
-
-\subsection{Figures}
-
-\begin{figure}
-  \centering
-  \includegraphics[width=.8\linewidth]{jfla.jpg}
-  \caption{Les JFLA 2002, photographie par Maxence Guesdon}
-  \label{fig:bienbelle}
-\end{figure}
-
-L'usage de~\texttt{includegraphics} avec une option~\texttt{width} permet une
-utilisation facile d'images, comme illustré par la figure~\ref{fig:bienbelle}.
-
-\subsection{Mathématiques}
-
-Les environnements suivants ont été prédéfinis via le paquet~\texttt{amsthm}.
-
-\begin{center}
-  \begin{tabular}{lll}
-    Environnement & Nom français & Nom anglais
-    \\
-    \hline
-    \texttt{theo} & Théorème & \emph{Theorem}
-    \\
-    \texttt{prop} & Proposition & \emph{Proposition}
-    \\
-    \texttt{conj} & Conjecture & \emph{Conjecture}
-    \\
-    \texttt{coro} & Corollaire & \emph{Corollary}
-    \\
-    \texttt{lemm} & Lemme & \emph{Lemma}
-    \\
-    \texttt{defi} & Définition & \emph{Definition}
-    \\
-    \texttt{rema} & Remarque & \emph{Remark}
-    \\
-    \texttt{exem} & Exemple & \emph{Example}
-  \end{tabular}
-\end{center}
-
-\subsection{Code source}
-
-La classe~\texttt{jflart.cls} ne propose pas de paquet pour la coloration
-syntaxique par défaut.
-%
-Les paquets~\texttt{listings} et~\texttt{minted} sont les plus fréquemment
-utilisés.
 
 \subsection{Bibliographie}
 
