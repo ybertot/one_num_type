@@ -33,19 +33,17 @@
   remettre en question l'approche répandue qui consiste à introduire
   d'abord les nombres naturels, puis d'autres types de nombres.
 
-  Nous explorons une approche ou le type des nombres réels est le seul type
+  Nous explorons une approche où le type des nombres réels est le seul type
   utilisé pour toutes les définitions concernant des nombres.  Ceci nous oblige
   à reconsidérer les outils fournis pour définir des fonctions (en particulier
   la récursion), et pour calculer avec ces fonctions.
-  L'une de ces caractéristiques de ce travail est de redonner de la place à
-  la notion d'ensemble dans l'univers de travail.
+  L'une des caractéristiques de ce travail est de redonner de la place à
+  la notion d'ensemble.
 
   Nous illustrons cette approche avec quelques exercices mêlant suites
   récurrentes et nombres réels, où la facilité à manipuler ensemble des nombres
   habituellement séparés dans des types distincts permet des expérimentations
   enrichissantes pour les étudiants.
-
-  L'approche a également des limites que nous tentons de décrire.
 \end{abstract}
 
 \section{Introduction}
@@ -59,10 +57,9 @@ pour justifier la correction de logiciels.  Par exemple, les
 primitives cryptographiques peuvent reposer sur des propriétés
 mathématiques d'objets remarquables comme des courbes elliptiques et
 la spécification même de la correction de tels algorithmes peut
-reposer sur le concept de probabilité pour un attaquant de contourner
-la protection fournie par l'algorithme.
+reposer sur le concept de mathématique de probabilité.
 
-Historiquement, pratiquement tous systèmes de preuve basés sur la
+Historiquement, pratiquement tous les systèmes de preuve basés sur la
 théorie des types ont commencé
 par décrire les entiers naturels, en spécifiant un type pour cette
 catégorie de nombres, puis d'autres types de nombres sont ajoutés au
@@ -74,14 +71,10 @@ disponible.  C'est le cas dans le système Rocq
 cette expérience.
 
 Dans les systèmes basés sur la théorie des types avec des types
-inductives, comme Agda, Rocq, ou Lean, la situation est renforcée par
+inductifs, comme Agda, Rocq, ou Lean, la situation est renforcée par
 le fait que les entiers naturels se décrivent très bien comme un type
-inductif.  Cette approche permet de mettre en œuvre des techniques
-générales pour disposer de capacités de calcul relativement efficaces.
-Ainsi, le calcul d'une expression numérique est fourni directement par
-un mécanisme interne appelé conversion, qui permet de remplacer par
-une étape de raisonnement des opérations qui seraient représentées par
-un grand nombre de pas de réécriture dans d'autres systèmes de preuve.
+inductif.  Cette approche permet de disposer de capacités de calcul
+relativement efficaces.
 
 Lorsque l'on fait des mathématiques plus avancées, on est amené à
 utiliser d'autres types de nombres, en particulier une grande partie
@@ -93,18 +86,7 @@ formules où nombres naturels et nombre réels se côtoient.
 
 L'essor des systèmes de preuve interactifs est tel que l'on peut
 maintenant s'interroger sur leur apport dans l'enseignement des
-mathématiques.  L'apprentissage des mathématiques contient plusieurs
-aspects.  Dans les premières étapes, l'étudiant doit apprendre à
-calculer.  Pendant des générations, les élèves ont dû apprendre à
-maîtriser les algorithmes d'addition, de multiplication, et de
-division pour les nombres décimaux avec partie factionnaire.  Cet
-apprentissage a été remis en question dans les dernières décennies à
-cause de l'apparition des machines à calculer.  L'un des effets de
-bord de cette apparition est que les moins courageux des élèves sont
-enclins à refuser de s'investir dans cet apprentissage, parce que
-l'existence des machines calculés rend se savoir-faire inutile.
-
-Dans une deuxième étape, l'étudiant en mathématique doit apprendre à
+mathématiques.  En particulier, l'étudiante en mathématique doit apprendre à
 raisonner.  Pour raisonner, il faut savoir appliquer des
 syllogismes, faire la différence entre les hypothèses et la conclusion
 d'une phrase, comprendre des phrases énonçant l'existence d'un objet
@@ -116,8 +98,8 @@ une langue étrangère.  Il faut pratiquer cette langue étrangère
 fréquemment pour progresser.  En particulier, il faut apprendre à décrire
 des raisonnements en suivant correctement les implications fournies par
 les théorèmes fournis, et en faisant correctement les transformations
-de formules permises par les égalités connues.  En fin de compte,
-l'apprentissage est réussi si l'étudiant est capable de faire un
+de formules permises par les égalités prouvées.  En fin de compte,
+l'apprentissage est réussi si l'étudiante est capable de faire un
 raisonnement qui sera considéré comme correct par une lectrice humaine.
 En d'autres termes, il s'agit d'apprendre le langage qui permet de
 s'inclure dans la communauté humaine des mathématiciens.
@@ -127,27 +109,26 @@ les étapes de raisonnement sont effectuées correctement.  Il est donc
 naturel de vouloir explorer l'utilisation d'un tel système de preuve
 pour l'enseignement des mathématiques.  En revanche, il faut éviter
 que ce nouvel outil impose une charge d'apprentissage supplémentaire,
-et finalement contre-productive si l'étudiant passe trop de temps à
-s'adapter au système de preuve, comme une informaticienne apprend un
-langage de programmation, mais n'a plus le temps d'apprendre les
+contre-productive si l'étudiant passe trop de temps à
+s'adapter au système de preuve mais n'a plus le temps d'apprendre les
 concepts mathématiques de son cursus.  Il faut éviter que le langage
 mathématique imposé par le système de preuve soit trop éloigné du
 langage usuel pour le niveau d'apprentissage de l'étudiant.
 
 Les nombres naturels, tels que manipulés dans les systèmes de preuve,
 sont fournis comme un type inductif.  La théorie des types inductifs
-fournit la possibilité de définir des fonctions, de telle que sorte
+fournit la possibilité de définir des fonctions par cas et par
+récurrence de telle que sorte
 que les opérations de base peuvent être définies, comme l'addition et
-la multiplication.  On peut également envisager la soustraction et la
-division, mais c'est un point où apparaît une dissonance entre les
+la multiplication et la soustraction.  Mais pour la soustraction
+il apparaît une dissonance entre les
 mathématiques telle qu'elles apparaissent dans le système de preuve et
-dans la tradition humaine.  Pour pouvoir composer les opérations à
-l'envi, il est préférable que le résultat d'une soustraction de deux
-nombres naturels soit un nombre naturel, le système de preuve impose
+dans la tradition humaine.  Le système de preuve impose
 que la fonction soit totale, donc le concepteur de la bibliothèque est
-obligé de donner une valeur à la formule \(3 - 5\).  Le choix fait
+obligé de donner aux formules où le deuxième argument est supérieur au
+premier, comme \(3 - 5\).  Le choix fait
 dans tous les systèmes de preuve est que le résultat est le nombre
-\(0\), parce que l'autre valeur envisageable \(-2\) n'est pas un
+\(0\), parce que la valeur réelle ou entière relative n'est pas un
 entier naturel.
 
 La tradition des mathématiques et d'associer à chaque fonction son
@@ -155,8 +136,8 @@ domaine de définition.  Lorsque l'on écrit une formule composée, on
 doit expliciter le fait que toutes les fonctions sont bien utilisées
 dans leur domaine de définition.  La tradition des mathématiques
 formalisées en théorie des types est que toute fonction doit être
-totale.  Les fonctions donc généralement prolongées avec une valeur
-par défaut aux endroits ou leur correspondantes traditionnelles sont
+totale.  Les fonctions sont donc généralement prolongées avec une valeur
+par défaut aux endroits où elles devraient être
 non définies.  La modélisation reste fidèle dans la mesure où les
 théorèmes qui permettent de raisonner sur la fonction utilisent
 généralement l'appartenance des arguments au domaine de définition
@@ -172,7 +153,7 @@ forall m n, n <= m -> (m - n) + n = m
 Ainsi, la condition de bonne formation de la formule n'est pas
 vérifiée a priori, mais uniquement au moment où l'on veut exploiter
 les propriétés de cette fonction de soustraction.  Les bonnes
-vérifications sont faites, mais au bon moment.
+vérifications sont faites, mais à un moment différent.
 
 Il reste que l'utilisatrice finale doit mémoriser le fait que
 lorsqu'elle voit l'opération \(m - n\) dans une formule mathématique,
@@ -192,7 +173,7 @@ naturels.  Par exemple, la formule suivante est une formule évidente à
 l'œil nu que cette tactique ne sait pas résoudre.
 \[(n + m - (m + n)) * n = 0\]
 
-Quand on avance dans les mathématiques, on est de toutes façon amené à
+Quand on avance dans les mathématiques, on est de toutes façons amené à
 étudier des ensembles de nombres plus riches que l'ensemble des
 entiers naturels.  Par exemple, si l'on considère la suite de
 Fibonacci \({\mathcal F}\), définie par les équations suivantes:
@@ -222,40 +203,25 @@ logiques, sans modifier le cadre de travail; les faits utilisés
 restent proches de la théorie des types traditionnelle et reposent sur
 plusieurs types de nombres.
 
-Au fur et à mesure que les étudiants acquièrent la maîtrise des
-mathématiques et potentiellement des systèmes de preuve interactifs,
-il est probablement justifié de revenir à la présentation usuelle des
-nombres, reposant sur plusieurs types.  En particulier, nous verrons
-que les types inductifs de nombre jouent un rôle crucial dans
-l'implémentation des différents fonctionnalités que nous proposons.
-
 Dans notre bibliothèque, les nombres naturels sont présents, mais
 présentés comme un sous-ensemble des nombres réels.  De même nous
-fournissons un ensemble des nombres entiers (et dans une version plus
-complète de la librairie, nous proposerons certainement aussi un
-ensemble des nombres rationnels).  L'ensemble des nombres naturels est
+fournissons un ensemble des nombres entiers.  L'ensemble des
+nombres naturels est
 décrit par un prédicat inductif de type \({\mathbb R} \rightarrow
 {\mathbb Prop}\).  Ceci nous permet de bénéficier directement des
 fonctionnalités existantes pour les preuves par récurrence.  En
 revanche, cette approche ne nous permet pas de définir des fonctions
 récursives sur les entiers naturels.  Nous fournissons une commande
 pour remplir cette lacune, et nous montrons sur quelques exemples que
-cette commande de retrouver la capacité de raisonner sur des suites
-récurrentes, un sujet qui est souvent abordé dans les premiers de
+cette commande permet de retrouver la capacité de raisonner sur des suites
+récurrentes, un sujet qui est souvent abordé dans les premiers
 cours de mathématiques.
 
-Dans un premier temps, nous décrirons les grandes lignes d'implémentation des
-différentes commandes que nous fournissons pour donner au type des
-nombres réels plusieurs des fonctionnalités qui étaient normalement
-réservées aux types inductifs, nous donnons quelques exemples qui
-illustrent les gains que permettent cette approche, en terme de
+Nous décrirons les grandes lignes d'implémentation des
+différentes commandes que nous fournissons, nous donnons quelques exemples qui
+illustrent les gains que permettent cette approche, en termes de
 simplicité d'utilisation pour un étudiant découvrant à la fois les
 mathématiques et les systèmes de preuve interactifs.
-
-Ensuite nous montrerons comment quelques exercices de mathématiques
-peuvent être réalisés dans ce cadre, en soulignant comment cette
-approche permet aux étudiants de rester proches de l'univers
-mathématiques qui devrait leur être familier.
 
 Les expériences décrites dans cet article sont visibles sur le site
 suivant:
@@ -264,15 +230,14 @@ suivant:
 
 
 \section{Décrire des sous-ensembles des nombres réels}
-Dans le système de preuve, l'ensemble des nombres réels \(\mathcal R\)
+Dans le système de preuve, l'ensemble des nombres réels \(\mathbb R\)
 est représenté par un type dénoté \texttt{R}.  Les opérations usuelles
 sur les nombres sont représentées par des fonctions \texttt{+}, \texttt{-},
 \texttt{*}, \texttt{/}.  Les constantes entières de type \texttt{R} s'écrivent
 directement dans leur représentation décimale.  De cette manière, une
-utilisatrice finale peut se contenter d'écrire le texte suivant:
-\begin{verbatim}
-3 - 5 * 2
-\end{verbatim}
+utilisatrice finale peut se contenter écrire la formule suivante
+\texttt{3 - 5 * 2}.
+
 Nous reviendrons plus tard sur le dispositif qui permet cette
 utilisation de notations décimales, car il repose sur des nombres
 entiers dans un type distinct, d'une façon dont l'utilisatrice ne
@@ -285,11 +250,11 @@ telle sorte que l'on écrit \texttt{Rnat n} pour exprimer que \texttt{n} est
 dans l'ensemble \texttt{Rnat}.  Le système de preuve est basé sur la
 théorie des types, donc cette fonction doit avoir un type de départ
 (où elle prend ses arguments).  Ici, nous considérons des
-sous-ensembles de \(\mathcal R\) donc la fonction a le type \texttt{R ->
+sous-ensembles de \(\mathbb R\) donc la fonction a le type \texttt{R ->
   Prop}.
 
 Les nombres naturels peuvent être décrits comme le sous-ensemble
-minimal de \(\mathcal R\) qui contient \(0\) et qui est stable par
+minimal de \(\mathbb R\) qui contient \(0\) et qui est stable par
 l'opération d'ajouter \(1\).  Le fait que l'ensemble considéré soit
 minimal donne naturellement l'existence d'un principe de récurrence
 qui s'énonce de la façon suivante: {\em toute propriété qui est vraie
@@ -327,16 +292,14 @@ la soustraction.
 
 L'utilisatrice finale ne sera probablement pas amenée à utiliser le
 principe de récurrence associé à la définition inductive \texttt{Rint}.
-En revanche les preuves par récurrences usuelles d'un cours de
+En revanche les preuves par récurrence usuelles d'un cours de
 mathématiques seront habituellement faisable directement avec le
 principe de récurrence associé avec \texttt{Rnat}.
 
-Enfin, l'utilisatrice finale ne devra pas le voir, mais en revanche
-l'éducatrice ou la personne en charge de développer la bibliothèque
-fournie à l'utilisatrice finale pourra avoir besoin d'établir une
+Enfin, l'utilisatrice finale ne devra pas le voir,
+mais pour nos développements, nous aurons besoin d'une
 correspondance entre l'ensemble \texttt{Rnat} et le type inductif
-\texttt{nat}.  Nous aurons besoin de cette correspondance pour définir des
-suites récurrentes de nombres réels.
+\texttt{nat}.
 
 La bibliothèque standard des nombres réels de Rocq fournit une fonction
 récursive \texttt{INR} de type \texttt{nat -> R}.  Cette fonction est
@@ -350,7 +313,8 @@ Rnat_exists_nat x {xnat : Rnat x} :
   exists n, x = IZR (Z.of_nat n).
 \end{verbatim}
 
-Les différents théorèmes de stabilité de l'ensemble des nombres naturels
+Les différents théorèmes exprimant que l'ensemble des nombres naturels
+est stable pour les opérations \texttt{+}, \texttt{*}, \texttt{Rabs},
 sont déclarés comme des instances de classes de types, de telle sorte que
 les preuves qu'une formule mathématique est bien un nombre naturel peuvent
 souvent être effectuées automatiquement.
@@ -370,17 +334,17 @@ L'une des caractéristiques essentielles des types inductifs dans les
 systèmes de preuve est qu'ils permettent de définir des fonctions
 récursives.  En décidant de représenter tous les nombres utilisés dans
 le discours mathématique par des nombres réels, nous perdons cette
-caractéristiques, parce que les nombres réels ne sont pas définis par
+caractéristique, parce que les nombres réels ne sont pas définis par
 un type inductif (et ils ne peuvent pas l'être).
 
 Pour remédier à cela, nous fournissons une commande qui permet de
 définir des fonctions de \texttt{R} dans \texttt{R} de telle sorte que leur
 valeur est spécifiée précisément pour tous les nombres naturels par un
 procédé récursif et {\em indéfinie} ailleurs.  Cet usage de valeurs
-indéfinie est très similaire à ce qui se produit pour l'inverse, dont
-la valeur n'est pas définie en 0.  Pour des commodités d'écriture,
-l'inverse de 0 peut être manipulé comme un nombre réel, mais aucune
-propriété ne peut obtenue pour ce nombre réel.
+indéfinies est très similaire à ce qui se produit déjà pour l'inverse, dont
+la valeur n'est pas définie en 0.  
+L'inverse de 0 peut être manipulé comme un nombre réel, mais aucune
+propriété ne peut obtenue par preuve pour ce nombre.
 
 Donnons un exemple de définition obtenue par notre commande:
 \begin{verbatim}
@@ -390,28 +354,30 @@ Recursive (def factorial such that factorial 0 = 1 /\
 À l'exécution de cette commande, deux nouveaux objets Rocq sont
 engendrés, le premier est une fonction nommée \texttt{factorial} de
 type \texttt{R -> R} et le
-deuxième est un théorème appelé \texttt{factorial\_eqn}
-qui reprend exactement la conjonction décrite ci-dessus.  Ce théorème
-est la preuve que la fonction \texttt{factorial} satisfait bien la
-spécification donnée par l'utilisateur.
+deuxième est un théorème appelé \texttt{factorial\_eqn} dont l'énoncé
+est exactement la conjonction décrite ci-dessus.
 
 Il est évident que la spécification donnée ci-dessus ne permet pas de
 décrire la valeur de \texttt{factorial} pour l'entrée \texttt{0.5}.
 En revanche, elle permet bien d'obtenir le résultat que
 \texttt{factorial 3} est égal à \texttt{6}, en reposant sur plusieurs
-appels au deuxième membre de la conjonction, et à aux preuves que
+réécritures avec le deuxième membre de la conjonction, aux preuves que
 \texttt{3 - 1}, \texttt{3 - 1 - 1}, \texttt{3 - 1 - 1 - 1} sont des
 nombres naturels, et à la vérification que \texttt{3 * (3 - 1) * (3 -
   1 - 1) * (3 - 1 - 1 - 1) = 6}.  Cette égalité est prouvée en une
 seule étape par la tactique \texttt{ring}, parce que les nombres
 considérés sont des nombres réels et la tactique \texttt{ring} n'a pas de
-restriction vis-à-vis de la soustraction pour ce type de nombres.
+restriction vis-à-vis de la soustraction pour ce type de nombres.  La
+tactique \texttt{ring} permet également de remplacer
+\texttt{3 - 1}, \texttt{3 - 1 - 1}, \texttt{3 - 1 - 1 - 1} par
+\texttt{2}, \texttt{1}, \texttt{0},
+respectively, et la preuve que ces nombres sont dans \texttt{Rnat} est
+automatique.
 
-La commande de définition de suite récurrentes que nous avons conçue permet
+La commande permet
 également de définir des suites récurrentes d'ordre arbitrairement élevé
 (mais fini).  Par exemple,  la suite de Fibonacci peut se définir de la façon
 suivante (nous nommons la fonction \texttt{fib} pour gagner de la place).
-
 \begin{verbatim}
 Recursive (def fib such that
     fib 0 = 0 /\
@@ -419,10 +385,8 @@ Recursive (def fib such that
     forall n : R, Rnat (n - 2) ->
     fib n = fib (n - 2) + fib (n - 1)).
 \end{verbatim}
-La personne qui définit une nouvelle fonction récursive peut donc
-mettre autant de cas de base qu'elle le désire, et une spécification
-quantifiée universellement qui utilise un nombre de valeurs
-précédentes égal au nombre de valeurs de base.
+Cette définition a deux cas de base, et la valeur générale pour
+\texttt{n} plus grand que \texttt{1} utilise deux valeurs précédentes.
 
 \subsection{Techniques d'implémentation}
 Ce que nous allons décrire dans cette section est la méthode que nous avons
@@ -436,39 +400,40 @@ naturel.
 
 Puisque l'utilisatrice finale ne voit pas ce code, nous avons le droit
 d'utiliser les nombres naturels, et nous pouvons utiliser un outil de
-méta-programmation pour manipuler la spécification fournie par
-l'utilisateur et construire une définition répondant à la
-spécification.
+méta-programmation pour manipuler la spécification
+et construire une définition qui la satisfait.
 
 \subsubsection{Forme des spécifications récursives}
 Notre commande prend en argument un nom de fonction, disons \texttt{f},
-à définir et une
+et une
 proposition qui spécifie le comportement de cette fonction.  Le nom de
-la variable est donc lié dans la spécification, car au moment où la
-fonction est appelée, la fonction n'est pas encore définie.  Notre
+la variable est donc lié dans la spécification.  Notre
 commande n'accepte que des spécifications qui respectent une forme
 syntaxique très précise: il doit s'agir d'une conjonction, dont les
-membres sont de deux formes différentes.  La première forme spécifie
+membres sont de deux formes différentes.
+
+La première forme spécifie
 les valeurs pour les constantes \(0\), jusqu'à \(k - 1\).  La forme
 syntaxique doit donc être \texttt{f i = V}.  Dans la suite, nous
 appellerons ce nombre \(k\) {\em l'ordre de la récursion}.
+
 La deuxième forme possible
 pour un membre est une quantification universelle sur une variable,
 disons \texttt{n}, le corps doit être une implication, dont la prémisse
-est \texttt{Rnat (n - k)}, la conclusion de cette implication doit être
+est \texttt{Rnat (n - \(k\))}, la conclusion de cette implication doit être
 une égalité de la forme \texttt{f n = B}.  La formule \texttt{B} doit être
 une expression bien typée dans le contexte où \texttt{f} est une fonction
-de type \texttt{R -> R}.  Nous appellerons cette formule \texttt{B} {\em le
-  corps du pas récursif}.
+de type \texttt{R -> R} et \texttt{n} est un nombre de type \texttt{R}.
+Nous appellerons cette formule \texttt{B} {\em le corps du pas récursif}.
 Ce corps peut contenir des appels récursifs de
-la forme \texttt{f (n - i)} où \texttt{i} est une constant entière comprise
-  entre \texttt{1} et \texttt{k}.  Il doit y avoir un seul membre de la
+la forme \texttt{f (n - \(i\))} où \(i\) est une constant entière comprise
+  entre \texttt{1} et \(k\).  Il doit y avoir un seul membre de la
   conjonction avec cette deuxième forme.
 
 \subsubsection{Analyse des spécifications}
 Un premier parcours récursif de la spécification, paramétré par
 \texttt{f}, permet de retrouver l'ensemble des membres de la première forme
-et de construire une liste de paires \(i, v_i\) où les \(i\) sont des
+et de construire une liste de paires \((i, v_i)\) où les \(i\) sont des
 constantes entières supérieures égale à 0 et les \(v_i\) sont les
 termes représentant les valeurs spécifiées pour \(\texttt{f}~i\).  Cette
 liste est triée, et on vérifie qu'il n'y a ni duplications ni manques.
@@ -481,7 +446,7 @@ Un deuxième parcours de la spécification permet de trouver le seul
 membre qui est une quantification universelle sur une valeur \texttt{n}.
 Un parcours récursif du membre droit \texttt{B} de l'égalité en conclusion de
 ce membre droit, paramétré par \texttt{f} et \texttt{n}  permet de retrouver
-l'ensemble des sous-termes de la forme \texttt{f (n - i)} et de
+l'ensemble des sous-termes de la forme \texttt{f (n - \(i\))} et de
 construire la liste des valeurs \(i\), que nous appellerons {\em la liste des
 décalages d'appels récursifs}.  Pour cette liste, il n'est
 pas nécessaire de montrer l'absence de duplications, mais il est
@@ -504,7 +469,7 @@ la liste des décalages d'appels récursifs est \texttt{[2,1]}.
 \subsubsection{Utilisation du type \texttt{nat} et son récurseur}
 L'implémentation repose sur le récurseur fourni pour le type
 \texttt{nat}.  Nous allons définir une fonction de type \texttt{nat -> list
-  R}, avec l'intention que la liste retournée pour l'entrée \texttt{n},
+  R}, avec l'intention que la liste retournée pour l'entrée \texttt{n}
 contienne les valeurs \texttt{f n}, \texttt{f (n + 1)} \dots
 \texttt{f (n + \(k - 1\))}, où \(k\) est l'ordre de la récursion.
 
@@ -514,18 +479,21 @@ Le récurseur pour le type \texttt{nat} est une fonction appelée
 nat_rect : forall (A : nat -> Type) (Init : A 0)
   (step : forall n, A n -> A (n + 1)) (n : nat), A n
 \end{verbatim}
-Dans notre cas, nous utiliseront \texttt{nat\_rect} de façon non
-dépendante, avec \texttt{A = fun \_ => list R}, de telle sorte la
+Dans notre cas, nous utiliserons \texttt{nat\_rect} de façon non
+dépendante, en instanciant \texttt{A} avec \texttt{fun \_ => list R},
+de telle sorte la
 valeurs \texttt{Init} devra être de type \texttt{list R} et \texttt{step} devra
 être de type \texttt{nat -> list R -> list R}.  La fonction \texttt{step} a
 pour objectif d'expliquer comment construire la valeur retournée pour
 \texttt{n + 1}, lorsque l'on connaît la valeur de \texttt{n} (reçue en argument)
-et la valeur déjà calculée pour \texttt{n}.  La fonction \texttt{step} commencera
+et la valeur déjà calculée pour \texttt{n} (également reçue en
+argument).
+La fonction \texttt{step} commencera
 toujours par une abstraction de la forme \texttt{fun n (l : list R) => ...}.
 
 Rappelons ici que la bibliothèque standard de Rocq contient une
 fonction \texttt{nth} qui permet de retourner le \(n\)ième élément d'une
-liste une valeur par défaut si la liste a moins de \(n\) éléments.  Il
+liste ou une valeur par défaut si la liste a moins de \(n\) éléments.  Il
 y a aussi une fonction \texttt{INR} qui envoie tout nombre naturel vers
 le nombre \texttt{R} qui lui correspond.
 
@@ -544,8 +512,8 @@ n * factorial (n - 1)
 
 Pour la suite de Fibonacci, , la liste retournée doit
 contenir \texttt{fib (n + 1)} et \texttt{fib (n + 2)}.
-La liste reçue en argument contient la valeur pour \texttt{fib
-    n} et la valeur pour \texttt{fib (n + 1)}.  Le premier
+La liste reçue en argument contient \texttt{fib
+    n} et \texttt{fib (n + 1)}.  Le premier
 élément de la liste retournée est tout simplement le deuxième élément
 de la liste reçue en argument, ce qui s'écrit \texttt{nth 1\%nat l 0}.
 Le deuxième élément de la liste retournée n'est pas présent dans la
@@ -575,11 +543,13 @@ jusqu'à \(k - 1\)
   être remplacée par \texttt{INR n + \(k\)}.
 \end{itemize}
 Il faut noter qu'après les modifications au corps du pas de récursif,
-il ne doit plus rester d'instance de la fonction définie \texttt{f}.  Par
+il ne doit plus rester d'instance de la fonction en cours de
+définition \texttt{f}.  Par
 ailleurs, dans la spécification \texttt{n} a le type \texttt{R}, mais dans
 la fonction \texttt{step}, \texttt{n} a le type \texttt{nat}, c'est pourquoi la
 fonction \texttt{INR} doit être utilisée.  Il est aussi remarquable qu'à
-l'endroit où le corps du pas récursif est utilisé, on est en train de
+l'endroit où une copie modifiée du corps du pas récursif est utilisé,
+on est en train de
 définir la valeur pour \texttt{f (n + \(k\))}.
 
 \subsubsection{méta-programmation en \texttt{Elpi}}
@@ -614,7 +584,8 @@ ce texte, et le point d'exclamation \texttt{!}, exprime que dès que le
 motif est reconnu, il ne doit pas y avoir de retour arrière dans l'exécution.
 
 La ligne de rang 7 décrit comment les instances restantes de \texttt{N} seront
-remplacées par \texttt{N\_plus\_Order}.
+remplacées par \texttt{N\_plus\_Order}, la valeur de
+\texttt{N\_plus\_Order} ayant été calculée une fois pour toute auparavant.
 \begin{verbatim}
       ((pi I I' In In' \ copy {{lp:F (lp:N - lp:I)}}
          {{nth lp:I' lp:L 0}} :-
@@ -626,8 +597,9 @@ remplacées par \texttt{N\_plus\_Order}.
     copy RHS (RHS' L)),
 \end{verbatim}
 Lorsque ce code est exécuté, le terme dans la variable \texttt{RHS} est copié
-dans la variable le terme \texttt{(RHS' L)}.  La variable \texttt{RHS'} est ensuite
-obtenu en {\em abstrayant} par rapport au terme \texttt{L}, ce qui facilitera
+dans le terme \texttt{(RHS' L)}.  La valeur de la variable
+\texttt{RHS'} est ensuite
+obtenue en {\em abstrayant} par rapport au terme \texttt{L}, ce qui facilitera
 la construction d'une \(\lambda\)-abstraction liant la variable \texttt{l}.
 
 Ce fragment permet également d'illustrer la fonctionnalité de {\em
@@ -636,7 +608,7 @@ syntaxe usuelle de Rocq.  Ici, le terme
 \begin{center}
 \texttt{\{\{lp:F (lp:N -  lp:I)\}\}}
 \end{center}
-permet de décrire la représentation en Elpi d'un terme du
+permet de décrire la représentation en Elpi d'un terme de
 Rocq comportant l'application d'une fonction à une soustraction de
 nombres réels.
 Lorsque la fonction basée sur \texttt{nat\_rect} est finalement
@@ -682,22 +654,22 @@ par le fait que \texttt{field} ne connaît pas la fonction de racine
 carrée.  C'est donc l'utilisateur final qui doit trouver le moyen
 d'éliminer la présence de cette racine dans les formules.
 
-Nous avons donc prouvé l'énoncé suivant:
+Nous avons donc prouvé l'énoncé suivant (où \texttt{phi'} est l'opposé
+de l'inverse de \texttt{phi}).
 \begin{verbatim}
 Lemma Fibonacci_and_golden_ratio n:
     Rnat n -> fib n = (phi ^ n - phi' ^ n)/ sqrt 5.
 \end{verbatim}
-La preuve fait moins de 200 lignes qui sont plus des étapes
-élémentaires envisagée pour des novices, avec des commentaires.
+La preuve fait moins de 200 lignes écrites dans un style accessible à
+des novices, avec des commentaires.
 \subsection{Ajouter des capacités de calcul}
 Pour les utilisateurs confirmés de Rocq, les nombres de types \texttt{nat} ou
-\texttt{Z} ont l'avantage notable que l'on les utiliser pour faire des calculs
+\texttt{Z} ont l'avantage notable que l'on peut
+les utiliser pour faire des calculs
 expérimentaux, surtout les nombres entiers, dont la structure de données
 exploite le codage binaire des nombres et permet donc la représentation
 et le calcul de très grand nombres.  Cette capacité de calcul est perdue pour
-les nombres réels, car certains de ces nombres sont définis de façon inhérente
-comme des limites de processus que l'on ne peut pas aisément décrire en
-un nombre fini d'opération.
+les nombres réels.
 
 Par exemple, la spécification de la fonction \texttt{fib} est
 suffisamment expressive pour prouver la valeur de la fonction sur des
@@ -707,9 +679,11 @@ entrées assez grandes, nous avons fourni deux commandes.
 
 La première de ces commandes s'appelle \texttt{R\_compute} et elle
 permet de demander qu'un calcul soit effectué avec les opérations
-usuelles.  La seconde s'appelle \texttt{mirror\_recursive\_definition}
+usuelles.
+
+La seconde s'appelle \texttt{mirror\_recursive\_definition}
 et permet d'ajouter les fonctions récursives définies par notre
-première commande parmi les fonctions usuelles.
+première commande parmi les fonctions connues par \texttt{R\_compute}.
 
 Nous illustrons la première commande avec cet exemple.
 \begin{verbatim}
@@ -733,9 +707,9 @@ d'addition, multiplication, soustraction, et opposé.  Le principe est
 de faire les calculs dans \texttt{Z} au lieu de les faire dans \texttt{R},
 en utilisant les correspondances prouvées déjà présentes dans la
 bibliothèque de Rocq.  Ainsi la puissance de calcul des nombres
-inductifs est mise en œuvre, mais l'utilisatrice finale ne donne
+inductifs est mise en œuvre, mais l'utilisatrice finale ne donne en
 entrée que des expressions réelles et ne reçoit en sortie que des
-nombres réelles.
+nombres réels.
 
 La deuxième commande s'appelle \texttt{mirror\_recursive\_definition}.
 L'objectif de cette commande est d'ajouter à la commande
@@ -838,7 +812,8 @@ arguments est la suivante:
 
 \begin{verbatim}
 translate_prf (app [F, A, B]) (app [F1, A1, B1])
-  {{private.IZR_map2 lp:F lp:F1 lp:PFF1 lp:A lp:B lp:A1 lp:B1 lp:PFRA lp:PFRB}}
+  {{private.IZR_map2 lp:F lp:F1 lp:PFF1 lp:A lp:B lp:A1 lp:B1
+           lp:PFRA lp:PFRB}}
   :-
   std.do! [
   thm_table F F1 PFF1,
@@ -853,7 +828,7 @@ Cette règle exprime que l'expression où \(F\) est appliquée à \(A\) et
 \(B\) sont traduites respectivement en \(A1\) et \(B1\).  La preuve
 que cette traduction est correcte est composée à l'aide de
  \texttt{private.IZR\_map2}, du théorème de morphisme pour \(F\) et \(F1\),
-ici appelé \(PFF1\), et des preuves pour \(A\) et \(B\).
+ici appelé \texttt{PFF1}, et des preuves pour \(A\) et \(B\).
 
 Lorsque l'on affiche la preuve obtenue pour l'expression \texttt{3 + (5 *
   7)}, on voit donc le texte suivant.
@@ -879,7 +854,8 @@ corps de la fonction \texttt{step} utilisée pour le récurseur
 dans le corps de cette fonction: la variable \(n\) de type \texttt{nat}
 et la variable \(l\) de type \texttt{list R}.  
 
-Nous supposons que la valeur \(n\) est seulement utilisée dans des
+Nous supposons que la valeur \(n\) est seulement utilisée dans les
+appels récursifs et dans des
 appels à \texttt{INR} afin que cette valeur numérique soit utilisée dans
 opérations du type \texttt{R}.  Ces usages de \(n\) doivent être
 remplacés par la valeur \(\texttt{Z.of\_nat}~n\).  Ces remplacements sont
@@ -918,8 +894,8 @@ private.nat_rect_list_IZR
 La cinquième ligne de cet énoncé exprime que l'une des conditions utilisée
 est que la liste initiale de valeur est la même (modulo application
 d'\texttt{IZR}).
-La sixième ligne et la septième ligne exprime que les fonctions
-utilisées pour pour l'étape récursive transforment des les listes
+La sixième et la septième ligne expriment que les fonctions
+utilisées pour l'étape récursive transforment des listes
 égales en des listes égales (à nouveau modulo application
 d'\texttt{IZR}).
 
@@ -930,17 +906,19 @@ l'utilisatrice qui définit cette fonction ait des connaissances
 précises sur l'algorithme et puisse en déduire que la valeur passée
 en argument soit toujours un nombre naturel.  Notre traducteur impose
 que dans ce cas, un appel à la fonction \texttt{Rabs} soit inséré sur
-l'argument de l'appel à cette autre fonction récursive.
+l'argument de l'appel à cette autre fonction récursive.  Si la valeur
+donnée en argument était déjà un nombre naturel, cette fonction
+\texttt{Rabs} la laisse inchangée.
 
 Les fonctions définies par \texttt{nat\_rect} sont essentiellement
 conçues pour recevoir des arguments d type \texttt{nat}, mais les
 fonctions utilisées dans les formules calculées doivent prendre en
 entrée des nombres de \texttt{Z}.  Pour concilier les deux, les fonctions
 que notre commande définit commencent par convertir le nombre entier en
-un nombre naturel en faisant une valeur absolue (mais le maximum
-entre 0 et le nombre en entrée aurait pu fonctionner également).  Au
-final, la correspondance entre le code le calcul en nombre réel et le
-calcul en nombre entier n'est garantie que pour les nombres naturels.
+un nombre naturel en faisant une valeur absolue.  Au
+final, la correspondance entre le calcul en nombre réel et le
+calcul en nombre entier n'est garantie que pour les entrées qui sont
+des nombres naturels.
 La commande \texttt{mirror\_recursive\_definition} créée une nouvelle
 fonction dont le nom est obtenu en accolant le suffixe
 \texttt{\_Z\_mirror} au nom de la fonction donnée en argument et un théorème
@@ -958,6 +936,10 @@ un appel à la valeur absolue sur l'argument de la valeur réelle.
 Puisque \texttt{x} est l'image de \texttt{y} par la fonction \texttt{IZR} nous
 savons que c'est un entier et que \texttt{(Rabs x)} est un nombre
 naturel.
+
+Les fonction \texttt{\(f\)}, \texttt{\(f\)\_Z\_mirror}, et le théorème
+\texttt{\(f\)\_Z\_prf} sont ajoutés dans une autre table de
+correspondance.
 
 Pour accepter quand même des formules dans lesquelles la fonction
 récursive n'est pas appelée sur le résultat d'une valeur absolue, nous
@@ -983,12 +965,12 @@ en incluant la preuve dans le terme en cours au moyen d'une réécriture.
 \section{Séquences d'entiers naturels et grandes opérations}
 Un idiome supplémentaire qui utilise des entiers naturels est celui
 des séquences finies d'objets.  Par exemple, une famille linéaire de
-vecteurs, un vecteur de \texttt{R \^ n}.  Pour rendre ce type d'objets
+vecteurs ou un vecteur de \texttt{R \^{ } n}.  Pour rendre ce type d'objets
 pratique à utiliser, nous proposons d'introduire une fonction avec
 une notation intuitive pour décrire une telle séquence, de fournir
 des notations spécifiques pour une collection d'opérations des listes
 vers les listes, en s'inspirant de la bibliothèque \mathcomp{}
-\cite{MahboubiTass2022} et
+\cite{MahboubiTassi2022} et
 de reposer sur des {\em grandes opérations}, sommes itérées ou
 produits itérés pour les opérations qui demanderaient normalement de
 la programmation récursive.
@@ -1014,11 +996,7 @@ peut bien sûr être définie à l'aide d'un schéma récursif, comme nous le
 faisons précédemment pour les suites récurrentes, mais il s'agit ici
 d'une fonction produisant des listes.
 
-Cette fonction sert à introduire dans notre bibliothèque les usages
-de la fonction \texttt{seq} de la librairie standard des listes et de la
-fonction \texttt{iota} de la librairie \mathcomp{}.  Pour déterminer
-quels théorèmes, doivent être fournis pour décrire le comportement de
-cette fonction, il est important de fournir deux théorèmes exprimant
+Il est important de fournir deux théorèmes exprimant
 le comportement calculatoire de ces fonctions récursives, plus des
 théorèmes de décomposition, exprimés essentiellement à l'aide des
 constructeurs du type des listes et la concaténation.
@@ -1048,23 +1026,6 @@ de \texttt{Rseq} est un entier naturel, alors tous les éléments de la
 séquence sont des entiers naturels (une propriété qui était donnée
 naturellement par le typage sur les entiers naturels).
 
-Il apparaît que les séquences, comme celles produites par
-\texttt{Rseq} sont aussi utilisées comme des ensembles.  En théorie des
-types, beaucoup d'ensembles sont simplement représentés comme des
-types et l'appartenance à ces ensembles est représentée par le typage.
-D'autres ensembles sont présentés comme des sous-ensembles de types à
-l'aide de prédicats, et maintenant nous avons les listes qui sont
-plutôt des ensembles décrits par énumération des éléments.  Dans la
-bibliothèque des listes de Rocq, le prédicat \texttt{In} fournit la
-passerelle pour voir une liste comme un ensemble décrit par un prédicat.
-L'inclusion d'une liste dans un
-ensemble décrit comme un prédicat est fourni par le prédicat
-\texttt{Forall}.  Dans la bibliothèque \mathcomp{}, une notion générique
-de sous-ensembles d'un type est fournie pour que les mêmes notations
-d'appartenance et d'inclusion soient utilisées.  Il serait bon de
-disposer d'un ensemble de notations et d'outils d'élaboration qui
-permettent de manipuler de façon uniforme ces différents point de vues
-sur les ensembles, mais cela dépasse le cadre de cet article.
 \subsection{Grands opérateurs}
 Les grands opérateurs apparaissent fréquemment dans les mathématiques
 sous deux formes.  Soit il s'agit de présentations avec ellipses, où
@@ -1079,9 +1040,8 @@ ressemble à ceci:
 Dans \mathcomp{}, la deuxième présentation est préférée, en utilisant
 des notations qui s'inspirent de ce que l'on doit écrire en \LaTeX{}
 pour obtenir la présentation ci-dessus.  Nous voulons nous inspirer de
-\mathcomp{}, mais en réduisant le nombre de possibilités.  Ce grand
-nombre de possibilités fait la puissance de la bibliothèque, mais il
-est également source de confusion pour les novices.
+\mathcomp{}, mais en réduisant le nombre de possibilités, pour réduire
+aussi les sources de confusion pour les novices.
 
 Nous proposons de réduire l'usage des grands opérateurs aux deux
 opérateurs d'addition (notation \cmd{sum} ou \cmd{prod}).
@@ -1133,12 +1093,11 @@ prédécesseur de \(n\).
 
 La bibliothèque \mathcomp{} est une source très riche de lemmes
 supplémentaires pour effectuer des raisonnements généraux sur les
-opérations itérées.  En particulier, elle exploite la possibilité de
-définir de nouveaux types dépendants pour transporter l'information
-que l'argument de la fonction répétée à chaque itération est un entier
-inférieur à la borne supérieure.  Dans nos expériences préliminaires,
-nous n'avons pas encore mis au point un théorème exprimant cette
-propriété.
+opérations itérées.  En particulier, elle permet de faire des preuves
+où l'on exploite l'information que dans la somme itérée, l'index
+d'itération est compris entre les bonnes de la somme.  Dans nos
+expériences préliminaires, nous n'avons pas encore mis au point un
+théorème exprimant cette propriété.
 
 
 \section{La fonction binomiale}
@@ -1154,6 +1113,8 @@ Cette définition repose sur la définition récursive dans le type
 \texttt{nat} de la fonction factorielle (ici appelée \texttt{fact}, puis
 une coercion dans les nombres réels, puis une division dans le type
 des nombres réels.
+
+La bibliothèque \mathcomp{} utilise plutôt la définition récursive suivante:
 \begin{verbatim}
 Fixpoint binomial n m :=
   match n, m with
@@ -1162,7 +1123,7 @@ Fixpoint binomial n m :=
   | 0, S _ => 0
   end.
 \end{verbatim}
-Le nombre \texttt{binomial n m} est donc une valeur entière, susceptible
+Le nombre \texttt{binomial n m} est donc une valeur entier naturel, susceptible
 d'être injectée dans n'importe quel anneau ou corps grâce à une
 fonction générique qui joue un rôle similaire à \texttt{INR}.
 
@@ -1218,7 +1179,7 @@ inductif \texttt{nat} comme on le trouve dans la bibliothèque
 La multiplicité des points de vue sur la fonction binomiale permet de
 faire de nombreux exercices sur cette fonction.  En particulier, nous
 avons fait quelques essais sur des exercices suggérés par Pierre
-Rousselin et ses collègues.
+Rousselin et ses collègues \cite{RousselinPF24}.
 \section{Travaux similaires et reliés}
 D'autres efforts existent pour rendre les systèmes de preuves basés
 sur la théorie des types pratiques pour l'enseignement.  Waterproof
@@ -1239,7 +1200,7 @@ naturel à la lecture.  En revanche, nous avons volontairement limité
 notre exploration du langage de tactique, justement parce que notre
 intention est de bénéficier de leurs approches.
 
-Pierre Rousselin, David Hamelin et leurs collègues développent
+Pierre Rousselin et ses collègues développent
 également des jeux d'exercices pour apprendre l'utilisation des
 systèmes formelles dans les premières années universitaire
 \cite{RousselinPF24}.  Les
@@ -1250,25 +1211,26 @@ Les systèmes de preuve Mizar \cite{Mizar-beyond2015} et PVS
 \cite{PVS11} fournissent aussi
 la possibilité d'utiliser un seul type de nombre, mais la question ne
 se pose pas avec la même acuité car les frontières entre les types ne
-sont pas aussi contraignante que dans Rocq.
+sont pas aussi contraignantes que dans Rocq.
 
 \section{Conclusion}
 {\em Chassez le naturel, il revient au galop}.  De nombreuses commandes
 et tactiques de Rocq sont conçues dans l'esprit que les nombres naturels
-sont toujours là à disposition des utiisateurs.  Par exemple, la tactique
+sont toujours là à disposition des utilisateurs.  Par exemple, la tactique
 \texttt{ring\_simplify} crée spontanément des puissances où l'exposant est un
 nombre naturel.
 
 Le travail que nous suggérons et commençons dans cet article est de
 faire l'inventaire de tous les endroits où le type des entiers
-naturels est utile, et de tâcher de comprendre si ce type peut être
-enlevé de la présentation des mathématiques.  Cela ne veut pas dire
+naturels est utile, et d'enlever cet usage de la présentation des
+mathématiques.  Cela ne veut pas dire
 que l'on veut faire disparaître le type des entiers naturels de la
 construction des objets sur lesquels nous reposons, mais que chaque
 concept présenté à l'utilisatrice finale doit utiliser les nombres
-réels (et le prédicat \texttt{Rnat}) comme interface.
+réels et le prédicat \texttt{Rnat} comme interface.
 
-Sur le long terme, il est probablement judicieux de réintroduire les
+Plus tard dans le déroulement des cours, il est probablement
+judicieux de réintroduire les
 nombres naturels et les autres types inductifs de nombres dans
 l'espace de travail, de façon à bénéficier directement des bénéfices
 que chacun peut apporter.  Le point de vue de cet article est surtout
@@ -1276,24 +1238,20 @@ d'éviter de surcharger l'utilisateur dans ses premiers pas
 d'apprentissage des mathématiques à l'aide des outils de preuve
 formelle.
 
-Pour rendre faire avancer cet objectif, il est important d'ajouter
+Pour l'objectif d'enseignement, il est important d'ajouter
 plus d'outils pour faciliter les preuves d'appartenance aux
 sous-ensembles choisis.  Il apparait également qu'un travail plus
 systématique devrait être fait pour associer à des fonctions un
 domaine de définition et systématiser les preuves pour vérifier qu'une
 fonction est bien appelée sur un argument dans son domaine de
-définition.  Nous avons vu que pour la fonction qui calcule les
-coefficients binomiaux, ce domaine de définition a une forme particulière.
-
-
-
+définition.
 
 \bibliographystyle{alpha-fr}
 \bibliography{bib}
 
 \end{document}
 
-% LocalWords:  Agda Rocq Lean texttt mathcal sqrt
+% LocalWords:  Agda Rocq Lean texttt sqrt
 % LocalWords:  qquad mathbb rightarrow Prop Rnat em Rint nat INR eqn
 % LocalWords:  factorial fib subsection récurseur list rect Init nth
 % LocalWords:  itemize Elpi -prolog lp IRZ IRN IZR enumerate forall
