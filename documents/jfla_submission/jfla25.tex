@@ -62,13 +62,16 @@ la spécification même de la correction de tels algorithmes peut
 reposer sur le concept de probabilité pour un attaquant de contourner
 la protection fournie par l'algorithme.
 
-Historiquement, pratiquement tous les systèmes de preuve ont commencé
+Historiquement, pratiquement tous systèmes de preuve basés sur la
+théorie des types ont commencé
 par décrire les entiers naturels, en spécifiant un type pour cette
 catégorie de nombres, puis d'autres types de nombres sont ajoutés au
-fur-et-à-mesure que des concepts de plus en plus avancés sont fournis.
+fur et à mesure que des concepts de plus en plus avancés sont fournis.
 Dans la présentation des données fournies aux utilisateurs finaux, ces
 nombres naturels apparaissent donc comme la première donnée
-disponible.
+disponible.  C'est le cas dans le système Rocq
+\cite{the_coq_development_team_2024_11551307} que nous utilisons dans
+cette expérience.
 
 Dans les systèmes basés sur la théorie des types avec des types
 inductives, comme Agda, Rocq, ou Lean, la situation est renforcée par
@@ -124,7 +127,7 @@ les étapes de raisonnement sont effectuées correctement.  Il est donc
 naturel de vouloir explorer l'utilisation d'un tel système de preuve
 pour l'enseignement des mathématiques.  En revanche, il faut éviter
 que ce nouvel outil impose une charge d'apprentissage supplémentaire,
-et finalement contreproductive si l'étudiant passe trop de temps à
+et finalement contre-productive si l'étudiant passe trop de temps à
 s'adapter au système de preuve, comme une informaticienne apprend un
 langage de programmation, mais n'a plus le temps d'apprendre les
 concepts mathématiques de son cursus.  Il faut éviter que le langage
@@ -180,7 +183,7 @@ Le coût pour l'utilisatrice finale n'est pas seulement un coût de
 mémorisation.  Les outils de démonstration (appelés des tactiques)
 fournis dans le système de preuve sont également impactés par la
 présence de cette représentation irrégulière de la soustraction.
-Dans le système Coq, il existe une tactique appelée \texttt{ring}, qui
+Dans le système Rocq, il existe une tactique appelée \texttt{ring}, qui
 est capable de prouver des égalités entre formules polynomiales, en
 exploitant les propriétés des différents opérateurs.  Cette tactique
 est très pratique et son comportement très facile à comprendre, sauf
@@ -253,6 +256,13 @@ Ensuite nous montrerons comment quelques exercices de mathématiques
 peuvent être réalisés dans ce cadre, en soulignant comment cette
 approche permet aux étudiants de rester proches de l'univers
 mathématiques qui devrait leur être familier.
+
+Les expériences décrites dans cet article sont visibles sur le site
+suivant:
+
+\url{https://github.com/ybertot/one_num_type}
+
+
 \section{Décrire des sous-ensembles des nombres réels}
 Dans le système de preuve, l'ensemble des nombres réels \(\mathcal R\)
 est représenté par un type dénoté \texttt{R}.  Les opérations usuelles
@@ -328,7 +338,7 @@ correspondance entre l'ensemble \texttt{Rnat} et le type inductif
 \texttt{nat}.  Nous aurons besoin de cette correspondance pour définir des
 suites récurrentes de nombres réels.
 
-La bibliothèque standard des nombres réels de Coq fournit une fonction
+La bibliothèque standard des nombres réels de Rocq fournit une fonction
 récursive \texttt{INR} de type \texttt{nat -> R}.  Cette fonction est
 définie récursivement, de telle sorte que l'on peut montrer facilement
 que l'image de \texttt{INR} coïncide avec l'ensemble \texttt{Rnat}.  Les
@@ -377,7 +387,7 @@ Donnons un exemple de définition obtenue par notre commande:
 Recursive (def factorial such that factorial 0 = 1 /\
   forall n, Rnat (n - 1) -> factorial n = n * factorial (n - 1)).
 \end{verbatim}
-À l'exécution de cette commande, deux nouveaux objets Coq sont
+À l'exécution de cette commande, deux nouveaux objets Rocq sont
 engendrés, le premier est une fonction nommée \texttt{factorial} de
 type \texttt{R -> R} et le
 deuxième est un théorème appelé \texttt{factorial\_eqn}
@@ -513,7 +523,7 @@ pour objectif d'expliquer comment construire la valeur retournée pour
 et la valeur déjà calculée pour \texttt{n}.  La fonction \texttt{step} commencera
 toujours par une abstraction de la forme \texttt{fun n (l : list R) => ...}.
 
-Rappelons ici que la bibliothèque standard de Coq contient une
+Rappelons ici que la bibliothèque standard de Rocq contient une
 fonction \texttt{nth} qui permet de retourner le \(n\)ième élément d'une
 liste une valeur par défaut si la liste a moins de \(n\) éléments.  Il
 y a aussi une fonction \texttt{INR} qui envoie tout nombre naturel vers
@@ -575,7 +585,7 @@ définir la valeur pour \texttt{f (n + \(k\))}.
 \subsubsection{méta-programmation en \texttt{Elpi}}
 Pour faire les analyses et la génération de code,
 nous utilisons le langage de programmation
-\texttt{Elpi}, fourni comme une extension de Coq.  Ce langage est basé
+\texttt{Elpi}, fourni comme une extension de Rocq.  Ce langage est basé
 sur \(\lambda\)-prolog, étendu avec des techniques de résolution de
 contraintes.  Un point qui rend ce langage particulièrement concis
 pour la conception de notre algorithme est que l'unité de base pour la
@@ -657,8 +667,30 @@ obtenue.  Nous avons écrit une tactique de quelques lignes pour cela
 et la preuve est sauvegardée dans un théorème dont le nom est obtenu
 en ajoutant le suffixe \texttt{\_eqn} au nom de la fonction.
 
+\subsection{Effectuer des preuves avec les fonctions récursives}
+Pour effectuer des preuves sur les fonctions définies par notre
+commande, nous avons deux outils: le principe de récurrence associé au
+prédicat inductif \texttt{Rnat} et la spécification donnée par
+l'utilisateur.  En effet notre commande fournit le théorème qui montre
+que cette fonction satisfait cette spécification.
+
+Pour illustrer l'utilisation de ces outils nous avons pris la
+propriété déjà citée dans cet article, qui relie la suite de Fibonacci
+et le nombre d'or.  Ce travail repose essentiellement sur les
+tactiques \texttt{field} et \texttt{lra}, avec une petite difficulté causée
+par le fait que \texttt{field} ne connaît pas la fonction de racine
+carrée.  C'est donc l'utilisateur final qui doit trouver le moyen
+d'éliminer la présence de cette racine dans les formules.
+
+Nous avons donc prouvé l'énoncé suivant:
+\begin{verbatim}
+Lemma Fibonacci_and_golden_ratio n:
+    Rnat n -> fib n = (phi ^ n - phi' ^ n)/ sqrt 5.
+\end{verbatim}
+La preuve fait moins de 200 lignes qui sont plus des étapes
+élémentaires envisagée pour des novices, avec des commentaires.
 \subsection{Ajouter des capacités de calcul}
-Pour les utilisateurs confirmés de Coq, les nombres de types \texttt{nat} ou
+Pour les utilisateurs confirmés de Rocq, les nombres de types \texttt{nat} ou
 \texttt{Z} ont l'avantage notable que l'on les utiliser pour faire des calculs
 expérimentaux, surtout les nombres entiers, dont la structure de données
 exploite le codage binaire des nombres et permet donc la représentation
@@ -700,7 +732,7 @@ ne fait que des calculs en nombres entiers, pour les opérations
 d'addition, multiplication, soustraction, et opposé.  Le principe est
 de faire les calculs dans \texttt{Z} au lieu de les faire dans \texttt{R},
 en utilisant les correspondances prouvées déjà présentes dans la
-bibliothèque de Coq.  Ainsi la puissance de calcul des nombres
+bibliothèque de Rocq.  Ainsi la puissance de calcul des nombres
 inductifs est mise en œuvre, mais l'utilisatrice finale ne donne
 entrée que des expressions réelles et ne reçoit en sortie que des
 nombres réelles.
@@ -733,7 +765,7 @@ lorsque c'est le cas et aucun théorème n'est engendré.
 
 \subsubsection{Réaliser la capacité de calcul}
 La première chose qu'il est nécessaire de savoir, c'est que les
-nombres réels dans Coq ont déjà une relation privilégiée avec les
+nombres réels dans Rocq ont déjà une relation privilégiée avec les
 nombres entiers.  Toute constante entière qui s'écrit sous forme
 décimale est déjà marquée comme l'application d'une fonction appelée
 \texttt{IZR} sur une constante de type \texttt{Z}.  Cette fonction \texttt{IZR}
@@ -751,12 +783,12 @@ réels (comme \texttt{+}, \texttt{*}, \texttt{-}, \texttt{Rabs}) est remplacée 
 l'opération correspondante sur les entiers.
 \end{itemize}
 Une fois que la formule de type \texttt{Z} est obtenue, il suffit de demander
-son calcul par Coq (on parle aussi de réduction en forme normale).
+son calcul par Rocq (on parle aussi de réduction en forme normale).
 Ce calcul retourne une constante entière \(z\) et le résultat
 affiché est le nombre réel \texttt{IZR \(z\)}, mais en accord avec le
 système de coercion implicite, le symbole \texttt{IZR} n'est pas affiché.
 
-Pour justifier qu'une constante entière de la form \(\texttt{IZR}~v\)
+Pour justifier qu'une constante entière de la forma \(\texttt{IZR}~v\)
 doit être traduite en \(v\), il suffit d'utiliser la réflexivité de
 l'égalité, car dans ce cas la garantie à obtenir est simplement
 \(\texttt{IZR}~v = \texttt{IZR}~v\).
@@ -848,7 +880,7 @@ dans le corps de cette fonction: la variable \(n\) de type \texttt{nat}
 et la variable \(l\) de type \texttt{list R}.  
 
 Nous supposons que la valeur \(n\) est seulement utilisée dans des
-appels à \texttt{INR} afin que cette valeur numérique soit utiisée dans
+appels à \texttt{INR} afin que cette valeur numérique soit utilisée dans
 opérations du type \texttt{R}.  Ces usages de \(n\) doivent être
 remplacés par la valeur \(\texttt{Z.of\_nat}~n\).  Ces remplacements sont
 justifiés par un théorème fourni dans la bibliothèque nommé
@@ -861,7 +893,7 @@ Dans la version actuelle de notre code, nous supposons que la variable \(l\) est
 seulement utilisée dans des appels à la fonction \texttt{nth}.  Pour ces
 appels, le premier argument qui est un entier naturel doit être laissé
 inchangé, la liste \(l\) également, mais le dernier argument, qui
-décrit la valeur par défault qui serait utilisée si le premier
+décrit la valeur par défaut qui serait utilisée si le premier
 argument est supérieur à la longueur de la liste, doit être remplacé
 par une valeur de type \texttt{Z}.
 
@@ -886,12 +918,12 @@ private.nat_rect_list_IZR
 La cinquième ligne de cet énoncé exprime que l'une des conditions utilisée
 est que la liste initiale de valeur est la même (modulo application
 d'\texttt{IZR}).
-La sizième ligne et la septième ligne exprime que les fonctions
+La sixième ligne et la septième ligne exprime que les fonctions
 utilisées pour pour l'étape récursive transforment des les listes
 égales en des listes égales (à nouveau modulo application
 d'\texttt{IZR}).
 
-Une difficulté apparait si la fonction récursive que l'on veut traiter
+Une difficulté apparaît si la fonction récursive que l'on veut traiter
 fait appel à une autre fonction récursive avec un argument qui n'est
 pas de façon évidente un nombre naturel.  Il est possible que
 l'utilisatrice qui définit cette fonction ait des connaissances
@@ -905,7 +937,7 @@ conçues pour recevoir des arguments d type \texttt{nat}, mais les
 fonctions utilisées dans les formules calculées doivent prendre en
 entrée des nombres de \texttt{Z}.  Pour concilier les deux, les fonctions
 que notre commande définit commencent par convertir le nombre entier en
-un nombre naturel en faisant une valeur absolue (mais le maxiumum
+un nombre naturel en faisant une valeur absolue (mais le maximum
 entre 0 et le nombre en entrée aurait pu fonctionner également).  Au
 final, la correspondance entre le code le calcul en nombre réel et le
 calcul en nombre entier n'est garantie que pour les nombres naturels.
@@ -948,14 +980,15 @@ le calcul et le remplacement d'une formule dans un but en cours de
 preuve, sans sauvegarder le théorème d'égalité dans un théorème, mais
 en incluant la preuve dans le terme en cours au moyen d'une réécriture.
 
-\section{Sequences d'entiers naturels et grandes opérations}
+\section{Séquences d'entiers naturels et grandes opérations}
 Un idiome supplémentaire qui utilise des entiers naturels est celui
 des séquences finies d'objets.  Par exemple, une famille linéaire de
 vecteurs, un vecteur de \texttt{R \^ n}.  Pour rendre ce type d'objets
-pratique à utiiser, nous proposons d'introduire une fonction avec
+pratique à utiliser, nous proposons d'introduire une fonction avec
 une notation intuitive pour décrire une telle séquence, de fournir
 des notations spécifiques pour une collection d'opérations des listes
-vers les listes, en s'inspirant de la bibliothèque \mathcomp{} et
+vers les listes, en s'inspirant de la bibliothèque \mathcomp{}
+\cite{MahboubiTass2022} et
 de reposer sur des {\em grandes opérations}, sommes itérées ou
 produits itérés pour les opérations qui demanderaient normalement de
 la programmation récursive.
@@ -977,7 +1010,7 @@ pour désigner la séquence de nombres réels de longueur \(m\) et
 contenant les nombres \(n\), \(n + 1\), \dots.
 Comme pour les fonctions récursives, cette notation
 n'est bien définie que si \(m\) est un nombre naturel.  Cette séquence
-peut bien sûr être définie à l'aide d'un schéma récursif, cmmme nous le
+peut bien sûr être définie à l'aide d'un schéma récursif, comme nous le
 faisons précédemment pour les suites récurrentes, mais il s'agit ici
 d'une fonction produisant des listes.
 
@@ -997,7 +1030,7 @@ Rseq_suc : forall n m : R, Rnat m ->
 \end{verbatim}
 A l'usage, le théorème \texttt{Rseq\_suc} n'est pas toujours pratique à
 utiliser, car il demande de préparer la formule sur laquelle on
-travaille pour faire apparaitre l'expression de la forme \texttt{\(n\) +
+travaille pour faire apparaître l'expression de la forme \texttt{\(n\) +
   1} avant de permettre l'utilisation.  La forme suivante est souvent
 plus facile à mettre en œuvre.
 \begin{verbatim}
@@ -1015,14 +1048,14 @@ de \texttt{Rseq} est un entier naturel, alors tous les éléments de la
 séquence sont des entiers naturels (une propriété qui était donnée
 naturellement par le typage sur les entiers naturels).
 
-Il apparait que les séequences, comme celles produites par
+Il apparaît que les séquences, comme celles produites par
 \texttt{Rseq} sont aussi utilisées comme des ensembles.  En théorie des
 types, beaucoup d'ensembles sont simplement représentés comme des
 types et l'appartenance à ces ensembles est représentée par le typage.
 D'autres ensembles sont présentés comme des sous-ensembles de types à
 l'aide de prédicats, et maintenant nous avons les listes qui sont
 plutôt des ensembles décrits par énumération des éléments.  Dans la
-bibliothèque des listes de Coq, le prédicat \texttt{In} fournit la
+bibliothèque des listes de Rocq, le prédicat \texttt{In} fournit la
 passerelle pour voir une liste comme un ensemble décrit par un prédicat.
 L'inclusion d'une liste dans un
 ensemble décrit comme un prédicat est fourni par le prédicat
@@ -1030,7 +1063,7 @@ ensemble décrit comme un prédicat est fourni par le prédicat
 de sous-ensembles d'un type est fournie pour que les mêmes notations
 d'appartenance et d'inclusion soient utilisées.  Il serait bon de
 disposer d'un ensemble de notations et d'outils d'élaboration qui
-permettent de manipuler de façon uniforme ces differents point de vues
+permettent de manipuler de façon uniforme ces différents point de vues
 sur les ensembles, mais cela dépasse le cadre de cet article.
 \subsection{Grands opérateurs}
 Les grands opérateurs apparaissent fréquemment dans les mathématiques
@@ -1058,68 +1091,209 @@ en utilisant la notation \texttt{\(m\) <= \(i\) < \(n\)}.  Cette
 notation exprime que le domaine sur lequel s'applique l'opération
 itérée est vide si \(n \leq m\).
 
+Pour les preuves, Nous pouvons utiliser les théorèmes de base qui
+expriment le comportement récursif des opérations itérées
+en enlevant de la somme ou du produit itéré des valeurs en commençant
+par l'une ou l'autre des extrémités.  Dans la bibliothèque \mathcomp{}
+qui nous sert d'inspiration, ces théorèmes sont génériques et la
+variantes \texttt{\_recr} nécessite une preuve supplémentaire que
+l'opération itérée et la valeur retournée pour la liste vide forment
+ un monoide associative.  Nous fournissons les théorèmes
+ instanciés et simplifiés pour la somme et le produit et ne montrons
+ ici que le théorème pour la somme.
+\begin{verbatim}
+big0 {A : Type}(E : R -> A) (f : A -> A -> A) (idx : A) (a : R) :
+  \big[f / idx]_(a <= i < a) E i = idx.
+
+big_recl {A : Type}(E : R -> A)
+  (f : A -> A -> A) (idx : A) (a b : R)
+  {hnat : Rnat (b - a)} : a < b ->
+  \big[f / idx]_(a <= i < b) E i =
+   f (E a) (\big[f / idx]_((a + 1) <= i < b) E i).
+
+sum_recr (E : R -> R) (a b : R) :
+  Rnat (b - a) -> a < b ->
+  \sum_(a <= i < b) E i =
+   (\sum_(a <= i < (b - 1)) E i) + E (b - 1).
+\end{verbatim}
+
+Nous avons testé ces définitions et théorèmes sur des preuves élémentaires.
+\[\sum_{0 \leq i < n} i = \frac{n (n - 1)}{2} \qquad
+\sum_{0 \leq i < n} i ^2 = \frac{n (n - 1) (2 n - 1)}{6} \qquad
+n! = \prod_{1 \leq i < n + 1} i\]
+Dans les trois cas, l'avantage notable est que les preuves d'égalité
+sont généralement résolues par les tactiques \texttt{ring} ou \texttt{field}
+lorsqu'une division apparaît.  Le prix à payer est la nécessité de
+prouver des conditions annexes, sous forme d'appartenance à l'ensemble
+\texttt{Rnat} ou des comparaisons entre entiers.  Pour résoudre ces
+conditions, il est important d'exploiter le fait que tout nombre
+naturel est positif ou nul et le fait qu'un nombre entier
+strictement inférieur à un nombre entier \(n\), est inférieur ou égal au
+prédécesseur de \(n\).
+
+La bibliothèque \mathcomp{} est une source très riche de lemmes
+supplémentaires pour effectuer des raisonnements généraux sur les
+opérations itérées.  En particulier, elle exploite la possibilité de
+définir de nouveaux types dépendants pour transporter l'information
+que l'argument de la fonction répétée à chaque itération est un entier
+inférieur à la borne supérieure.  Dans nos expériences préliminaires,
+nous n'avons pas encore mis au point un théorème exprimant cette
+propriété.
 
 
 \section{La fonction binomiale}
-La fonction binomiale est une autre fonction souvent définie
-récusivement sur entiers naturels, dans les librairies de
-mathématiques formelles.  Dans un cours de mathématique, elle peut
-également être définie par une fraction de nombres entiers (pour
-laquelle il n'est pas directement evident que le résultat est un
-entier).  Nous proposons d'utiliser cette définition:
+La fonction binomiale peut être présentée alternativement comme une fraction
+d'expressions obtenues avec des factorielles ou comme une
+fonction récursive sur les entiers naturels.  La bibliothèque
+standard des réels utilise la définition suivante:
 \begin{verbatim}
-Definition k_among_n (k n : R) :=
-  factorial n / (factorial (n - k) * (factorial k)).
+C =
+fun n p : nat => INR (fact n) / (INR (fact p) * INR (fact (n - p)))
+\end{verbatim}
+Cette définition repose sur la définition récursive dans le type 
+\texttt{nat} de la fonction factorielle (ici appelée \texttt{fact}, puis
+une coercion dans les nombres réels, puis une division dans le type
+des nombres réels.
+\begin{verbatim}
+Fixpoint binomial n m :=
+  match n, m with
+  | S n', S m' => binomial n' m + binomial n' m'
+  | _, 0 => 1
+  | 0, S _ => 0
+  end.
+\end{verbatim}
+Le nombre \texttt{binomial n m} est donc une valeur entière, susceptible
+d'être injectée dans n'importe quel anneau ou corps grâce à une
+fonction générique qui joue un rôle similaire à \texttt{INR}.
+
+La motivation pour montrer ces deux définitions est de remarquer
+qu'elles ne coïncident pas lorsque le premier argument est strictement
+inférieur au second.   Dans la définition de \texttt{C},  dans le cas où
+\texttt{n}  est strictement inférieur à \texttt{p}, l'expression \texttt{n -
+  p)} est égale à 0, la
+factorielle de la soustraction est égale à 1, et le résultat est un
+nombre rationnel strictement compris entre 0 et 1.  Dans la definition
+de binomial, on peut démontrer par récurrence que la valeur retournée
+est 0 (c'est le théorème \texttt{bin\_small} dans la bibliothèque
+\mathcomp{}).
+
+S'il y a une différence, c'est que l'endroit où les deux définitions
+divergent n'est pas significatif.
+
+La page Wikipedia en anglais (en octobre 2024) présente une troisième
+définition, plus
+efficace que les deux autres (mais pas encore optimale si \(k\) est proche
+de \(n\)).
+\[\frac{n \times (n - 1) \cdots \times (n - k + 1)}
+{k \times (k - 1) \cdots \times 1}\]
+
+Nous pouvons définir cette fonction dans notre librairie de la façon
+proposée par cette page:
+\begin{verbatim}
+Definition choose (n k : R) :=
+  (\prod_(m - k + 1 <= i < n + 1) i) / factorial k
 \end{verbatim}
 
-Cette définition pose quelques problèmes.  Le premier est celui du
-domaine de définition.  La valeur \texttt{k\_among\_n \(k\) \(n\)} n'est bien
-définie que si \(n\) et \(k\) sont des nombres naturels, et \(k \leq n\).
-Le deuxième problème est que la valeur obtenue n'est pas visiblement
-entière.
-
-Pour montrer que la valeur est bien entière, nous pouvons montrer les
-différents lemmes suivants:
+Pour montrer que la valeur est bien entière, nous pouvons commencer
+par réconcilier la définition avec les deux autres, du moins pour les
+arguments qui le permettent.
 \begin{verbatim}
-zero_among_n : forall n, Rnat n -> k_among_n 0 n = 1
+choose_n_factorial : forall n m, Rnat n -> Rnat m, m <= n -> 
+  chose n k = factorial n / (factorial (n - k) * factorial k)
 
-n_among_n : forall n, Rnat n -> k_among_n n n = 1
+choose_n_0 : forall n, Rnat n -> choose n 0 = 1
 
-k_among_n_suc k n : Rnat k -> Rnat n -> k < n ->
-   k_among_n (k + 1) (n + 1) = k_among_n k n + k_among_n (k + 1) n
+chose_n_n : forall n, Rnat n -> chose n n = 1
+
+choose_suc k n : Rnat k -> Rnat n -> k < n ->
+   choose (k + 1) (n + 1) = choose k n + choose (k + 1) n
 \end{verbatim}
-Ces lemmes sont très similaires aux règle de réduction donnée pour
+Le premier lemme met en relation notre définition avec
+la définition basée sur trois factorielles.  Les trois autres
+lemmes sont très similaires aux règle de réduction donnée pour
 la définition de la fonction \texttt{binomial} par récursion sur le type
 inductif \texttt{nat} comme on le trouve dans la bibliothèque
 \mathcomp{}.
 
-\section{Conditions générales JFLA}
+La multiplicité des points de vue sur la fonction binomiale permet de
+faire de nombreux exercices sur cette fonction.  En particulier, nous
+avons fait quelques essais sur des exercices suggérés par Pierre
+Rousselin et ses collègues.
+\section{Travaux similaires et reliés}
+D'autres efforts existent pour rendre les systèmes de preuves basés
+sur la théorie des types pratiques pour l'enseignement.  Waterproof
+\cite{Wemmenhove_2024}
+utilise Rocq pour former les étudiants à écrire des preuves qui sont
+acceptables pour la communication avec des humains, à commencer par
+leur professeurs de mathématiques.  De façon similaire, Massot
+\cite{massot:LIPIcs.ITP.2024.27}
+propose
+de modifier les tactiques de Lean pour que les utilisateurs emploient
+un langage proche du langage naturel pour intéragir avec le système de
+preuve.
 
-\subsection{Bibliographie}
+Notre travail est complémentaire de ces travaux.  En rendant
+l'intéraction avec le type de nombre plus automatique, il permet de
+faciliter leurs efforts pour produire un texte mathématique qui semble
+naturel à la lecture.  En revanche, nous avons volontairement limité
+notre exploration du langage de tactique, justement parce que notre
+intention est de bénéficier de leurs approches.
 
-Vous pouvez au choix utiliser bibtex ou biblatex pour gérer votre bibliographie.
-%
-Merci d'utiliser le style de citation~\texttt{alpha-fr} avec bibtex, ou son
-équivalent biblatex.
+Pierre Rousselin, David Hamelin et leurs collègues développent
+également des jeux d'exercices pour apprendre l'utilisation des
+systèmes formelles dans les premières années universitaire
+\cite{RousselinPF24}.  Les
+exercices qu'ils ont produit nous ont servi d'inspiration à plusieurs
+reprises.
 
-\subsection{Remerciements}
+Les systèmes de preuve Mizar \cite{Mizar-beyond2015} et PVS
+\cite{PVS11} fournissent aussi
+la possibilité d'utiliser un seul type de nombre, mais la question ne
+se pose pas avec la même acuité car les frontières entre les types ne
+sont pas aussi contraignante que dans Rocq.
 
-La classe ne propose pas d'environnement dédié pour les remerciements et sources de financement éventuelles.
-%
-Nous vous suggérons d'utiliser la commande~\cmd{paragraph\{Remerciements.\}} en
-fin d'article.
+\section{Conclusion}
+{\em Chassez le naturel, il revient au galop}.  De nombreuses commandes
+et tactiques de Rocq sont conçues dans l'esprit que les nombres naturels
+sont toujours là à disposition des utiisateurs.  Par exemple, la tactique
+\texttt{ring\_simplify} crée spontanément des puissances où l'exposant est un
+nombre naturel.
 
-\subsection{Autres ressources}
+Le travail que nous suggérons et commençons dans cet article est de
+faire l'inventaire de tous les endroits où le type des entiers
+naturels est utile, et de tâcher de comprendre si ce type peut être
+enlevé de la présentation des mathématiques.  Cela ne veut pas dire
+que l'on veut faire disparaître le type des entiers naturels de la
+construction des objets sur lesquels nous reposons, mais que chaque
+concept présenté à l'utilisatrice finale doit utiliser les nombres
+réels (et le prédicat \texttt{Rnat}) comme interface.
 
-La classe~\texttt{jflart.cls} et sa documentation sont disponibles en
-ligne~\cite{JFLART}.
+Sur le long terme, il est probablement judicieux de réintroduire les
+nombres naturels et les autres types inductifs de nombres dans
+l'espace de travail, de façon à bénéficier directement des bénéfices
+que chacun peut apporter.  Le point de vue de cet article est surtout
+d'éviter de surcharger l'utilisateur dans ses premiers pas
+d'apprentissage des mathématiques à l'aide des outils de preuve
+formelle.
+
+Pour rendre faire avancer cet objectif, il est important d'ajouter
+plus d'outils pour faciliter les preuves d'appartenance aux
+sous-ensembles choisis.  Il apparait également qu'un travail plus
+systématique devrait être fait pour associer à des fonctions un
+domaine de définition et systématiser les preuves pour vérifier qu'une
+fonction est bien appelée sur un argument dans son domaine de
+définition.  Nous avons vu que pour la fonction qui calcule les
+coefficients binomiaux, ce domaine de définition a une forme particulière.
+
+
+
 
 \bibliographystyle{alpha-fr}
-\bibliography{jflart}
+\bibliography{bib}
 
 \end{document}
 
-% LocalWords:  maketitle begin end Agda Rocq Lean texttt mathcal sqrt
+% LocalWords:  Agda Rocq Lean texttt mathcal sqrt
 % LocalWords:  qquad mathbb rightarrow Prop Rnat em Rint nat INR eqn
 % LocalWords:  factorial fib subsection récurseur list rect Init nth
 % LocalWords:  itemize Elpi -prolog lp IRZ IRN IZR enumerate forall
