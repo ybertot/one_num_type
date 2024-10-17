@@ -335,7 +335,6 @@ apply factorial_gt0.
 assumption.
 Qed.
 
-
 Lemma k_among_n_suc k n : Rnat k -> Rnat n -> k < n ->
    k_among_n (k + 1) (n + 1) = k_among_n k n + k_among_n (k + 1) n.
 Proof.
@@ -420,3 +419,320 @@ rewrite k_among_n_suc; solve_Rnat.
   lra.
 lra.
 Qed.
+
+(* experiments with big operators *)
+
+Lemma sum_integers n : Rnat n ->
+  \sum_(0 <= i < n) i = n * (n - 1) / 2.
+Proof.
+intros nnat.
+induction nnat as [ | n nnat Ih].
+  rewrite big0.
+  now field.
+rewrite sum_recr.
+    replace (n + 1 - 1) with n by ring.
+    rewrite Ih.
+    now field.
+  replace (n + 1 - 0) with (n + 1) by ring.
+  solve_Rnat.
+assert (0 <= n) by now apply Rnat_ge0.
+lra.
+Qed.
+
+Lemma sum_squares n : Rnat n ->
+  \sum_(0 <= i < n) i ^ 2 = n * (n - 1) * (2 * n - 1) / 6.
+Proof.
+intros nnat.
+induction nnat as [ | n nnat Ih].
+  rewrite big0.
+  now field.
+rewrite sum_recr.
+    replace (n + 1 - 1) with n by ring.
+    replace (n + 1 - 2) with (n - 1) by ring.
+    rewrite Ih.
+    now field.
+  replace (n + 1 - 0) with (n + 1) by ring.
+  solve_Rnat.
+assert (0 <= n) by now apply Rnat_ge0.
+lra.
+Qed.
+
+Lemma factorial_as_product n:
+   Rnat n -> factorial n = \prod_(1 <= i < n + 1) i.
+Proof.
+intros nnat.
+induction nnat as [ | n nnat Ih].
+  rewrite fact0.
+  replace (0 + 1) with 1 by ring.
+  rewrite big0.
+  easy.
+rewrite fact_suc.
+  all:replace (n + 1 - 1) with n by ring.
+  rewrite prod_recr.
+  all:replace (n + 1 + 1 - 1) with (n + 1) by ring; solve_Rnat.
+  rewrite Ih.
+  ring.
+assert (0 <= n) by now apply Rnat_ge0.
+lra.
+Qed.
+
+Lemma truncated_factorial n k: Rnat n -> Rnat k ->
+  \prod_((n + 1) <= i < n + k + 1) i =
+    factorial (n + k) / factorial n.
+Proof.
+intros nnat knat.
+induction knat as [ | k knat Ih].
+  replace (n + 0) with n by ring.
+  rewrite big0.
+  field.
+  assert (0 < factorial n) by now apply factorial_gt0.
+  lra.
+rewrite (fact_suc (n + (k + 1))).
+  replace (n + (k + 1) - 1) with (n + k) by ring.
+  rewrite prod_recr.
+    replace (n + (k + 1) + 1 - 1) with (n + k + 1) by ring.
+    rewrite Ih.
+    field.
+    assert (0 < factorial n) by now apply factorial_gt0.
+    lra.
+  ring_simplify (n + (k + 1) + 1 - (n + 1)).
+  solve_Rnat.
+  assert (0 <= k) by now apply Rnat_ge0.
+  lra.
+replace (n + (k + 1) - 1) with (n + k) by ring.
+solve_Rnat.
+Qed.
+
+Definition choose n k :=
+  \prod_((n - k + 1) <= i < n + 1) i /
+  factorial k.
+
+Lemma choose_def1 n k : Rnat n -> Rnat k -> k <= n ->
+  choose n k = factorial n / (factorial (n - k) * factorial k).
+Proof.
+intros nnat knat klen.
+unfold choose.
+replace (n + 1) with ((n - k) + k + 1) by ring.
+assert (nmknat : Rnat (n - k)).
+  now apply Rnat_sub; solve_Rnat.
+rewrite truncated_factorial.
+    replace (n - k + k) with n by ring.
+    field.
+    split.
+      assert (0 < factorial k) by now apply factorial_gt0.
+      lra.
+    enough (0 < factorial (n - k)) by lra.
+    apply factorial_gt0.
+all: easy.
+Qed.
+
+Lemma choose_n_0 n : Rnat n -> choose n 0 = 1.
+Proof.
+intros nnat.
+unfold choose.
+ring_simplify (n - 0 + 1).
+rewrite big0.
+rewrite fact0.
+field.
+Qed.
+
+Lemma choose_n_n n: Rnat n -> choose n n = 1.
+Proof.
+intros nnat.
+rewrite choose_def1; solve_Rnat; try lra.
+replace (n - n) with 0 by ring.
+rewrite fact0.
+field.
+assert (0 < factorial n) by now apply (factorial_gt0).
+lra.
+Qed.
+
+Lemma choose_suc k n : Rnat k -> Rnat n -> k < n ->
+   choose (n + 1) (k + 1) = choose n k + choose n (k + 1).
+Proof.
+intros knat nnat kint.
+assert (0 <= k) by now apply Rnat_ge0.
+assert (k + 1 <= n) by now apply Rnat_le_lt.
+rewrite !choose_def1; solve_Rnat; try lra.
+assert (nnat' : Rnat (n + 1 - 1)).
+  ring_simplify (n + 1 - 1).
+  assumption.
+assert (knat' : Rnat (k + 1 - 1)).
+  ring_simplify (k + 1 - 1).
+  assumption.
+rewrite (fact_suc (n + 1)); auto.
+rewrite (fact_suc (k + 1)); auto.
+ring_simplify (n + 1 - 1) (k + 1 - 1) (n + 1 - (k + 1)).
+assert (nmknat: Rnat (n - (k + 1))).
+  apply Rnat_sub; solve_Rnat.
+  apply Rnat_le_lt; solve_Rnat.
+  lra.
+rewrite (fact_suc (n - k)).
+  replace (n - k - 1) with (n - (k + 1)) by ring.
+  field.
+  split.
+    enough (0 < factorial k) by lra.
+    apply factorial_gt0.
+    assumption.
+  split.
+    lra.
+  split.
+    enough (0 < factorial (n - (k + 1))) by lra.
+    apply factorial_gt0.
+    assumption.
+  lra.
+replace (n - k - 1) with (n - (k + 1)) by ring.
+assumption.
+Qed.
+
+Lemma choose_nat k n : Rnat k -> Rnat n -> k <= n ->
+  Rnat (choose n k).
+Proof.
+intros knat nnat; revert k knat.
+induction nnat as [ | n nnat Ih].
+  intros k knat kle0.
+  enough (it : choose 0 k = 1) by (rewrite it; solve_Rnat).
+  assert (0 <= k).
+    apply Rnat_ge0 in knat.
+    easy.
+  replace k with 0 by lra.
+  rewrite choose_n_0; solve_Rnat.
+  easy.
+intros k knat klenp1.
+destruct (Req_dec k (n + 1)) as [ knp1 | knnp1].
+  rewrite knp1, choose_n_n.
+    solve_Rnat.
+  solve_Rnat.
+destruct (Req_dec k 0) as [k0 |kn0].
+  rewrite k0.
+  now rewrite choose_n_0; solve_Rnat.
+assert (kgt0 : 0 < k).
+  enough (0 <= k) by lra.
+  apply Rnat_ge0.
+  assumption.
+assert (1 <= k).
+  replace 1 with (0 + 1) by ring.
+  apply Rnat_le_lt; solve_Rnat.
+  assumption.
+assert (Rnat (k - 1)).
+  apply Rnat_sub; solve_Rnat.
+  assumption.
+assert (k <= n).
+  replace k with ((k - 1) + 1) by ring.
+  apply Rnat_le_lt; solve_Rnat.
+  lra.
+replace k with ((k - 1) + 1) by ring.
+rewrite choose_suc; solve_Rnat.
+  apply Rnat_add.
+    apply Ih.
+      assumption.
+    lra.
+  apply Ih.
+    solve_Rnat.
+  lra.
+lra.
+Qed.
+
+(* This lemma is made approximately in a way that could be shown to students. *)
+(* Even for an expert, it is an exercise that requires more than an hour. *)
+Lemma binomial_poly (x y n : R) : Rnat n -> (x + y) ^ n =
+  \sum_(0 <= i < n + 1) 
+       (choose n i * x ^ i * y ^ (n - i)).
+Proof.
+induction 1 as [ | n nnat Ih].
+  rewrite Rpow0.
+  rewrite big_recl; cycle 1.
+      now replace (0 + 1 - 0) with 1 by ring; solve_Rnat.
+    lra.
+  rewrite choose_n_n; solve_Rnat.
+  replace (0 - 0) with 0 by ring.
+  rewrite !Rpow0; cycle 1.
+  rewrite big0.
+  ring.
+rewrite Rpow_add, Rpow1, Ih; solve_Rnat.
+rewrite Rmult_comm.
+rewrite Rmult_plus_distr_r.
+rewrite !big_distr;[ |  rewrite Rminus_0_r | rewrite Rminus_0_r]; solve_Rnat.
+set (w1 := fold_right _ _ _).
+set (w2 := fold_right _ _ _).
+set (w3 := fold_right _ _ _).
+unfold w2.
+rewrite big_recl; auto; cycle 1.
+    now replace (n + 1 - 0) with (n + 1) by ring; solve_Rnat.
+  apply Rnat_ge0 in nnat; lra.
+rewrite <- big_shift; cycle 1.
+  now replace (n - 0) with n by ring.
+set (w4 := fold_right _ _ _).
+replace (n - 0) with n by ring.
+replace (choose n 0) with (choose (n + 1) 0); cycle 1.
+  rewrite !choose_n_0; destruct (Rnat_Rint n); solve_Rnat; lra.
+replace (y * (choose(n + 1) 0 * x ^ 0 * y ^ n)) with
+  (choose (n + 1) 0 * x ^ 0 * y ^ (n + 1 - 0)); cycle 1.
+  rewrite Rminus_0_r, Rpow_add, Rpow1; solve_Rnat; ring.
+unfold w1.
+rewrite big_recr; auto; cycle 1.
+    now replace (n + 1 - 0) with (n + 1) by ring; solve_Rnat.
+  apply Rnat_ge0 in nnat; lra.
+replace (n + 1 - 1) with n by ring.
+set (w5 := fold_right _ _ _).
+replace (x * (choose n n * x ^ n * y ^ (n - n))) with
+  (choose (n + 1) (n + 1) * x ^ (n + 1) * y ^ ((n + 1) - (n + 1))); 
+  cycle 1.
+  replace (n - n) with 0 by ring; replace ((n + 1) - (n + 1)) with 0 by ring.
+  rewrite Rpow_add, Rpow1; solve_Rnat.
+  rewrite !choose_n_n; destruct (Rnat_Rint n); solve_Rnat; auto.
+  ring.
+set (tmn := _ * _ * _).
+set (t0 := _ * _ * _).
+replace (w5 + tmn + (t0 + w4)) with (t0 + (w5 + w4) + tmn) by ring.
+replace (w5 + w4) with
+ (\sum_((0 + 1) <= i < (n + 1))
+   (choose (n + 1) i * x ^ i * y ^ ((n + 1) - i))).
+  unfold t0.
+  rewrite <-
+    (big_recl (fun i => choose (n + 1) i * x ^ i * y ^ ((n + 1) - i)));
+  cycle 1.
+      now rewrite Rminus_0_r; try typeclasses eauto.
+    apply Rnat_ge0 in nnat; lra.
+  unfold tmn.
+  replace (n + 1) with (n + 1 + 1 - 1) at 1 3 4 6 by ring.
+  rewrite <-
+   (big_recr (fun i => choose (n + 1) i * x ^ i * y ^ ((n + 1) - i)));
+    cycle 1.
+        now auto.
+      now rewrite Rminus_0_r; try typeclasses eauto.
+    apply Rnat_ge0 in nnat; lra.  
+  easy.
+unfold w5, w4.
+rewrite big_add; cycle 1.
+  now rewrite Rminus_0_r; try typeclasses eauto.
+rewrite <- big_shift; cycle 1.
+  now rewrite Rminus_0_r; try typeclasses eauto.
+apply big_ext.
+  now rewrite Rminus_0_r; try typeclasses eauto.
+intros i inat ibound.
+replace (0 + i + 1) with (i + 1) by ring.
+replace (0 + i) with i by ring.
+replace (x * (choose n i * x ^ i * y ^ (n - i))) with
+  (choose n i * x ^ (i + 1) * y ^ (n - i)); cycle 1.
+  rewrite Rpow_add, Rpow1; solve_Rnat; ring.
+replace (y * (choose n (i + 1) * x ^ (i + 1) * y ^ (n - (i + 1)))) with
+  (choose n (i + 1) * x ^ (i + 1) * y ^ (n - i)); cycle 1.
+  replace (n - i) with (n - (i + 1) + 1) by ring.
+  rewrite (Rpow_add y), Rpow1; solve_Rnat; cycle 1.
+    apply Rnat_sub; solve_Rnat.
+    assert (iltn : i < n) by lra.
+  now apply Rnat_le_lt; auto.
+  ring.
+rewrite choose_suc; destruct (Rnat_Rint n);
+  destruct (Rnat_Rint n); try typeclasses eauto; try lra.
+replace (n + 1 - (i + 1)) with (n - i) by ring.
+ring.
+Qed.
+
+(* An example of a function where the order of recursion is
+  lower than the number of base cases.  *)
+Recursive (def one_then_0 such that
+   one_then_0 0 = 1 /\
+   one_then_0 1 = 0 /\
+   forall n, Rnat (n - 2) -> one_then_0 n = one_then_0 (n - 1)).

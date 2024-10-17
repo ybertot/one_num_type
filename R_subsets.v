@@ -252,8 +252,9 @@ destruct (Rnat_Rint y) as [yint yge0].
 apply Rint_Rnat; [ typeclasses eauto | lra].
 Qed.
 
-(*
-Hint Resolve Rnat_add Rnat_mul : rnat. *)
+Example test_Rnat_proof x : Rnat x -> Rnat ((x + 2) * x).
+Proof. exact _. Qed.
+
 Ltac solve_Rnat := try typeclasses eauto.
 
 (* Order properties for natural numbers. *)
@@ -564,4 +565,265 @@ Lemma sqrt_pos_Z x : 0 < sqrt (IZR (Z.pos x)).
 Proof.
 apply sqrt_lt_R0.
 now apply IZR_lt.
+Qed.
+
+(* sequences of natural numbers and big operators *)
+(* It is sensible that students see the primitives used to program
+  recursively on lists, so this definition may be part of the visible
+  interface.  Otherwise, we could decide to only have big operations. *)
+Fixpoint rlength {A : Type} (l : list A) : R :=
+  match l with
+  | nil => 0
+  | a :: l => 1 + rlength l
+  end.
+
+(* Ideally all theorems about the length of lists and its interactions with
+   map, filter, app, etc. should be made available to the students.  The
+   following theorem is a tool for that, but it is not for the students' eyes. *)
+
+Lemma rlength_nat {A : Type} (l : list A) : rlength l = INR (length l).
+Proof.
+induction l as [ | a l Ih]; auto.
+cbn [rlength length]; rewrite S_INR; ring [Ih].
+Qed.
+
+Definition Rseq (n m : R) :=
+  map (fun x => n + INR x) (seq 0 (IRN m)).
+
+Lemma rlength_Rseq x y : Rnat y -> rlength (Rseq x y) = y.
+Proof.
+intros ynat.
+rewrite rlength_nat; unfold Rseq.
+now rewrite map_length, seq_length, INR_IRN.
+Qed.
+
+Lemma Rseq0 (n : R) : Rseq n 0 = nil.
+Proof.
+now unfold Rseq; rewrite IRN0.
+Qed.
+
+Lemma Rseq1 (n : R) : Rseq n 1 = n :: nil.
+Proof.
+unfold Rseq; rewrite IRN1; simpl; apply (f_equal (fun x => x :: nil)); ring.
+Qed.
+
+Lemma seq_shift_add (n l m : nat) : seq (n + l) m =
+  map (fun x => Nat.add x l) (seq n m).
+Proof.
+revert n l; induction m as [ | m Ih].
+  easy.
+intros n l; simpl; apply f_equal.
+replace (S (n + l))%nat with ((S n) + l)%nat by ring.
+now apply Ih.
+Qed.
+
+(* This is a workhorse, making it possible to chip off elements at each
+  extremity, or to cut a big sequence in the middle. *)
+Lemma Rseq_add (n l m : R) :
+  Rnat l -> Rnat m -> Rseq n (l + m) = Rseq n l ++ Rseq (n + l) m.
+Proof.
+intros lnat mnat.
+unfold Rseq.
+rewrite IRN_add; auto.
+rewrite seq_app, map_app.
+apply f_equal.
+rewrite seq_shift_add, map_map.
+apply map_ext.
+intros a; rewrite plus_INR, INR_IRN; auto; ring.
+Qed.
+
+Lemma Rseq_S (n m : R) {mnat : Rnat m} :
+  Rseq n (m + 1) = n :: (Rseq (n + 1) m).
+Proof.
+now rewrite Rplus_comm; rewrite Rseq_add, Rseq1; try typeclasses eauto.
+Qed.
+
+Lemma Rseq_S' (n m : R) {m'nat : Rnat (m - 1)} :
+  Rseq n m = n :: Rseq (n + 1) (m - 1).
+Proof.
+replace m with (1 + (m - 1)) at 1 by ring.
+rewrite Rseq_add; try typeclasses eauto.
+now rewrite Rseq1.
+Qed.
+
+Notation "[ '0 <..> m ]"  := (Rseq 0 m).
+
+Example seq03 : ['0 <..> 3] = 0 :: 1 :: 2 :: nil.
+Proof.
+unfold Rseq; rewrite IRN_pos; simpl.
+replace (0 + 0) with 0 by ring.
+replace (0 + 1) with 1 by ring.
+replace (0 + (1 + 1)) with 2 by ring.
+easy.
+Qed.
+
+Notation "\big[ f / idf ]_( a <= i < b ) E" :=
+  (fold_right f  idf (map (fun i => E) (Rseq a (b - a))))
+  (at level 35, a at level 30,  b at level 30, E at level 36, f,
+   idf at level 10, i at level 0, right associativity).
+
+
+Notation "\sum _( a <= i < b ) E" :=
+  (fold_right Rplus 0 (map (fun i => E) (Rseq a (b - a))))
+  (at level 35, a at level 30,  b at level 30, E at level 36,
+  i at level 0, right associativity).
+
+Notation "\prod _( a <= i < b ) E" :=
+  (fold_right Rmult 1 (map (fun i => E) (Rseq a (b - a))))
+  (at level 35, a at level 30,  b at level 30, E at level 36,
+  i at level 0, right associativity).
+
+
+Lemma big0 {A : Type}(E : R -> A) (f : A -> A -> A) (idx : A) (a : R) :
+  \big[f / idx]_(a <= i < a) E i = idx.
+Proof.
+now rewrite Rminus_diag, Rseq0.
+Qed.
+
+Lemma big_recl {A : Type}(E : R -> A) (f : A -> A -> A) (idx : A) (a b : R)
+  {hnat : Rnat (b - a)} : a < b ->
+  \big[f / idx]_(a <= i < b) E i =
+   f (E a) (\big[f / idx]_((a + 1) <= i < b) E i).
+Proof.
+intros altb.
+rewrite Rseq_S'; [ | apply Rnat_sub; try typeclasses eauto]; simpl.
+  replace (b - a - 1) with (b - (a + 1)) by ring.
+  easy.
+replace 1 with (0 + 1) by ring; apply Rnat_le_lt; try typeclasses eauto.
+lra.
+Qed.
+
+Definition associative_monoid {A : Type} (f : A -> A -> A) (idx : A) :=
+  (forall x y z, f x (f y z) = f (f x y) z) /\
+   (forall x, f x idx = x) /\
+   (forall x, f idx x = x).
+
+Lemma big_recr {A : Type}(E : R -> A) (f : A -> A -> A) (idx : A) (a b : R) :
+  associative_monoid f idx ->
+  Rnat (b - a) -> a < b ->
+  \big[f / idx]_(a <= i < b) E i =
+   f (\big[f / idx]_(a <= i < (b - 1)) E i)
+    (E (b - 1)).
+Proof.
+intros amf hnat altb.
+assert (induct_arg : Rnat (b - a  - 1)).
+  apply Rnat_sub; try typeclasses eauto;
+      apply Rnat_gt_pred; try typeclasses eauto; lra.
+enough (main : forall p, Rnat p ->
+  forall a, fold_right f idx (map (fun i => E i) (Rseq a (p + 1))) =
+   f (fold_right f idx (map (fun i => E i) (Rseq a p))) (E (a + p))).
+  replace (b - a) with (b - a - 1 + 1) by ring.
+  rewrite main; auto.
+  replace (a + (b - a - 1)) with (b - 1) by ring.
+  now replace (b - 1 - a) with (b - a - 1) by ring.
+clear hnat altb induct_arg a.
+intros p'; induction 1 as [ | p pnat Ih] using Rnat_ind.
+  intros a; rewrite Rplus_0_l, Rplus_0_r, Rseq0, Rseq1; simpl.
+  now destruct amf as [_ [P1 P2]]; rewrite P1, P2.
+intros a; rewrite Rseq_S; try typeclasses eauto; simpl.
+rewrite (Rseq_S a); auto; simpl.
+destruct amf as [Pa [P1 P2]].
+now rewrite Ih, Pa; replace (a + (p + 1)) with (a + 1 + p) by ring.
+Qed.
+
+Lemma associative_monoid_Rplus : associative_monoid Rplus 0.
+Proof.
+split;[exact (fun x y z => eq_sym (Rplus_assoc x y z))| ].
+split;[exact Rplus_0_r | exact Rplus_0_l].
+Qed.
+
+#[export]
+Hint Resolve associative_monoid_Rplus : core.
+
+Lemma associative_mul : associative_monoid Rmult 1.
+Proof.
+split.
+  exact (fun x y z => eq_sym (Rmult_assoc x y z)).
+split.
+  exact Rmult_1_r.
+exact Rmult_1_l.
+Qed.
+
+#[export]
+Hint Resolve associative_mul : core.
+
+Lemma sum_recr (E : R -> R) (a b : R) :
+  Rnat (b - a) -> a < b ->
+  \sum_(a <= i < b) E i =
+   (\sum_(a <= i < (b - 1)) E i) + E (b - 1).
+Proof.
+apply big_recr; auto.
+Qed.
+
+Lemma prod_recr (E : R -> R) (a b : R) :
+  Rnat (b - a) -> a < b ->
+  \prod_(a <= i < b) E i =
+   (\prod_(a <= i < (b - 1)) E i) * E (b - 1).
+Proof.
+apply big_recr; auto.
+Qed.
+
+Lemma big_add (f g : R -> R) (b n : R) : Rnat (n - b) ->
+  \sum_(b <= i < n) f i +
+  \sum_(b <= i < n) g i = 
+  \sum_(b <= i < n) (f i + g i).
+Proof.
+set (w := fold_right).
+generalize (n - b); intros k knat; revert b.
+induction knat as [ | k knat Ih]; intros b.
+  rewrite Rseq0; simpl; ring.
+rewrite Rseq_S'; replace (k + 1 - 1) with k by ring; auto.
+unfold w; simpl; fold w.
+rewrite <- Ih; ring.
+Qed.
+
+Lemma big_distr (f : R -> R) (b n a : R) : Rnat (n - b) ->
+  a * \sum_(b <= i < n) f i =
+  \sum_(b <= i < n) (a * f i).
+Proof.
+set (w := fold_right).
+generalize (n - b); intros k knat; revert b.
+induction knat as [ | k knat Ih]; intros b.
+   rewrite Rseq0; simpl; ring.
+rewrite Rseq_S'; replace (k + 1 - 1) with k by ring; auto.
+unfold w; simpl; fold w.
+rewrite <- Ih; ring.
+Qed.
+
+Lemma big_shift {A : Type} (op : R -> A -> A) v
+ (f : R -> R) (b k n : R) : Rnat (n - b) ->
+  \big[op/v]_(b <= i < n) (f (i + k)) =
+  \big[op/v]_((b + k) <= i < (n + k)) (f i).
+Proof.
+set (w := fold_right).
+replace (n + k - (b + k)) with (n - b) by ring.
+generalize (n - b); intros l lnat; revert b.
+induction lnat as [ | l lnat Ih]; intros b.
+  now rewrite !Rseq0.
+rewrite !Rseq_S; auto.
+simpl; rewrite Ih.
+now replace (b + 1 + k) with (b + k + 1) by ring.
+Qed.
+
+Lemma big_ext {A : Type} (op : R -> A -> A) v (f g : R -> R)
+  (b n : R) : Rnat (n - b) ->
+  (forall x, Rnat x -> 0 <= x < n - b -> f (b + x) = g (b + x)) ->
+  \big[op/v]_(b <= i < n) f i =
+  \big[op/v]_(b <= i < n) g i.
+Proof.
+set (w := fold_right).
+generalize (n - b); intros l lnat; revert b.
+induction lnat as [ | l lnat Ih]; intros b eq_cnd.
+  now rewrite Rseq0.
+rewrite Rseq_S; auto; simpl.
+replace b with (b + 0) at 1 3 by ring.
+rewrite eq_cnd; cycle 1.
+    try typeclasses eauto.
+  apply Rnat_ge0 in lnat; lra.
+apply f_equal, Ih.
+intros x xnat xint.
+replace (b + 1 + x) with (b + (1 + x)) by ring.
+apply eq_cnd.
+  try typeclasses eauto.
+lra.
 Qed.

@@ -301,12 +301,11 @@ on {\tt R}, {\tt Z} (with proofs)
 \frametitle{Big sums and products}
 \begin{itemize}
 \item Taking inspiration from Mathematical components
-\item {\tt \char'134{}big[op/idx]\_(a <= i < b) f(i)}
+\item {\tt \char'134{}sum\_(a <= i < b) f(i)}
 \begin{itemize}
-\item Big sum when {\tt op = Rplus} and {\tt idx = 0}
+\item Also {\tt \char'134{}prod}
 \end{itemize}
 \item Well-typed when {\tt a} and {\tt b} are real numbers\\
- (plus typing conditions on {\tt op}, {\tt idx}, and {\tt f})
 \item Relevant when \({\tt a} < {\tt b}\)
 \item This needs a hosts of theorems
 \begin{itemize}
@@ -343,6 +342,9 @@ on {\tt R}, {\tt Z} (with proofs)
 \item {\tt rewrite} to handle the behavior of all defined functions
  (and recursors)
 \item {\tt unfold} for functions defined by students
+\begin{itemize}
+\item But we should block unfolding of recursive functions
+\end{itemize}
 \item {\tt apply} and {\tt lra} to handle all side conditions related to bounds
 \item {\tt typeclasses eauto} to prove membership in {\tt Rnat}
 \begin{itemize}

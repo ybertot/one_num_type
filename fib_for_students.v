@@ -318,12 +318,10 @@ Proof.
 intros nnat.
 apply root_to_fib_sum.
   easy.
-exact phi'_root.
 Qed.
 
 Lemma Fibonacci_and_golden_ratio n:
-    Rnat n -> 
-    fib n = (Rpow phi n - Rpow phi' n)/ sqrt 5.
+    Rnat n -> fib n = (phi ^ n - phi' ^ n)/ sqrt 5.
 Proof.
 destruct fib_eqn as [fib0 [fib1 fib_suc]].
 assert (s5gt0 : 0 < sqrt 5).
