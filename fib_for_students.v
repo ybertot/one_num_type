@@ -318,6 +318,7 @@ Proof.
 intros nnat.
 apply root_to_fib_sum.
   easy.
+exact phi'_root.
 Qed.
 
 Lemma Fibonacci_and_golden_ratio n:

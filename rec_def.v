@@ -479,7 +479,11 @@ eat_implications Order F N (prod _ _ G) R :-
   pi h \ 
    eat_implications Order F N (G h) R.
 
-eat_implications Order F N {{_ = lp:RHS}} R :-
+eat_implications Order F N {{lp:F lp:N = lp:RHS}} RHS.
+
+pred translate_recursive_body i:int i:term, i:term, i:term, o:term.
+
+translate_recursive_body Order F N RHS R :-
   std.do! [
     % This should recognize (f (n - k)) and store k in the list
     (pi A E Op V\
@@ -539,7 +543,8 @@ find_uses_of F Spec Final Order_Z :-
        "Expecting exactly one recursive equation",
     (pi n\
       decl n Scalar_name Sc_type =>
-      eat_implications Order F n (F1 n) (Main_expression n)),
+      (eat_implications Order F n (F1 n) (Body n),
+      translate_recursive_body Order F n (Body n) (Main_expression n))),
     %Final = {{Rnat_rec lp:ListSps (fun x : R => lp:(Main_expression x)) }},
     Final = {{ fun r : R => nth 0 
                 (Rnat_rec lp:ListSps lp:{{ fun Scalar_name {{R}}
@@ -565,7 +570,7 @@ std.do![
 make_eqn_proof _ _ _ _ :-
   coq.say "proof of equations failed".
 
-main [trm (fun N _ _ as Abs_eqn)] :-
+main [trm (fun N Ty _ as Abs_eqn)] :-
 std.do! [
   find_uses Abs_eqn Final Order,
   std.assert-ok! (coq.typecheck Final Ty) "Type error",

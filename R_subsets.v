@@ -413,11 +413,15 @@ Qed.
 
 Ltac to_pow :=
   repeat
-    (match goal with |- context [Rpow ?x (IZR (Z.pos ?n))] =>
+    (match goal with 
+      |- context [Rpow ?x (IZR (Z.pos ?n))] =>
       let nN := constr:(Z.abs_nat (Z.pos n)) in
       let v := eval compute in nN in
         replace (Rpow x (IZR (Z.pos n))) with (pow x v);
          [ | rewrite (Rpow_convert_Z x (Z.pos n)); easy]
+    | |- context [Rpow ?x (IZR Z0)] =>
+         replace (Rpow x (IZR Z0)) with 1;
+         [ | rewrite Rpow0]
     end).
 
 Ltac from_pow :=
@@ -657,19 +661,22 @@ replace (0 + (1 + 1)) with 2 by ring.
 easy.
 Qed.
 
-Notation "\big[ f / idf ]_( a <= i < b ) E" :=
-  (fold_right f  idf (map (fun i => E) (Rseq a (b - a))))
-  (at level 35, a at level 30,  b at level 30, E at level 36, f,
-   idf at level 10, i at level 0, right associativity).
+Definition Rbigop [A : Type] (f : A -> A -> A) (idf : A)
+  (a b : R) (E : R -> A) :=
+  fold_right f idf (map E (Rseq a (b - a))).
 
+Notation "\big[ f / idf ]_( a <= i < b ) E" :=
+  (Rbigop f idf a b (fun i => E))
+  (at level 35, a at level 30, b at level 30, E at level 36, f, idf
+   at level 10, i at level 0, right associativity).
 
 Notation "\sum _( a <= i < b ) E" :=
-  (fold_right Rplus 0 (map (fun i => E) (Rseq a (b - a))))
+  (Rbigop Rplus 0 a b (fun i => E))
   (at level 35, a at level 30,  b at level 30, E at level 36,
   i at level 0, right associativity).
 
 Notation "\prod _( a <= i < b ) E" :=
-  (fold_right Rmult 1 (map (fun i => E) (Rseq a (b - a))))
+  (Rbigop Rmult 1 a b (fun i => E))
   (at level 35, a at level 30,  b at level 30, E at level 36,
   i at level 0, right associativity).
 
@@ -677,7 +684,7 @@ Notation "\prod _( a <= i < b ) E" :=
 Lemma big0 {A : Type}(E : R -> A) (f : A -> A -> A) (idx : A) (a : R) :
   \big[f / idx]_(a <= i < a) E i = idx.
 Proof.
-now rewrite Rminus_diag, Rseq0.
+now unfold Rbigop; rewrite Rminus_diag, Rseq0.
 Qed.
 
 Lemma big_recl {A : Type}(E : R -> A) (f : A -> A -> A) (idx : A) (a b : R)
@@ -686,6 +693,7 @@ Lemma big_recl {A : Type}(E : R -> A) (f : A -> A -> A) (idx : A) (a b : R)
    f (E a) (\big[f / idx]_((a + 1) <= i < b) E i).
 Proof.
 intros altb.
+unfold Rbigop.
 rewrite Rseq_S'; [ | apply Rnat_sub; try typeclasses eauto]; simpl.
   replace (b - a - 1) with (b - (a + 1)) by ring.
   easy.
@@ -706,6 +714,7 @@ Lemma big_recr {A : Type}(E : R -> A) (f : A -> A -> A) (idx : A) (a b : R) :
     (E (b - 1)).
 Proof.
 intros amf hnat altb.
+unfold Rbigop.
 assert (induct_arg : Rnat (b - a  - 1)).
   apply Rnat_sub; try typeclasses eauto;
       apply Rnat_gt_pred; try typeclasses eauto; lra.
@@ -768,12 +777,12 @@ Lemma big_add (f g : R -> R) (b n : R) : Rnat (n - b) ->
   \sum_(b <= i < n) g i = 
   \sum_(b <= i < n) (f i + g i).
 Proof.
-set (w := fold_right).
+unfold Rbigop.
 generalize (n - b); intros k knat; revert b.
 induction knat as [ | k knat Ih]; intros b.
   rewrite Rseq0; simpl; ring.
 rewrite Rseq_S'; replace (k + 1 - 1) with k by ring; auto.
-unfold w; simpl; fold w.
+simpl.
 rewrite <- Ih; ring.
 Qed.
 
@@ -781,21 +790,21 @@ Lemma big_distr (f : R -> R) (b n a : R) : Rnat (n - b) ->
   a * \sum_(b <= i < n) f i =
   \sum_(b <= i < n) (a * f i).
 Proof.
-set (w := fold_right).
+unfold Rbigop.
 generalize (n - b); intros k knat; revert b.
 induction knat as [ | k knat Ih]; intros b.
    rewrite Rseq0; simpl; ring.
 rewrite Rseq_S'; replace (k + 1 - 1) with k by ring; auto.
-unfold w; simpl; fold w.
+simpl.
 rewrite <- Ih; ring.
 Qed.
 
-Lemma big_shift {A : Type} (op : R -> A -> A) v
- (f : R -> R) (b k n : R) : Rnat (n - b) ->
+Lemma big_shift {A : Type} (op : A -> A -> A) v
+ (f : R -> A) (b k n : R) : Rnat (n - b) ->
   \big[op/v]_(b <= i < n) (f (i + k)) =
   \big[op/v]_((b + k) <= i < (n + k)) (f i).
 Proof.
-set (w := fold_right).
+unfold Rbigop.
 replace (n + k - (b + k)) with (n - b) by ring.
 generalize (n - b); intros l lnat; revert b.
 induction lnat as [ | l lnat Ih]; intros b.
@@ -805,13 +814,13 @@ simpl; rewrite Ih.
 now replace (b + 1 + k) with (b + k + 1) by ring.
 Qed.
 
-Lemma big_ext {A : Type} (op : R -> A -> A) v (f g : R -> R)
+Lemma big_ext {A : Type} (op : A -> A -> A) v (f g : R -> A)
   (b n : R) : Rnat (n - b) ->
   (forall x, Rnat x -> 0 <= x < n - b -> f (b + x) = g (b + x)) ->
   \big[op/v]_(b <= i < n) f i =
   \big[op/v]_(b <= i < n) g i.
 Proof.
-set (w := fold_right).
+unfold Rbigop.
 generalize (n - b); intros l lnat; revert b.
 induction lnat as [ | l lnat Ih]; intros b eq_cnd.
   now rewrite Rseq0.
@@ -825,5 +834,19 @@ intros x xnat xint.
 replace (b + 1 + x) with (b + (1 + x)) by ring.
 apply eq_cnd.
   try typeclasses eauto.
+lra.
+Qed.
+
+Lemma big_ext_low_nat {A : Type} (op : A -> A -> A) v (f g : R -> A)
+  (b n : R) : Rnat b -> Rnat (n - b) ->
+  (forall x, Rnat x -> b <= x < n -> f x = g x) ->
+  \big[op/v]_(b <= i < n) f i =
+  \big[op/v]_(b <= i < n) g i.
+Proof.
+intros bnat dnat eq_ext.
+apply big_ext; auto.
+intros x xnat xint.
+apply eq_ext; solve_Rnat.
+apply Rnat_ge0 in xnat.
 lra.
 Qed.
