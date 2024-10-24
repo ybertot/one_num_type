@@ -502,7 +502,7 @@ Pour la fonction factorielle, on voit que la valeur retournée pour
 le produit de \texttt{n + 1} avec
 la première valeur trouvée dans la liste en entrée, \texttt{nth 0\%nat l 0}.
 \begin{verbatim}
-(INR n + 1) * nth 0%nat l
+(INR n + 1) * nth 0%nat l 0
 \end{verbatim}
 ceci doit être comparé avec le corps du pas récursif de la
 spécification, qui est :
@@ -531,7 +531,7 @@ récurrente d'ordre \(k\) arbitraire.
 \item La fonction \texttt{step} doit
 retourner une liste dont la longueur est l'ordre \(k\).
 \item Les \(k-1\) premiers éléments de la liste retournée doivent
-  être \texttt{nth 1\%nat l 0}, \texttt{nth 2\%nat 0}, et ainsi de suite
+  être \texttt{nth 1\%nat l 0}, \texttt{nth 2\%nat l 0}, et ainsi de suite
 jusqu'à \(k - 1\)
   (dans le cas de la fonction factorielle, il n'y a pas d'éléments de
   cette forme dans la liste).
@@ -611,6 +611,7 @@ syntaxe usuelle de Rocq.  Ici, le terme
 permet de décrire la représentation en Elpi d'un terme de
 Rocq comportant l'application d'une fonction à une soustraction de
 nombres réels.
+
 Lorsque la fonction basée sur \texttt{nat\_rect} est finalement
 construite, on dispose d'une fonction de type \texttt{nat -> list R}, il
 reste deux opérations à effectuer: prendre le premier élément du
