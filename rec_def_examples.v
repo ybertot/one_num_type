@@ -35,6 +35,7 @@ Recursive (def fib such that
     fib 1 = 1 /\
     forall n : R, Rnat (n - 2) ->
     fib n = fib (n - 2) + fib (n - 1)).
+Print fib.
 
 Elpi mirror_recursive_definition fib.
 Check fib_Z_prf.
@@ -283,6 +284,15 @@ elpi r_compute (42 + fib (factorial 5)).
 unfold huge_val.
 reflexivity.
 Qed.
+
+Notation "x =? y" := (Req_bool x y) : R_scope.
+Recursive (def bin such that 
+    bin 0 = (fun n : R => if (n =? 0)then 1 else 0) /\ 
+    forall n, Rnat (n-1) -> bin n = 
+    (fun m => if (m =? 0) then 1 else (bin (n-1)) (m-1) + (bin (n-1)) m)).
+Check (bin 2 1).
+Check bin_eqn.
+Fail Elpi mirror_recursive_definition bin.
 
 Definition k_among_n (k n : R) :=
   factorial n / ((factorial k) * factorial (n - k)).
@@ -786,3 +796,12 @@ Recursive (def one_then_0 such that
    one_then_0 0 = 1 /\
    one_then_0 1 = 0 /\
    forall n, Rnat (n - 2) -> one_then_0 n = one_then_0 (n - 1)).
+Recursive (def tail_addmul such that 
+   tail_addmul 0 = (fun m r x => r) /\
+   forall n, Rnat (n-1) -> 
+   tail_addmul n = (fun m r x  => tail_addmul (n - 1) m (m + r) x)).
+Print tail_addmul.
+Elpi mirror_recursive_definition tail_addmul.
+Fail R_compute (fib (tail_addmul 3 (-5) 4 2)).
+R_compute (fib (tail_addmul 3 5 (-4) 2)) thm .
+Check thm.

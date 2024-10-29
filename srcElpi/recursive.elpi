@@ -1,5 +1,4 @@
 
-
 pred fetch_recursive_equation i:term, o:list term.
 
 fetch_recursive_equation X [X] :-
@@ -50,29 +49,30 @@ check_all_present N [pr N _ | L] N2 :-
 check_all_present N [pr _ _ | _] _ :-
   coq.error "missing value for" N.
 
-pred make_initial_list i:list (pair int term), o:term.
 
-make_initial_list [] {{ @nil R}}.
+pred make_initial_list i:term, i:list (pair int term), o:term.
 
-make_initial_list [pr _ V | L] (app [{{ @cons R}}, V, Tl]) :-
-  make_initial_list L Tl.
+make_initial_list T [] {{ @nil lp:T}}.
 
-pred make_recursive_step_list i:(term -> term), i:int, i:int,
+make_initial_list T [(pr  _ V) | L] (app [{{ @cons lp:T}}, V, Tl]) :-
+  make_initial_list T L Tl, std.assert-ok! (coq.typecheck Tl _) "constructed a bad initial list".
+
+pred make_recursive_step_list i:term, i:term, i:(term -> term), i:int, i:int,
    o:(term -> term).
 
-make_recursive_step_list Func 0 _Rank R :-
+make_recursive_step_list Ty _ZTy Func 0 _Rank R :-
   pi V\
-   app [{{ cons}}, (Func V), {{ nil }}] = R V.
+   app [{{ @cons }}, Ty, (Func V), {{ @nil lp:Ty}}] = R V.
 
-make_recursive_step_list Func N Rank R :-
+make_recursive_step_list Ty ZTy Func N Rank R :-
   std.do! [
     0 < N,
     N1 is N - 1,
     Rank1 is Rank + 1,
     int_to_nat Rank1 RankTerm,
-    make_recursive_step_list Func N1 Rank1 Func',
+    make_recursive_step_list Ty ZTy Func N1 Rank1 Func',
     pi V \
-      app [{{ cons}}, app [{{ nth}}, {{R}}, RankTerm, V, {{ 0}}],
+      app [{{ @cons}}, Ty, app [ {{ @nth}}, Ty, RankTerm, V, ZTy],
            Func' V] = R V
   ].
 
@@ -103,37 +103,34 @@ eat_implications F N (prod _ _ G) R :-
 
 eat_implications F N {{lp:F lp:N = lp:RHS}} RHS.
 
-pred translate_recursive_body i:int i:term, i:term, i:term, o:term.
+pred translate_recursive_body i:int, i:term, i:term, i:term, i:term, i:term, o:term.
 
-translate_recursive_body Order F N RHS R :-
-  std.do! [
-    % This should recognize (f (n - k)) and store k in the list
-    (pi A E Op V\
-      fold-map {{lp:F (lp:V - lp:E)}} A
-      {{lp:F (lp:V - lp:E)}} [E | A])
-        =>
-      fold-map RHS [] _ Uses,
-    std.map Uses (real_to_int) Uses_int,
-    list_max Uses_int MaxUses,
-    % Need to generate an abstraction that gives the name L to
-    % the result of the recursive call
-    std.assert! (MaxUses =< Order)
-    "The depth of recursive calls exceeds the number of base values",
-    shift_real Order N N_plus_Order,
-    % Now performing the replacement for both the recursive calls
-    % and the numeric value received as argument
-    (pi L \
-      ((pi I I' In In' \ copy {{lp:F (lp:N - lp:I)}}
-         {{nth lp:I' lp:L 0}} :-
-         !,
-          real_to_int I In,
-          In' is Order - In,
-          int_to_nat In' I'),
+translate_recursive_body Order F VTy DefN N RHS R :-
+std.do! [
+      % This should recognize (f (n - k)) and store k in the list
+  (pi A E Op V Args\
+         %         fold-map (app [F, app[Op, V, E]]) A
+                  %                 (app [F, app[Op, V, E]]) [E | A]
+    fold-map (app [F, app[Op, V, E]|Args]) A
+    (app [F, app[Op, V, E]|Args])[E | A])
+  =>
+    fold-map RHS [] _ Uses,
+  std.map Uses (real_to_int) Uses_int,
+% TODO: just take the last element, or avoid sorting
+  list_max Uses_int MaxUses,
+% Need to generate an abstraction that gives the name V to
+% the result of the recursive call
+  std.assert! (MaxUses =< Order)
+  "The number of base values does not match the depth of recursive calls",
+  shift_real Order N N_plus_Order,
+     (pi L \
+      ((pi A B \ copy A B :-
+         replace_rec_call_by_seq_nth VTy DefN MaxUses F N L A B),
        copy N N_plus_Order) =>
     copy RHS (RHS' L)),
     Order1 is Order - 1,
-    make_recursive_step_list RHS' Order1 0 RecList,
-    R = (fun `v` {{list R}} RecList)
+    make_recursive_step_list VTy DefN RHS' Order1 0 RecList,
+    R = (fun `v` {{list lp:VTy}} RecList)
 ].
 
 % The input must have the form:
@@ -145,34 +142,44 @@ pred find_uses i:term, o:term, o:term.
 find_uses (fun N Ty Bo) R Order_Z :-
   pi arg\
     decl arg N Ty => % let one call the pretty printer and type checker inside
-    find_uses_of arg (Bo arg) R Order_Z. 
+    find_uses_of Ty arg (Bo arg) R Order_Z. 
                               % R does not use f recursively, but rather
                               % the value of its recursion history at depth
                               % Order_Z (which must be a cic term of type Z)
 
-pred find_uses_of i:term, i:term, o:term, o:term.
+pred find_uses_of i:term, i:term, i:term, o:term, o:term.
 
-find_uses_of F Spec Final Order_Z :-
+find_uses_of Ty F Spec Final Order_Z :-
   std.do! [
-    collect_base_specs F Spec Sps,
-    alist_sort Sps Sps2,
-    check_all_present 0 Sps2 Order,
-    make_initial_list Sps2 ListSps,
-    % coq.say "ListSps = " {coq.term->string ListSps},
-    fetch_recursive_equation Spec Ts,
+
+  collect_base_specs F Spec Sps,
+  alist_sort Sps Sps2,
+  check_all_present 0 Sps2 Order,
+  Ty = prod _ _Ty' (c0\ T2),
+  
+  make_initial_list T2 Sps2 ListSps,
+  fetch_recursive_equation Spec Ts,
+  type_to_nargs T2 Nargs,
+  nargs_to_def_val Nargs DefN,
+  N1 is  Nargs + 1,
+  int_to_nat N1 NatNargs,
+  std.assert-ok! (coq.typecheck F {{ty_R lp:NatNargs}})
+  "one of the argument's type couldn't be determined",
+  coq.say "F : " {coq.term->string F},
 % TODO : error reporting is not satisfactory here
     std.assert! (Ts = [prod Scalar_name Sc_type F1])
        "Expecting exactly one recursive equation",
     (pi n\
       decl n Scalar_name Sc_type =>
       (eat_implications F n (F1 n) (Body n),
-      translate_recursive_body Order F n (Body n) (Main_expression n))),
+      translate_recursive_body Order F T2 DefN n (Body n) (Main_expression n))),
     %Final = {{Rnat_rec lp:ListSps (fun x : R => lp:(Main_expression x)) }},
-    Final = {{ fun r : R => nth 0 
-                (Rnat_rec lp:ListSps lp:{{ fun Scalar_name {{R}}
-                              Main_expression}} r) 0}},
+    Final = {{fun r : R => @nth lp:T2 0 
+                (@Rnat_rec (list lp:T2) lp:ListSps 
+                lp:{{fun Scalar_name {{R}} Main_expression}} r) lp:DefN}},
     int_to_Z Order Order_Z
   ].
+
 
 pred make_eqn_proof i:string, i:term, i:term, i:constant.
 
@@ -201,7 +208,7 @@ std.do! [
   coq.env.add-const N_id Final Ty @transparent! C,
   coq.say "Defined" N_id,
 
-  make_eqn_proof N_id Abs_eqn Order C
+   make_eqn_proof N_id Abs_eqn Order C
 ].
 
 main _L :-

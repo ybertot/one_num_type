@@ -1,18 +1,4 @@
 
-pred compute_table o:term, o:term.
-
-compute_table {{Rplus}} {{Z.add}}.
-
-compute_table {{Rminus}} {{Z.sub}}.
-
-compute_table {{Rmult}} {{Z.mul}}.
-
-compute_table {{Ropp}} {{Z.opp}}.
-
-compute_table {{Rpower}} {{Z.pow}}.
-
-compute_table {{Rabs}} {{Z.abs}}.
-
 pred thm_table o:term, o:term, o:term.
 
 thm_table {{Rplus}} {{Z.add}} {{add_compute}}.
@@ -24,15 +10,21 @@ thm_table {{Rminus}} {{Z.sub}} {{sub_compute}}.
 thm_table {{Ropp}} {{Z.opp}} {{opp_compute}}.
 
 thm_table {{Rabs}} {{Z.abs}} {{abs_compute}}.
+
+thm_table {{Req_bool}} {{Zeq_bool}} {{eq_bool_compute}}.
+
+thm_table {{at_x}} {{at_x_Z}} {{at_x_compute}}.
+
 % arguments in a nat_thm_table relation are
 % 1/ a function f from R -> R
 % 2/ a function fz from Z -> Z
 % 3/ a theorem f_prf with statement
 %   forall x y, x = IZR y -> f (Rabs x) = IZR (fz y)
 %  This reflect that recursive definitions are mirrored
-% by function that first perform a Z.abs_nat operation 
+% by function that first perform a Z.abs_nat operation
 % to obtain the integer that will feed the recursive
 % computation
 % This table is used by R_compute, and its elements
 % are produced by mirror_recursive_definition
 pred nat_thm_table o:term, o:term, o:term.
+

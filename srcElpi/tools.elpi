@@ -1,3 +1,16 @@
+
+pred type_to_nargs i:term, o:int.
+
+type_to_nargs (prod _ _ c\T) N1 :-
+  !, type_to_nargs T N, N1 is N + 1.
+
+type_to_nargs {{R}} 0.
+
+pred nargs_to_def_val i:int, o:term.
+
+nargs_to_def_val N {{id_R lp:NasNat}} :-
+int_to_nat N NasNat.
+
 % sorting a list of integers removing duplicates
 pred list_insert i:int, i:list int, o:list int.
 
@@ -118,6 +131,24 @@ choose_pos_constructor.aux 0 {{xO}} :- !.
 
 choose_pos_constructor.aux _ _ :-
   coq.error "choose_pos_constructor.aux only accepts 0 or 1 as input".
+
+
+pred replace_rec_call_by_seq_nth i:term, i:term, i:int, i:term, i:term, i:term ,i:term,
+  o:term.
+
+% replace (F (N - k)) by (nth (L - k) V 0) everywhere in term A
+% But the subtraction (L - k) is actually computed and a number of type nat,
+% while (N - k) is a term representing a subtraction, where k is a
+% positive integer constant of type R
+
+replace_rec_call_by_seq_nth VTy Def L F N V A B :-
+  std.do! [
+    A = app[F, app [{{Rminus}}, N, K]|Args ] ,
+    real_to_int K Kn,
+    In is L - Kn,
+    int_to_nat In I,
+    B = app[{{@nth}}, VTy, I, V, Def|Args]
+  ].
 
 pred make_one_spec i:term, i:term, o:pair int term.
 make_one_spec V1 V2 (pr I1 V2) :-
