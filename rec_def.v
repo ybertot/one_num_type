@@ -629,5 +629,5 @@ Ltac rec_Rnat fun_name :=
     )) | assumption].
 
 
+Fail Elpi mirror_recursive_definition bin.
 
-(* Elpi Trace Browser. *)
