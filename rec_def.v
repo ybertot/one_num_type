@@ -579,7 +579,11 @@ coq.typecheck {{fun v : list (R -> R)=> @nth (ty_R 1) 0%nat v (id_R 1)}} A Diag
  }}.
 
 
-(* R_compute (bin 5 3). *)
+  
+
+Notation "'def' id 'such' 'that' bo" := (fun id => bo) 
+ (id binder, bo at level 100, at level 1, only parsing).
+
 
 Ltac rec_Rnat fun_name :=
 (* This tactic is only meant to be used on statements of the form:
@@ -603,5 +607,7 @@ Ltac rec_Rnat fun_name :=
              intros [ | k];[typeclasses eauto | revert k; cbn [nth]]
     )) | assumption].
 
+
+Fail Elpi mirror_recursive_definition bin.
 
 (* Elpi Trace Browser. *)
