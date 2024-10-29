@@ -273,7 +273,6 @@ Lemma nth_map {A B : Type} (da : A) (db : B) (f : A -> B) (la : list A)
   lb = map f la ->
   nth k lb db = f (nth k la da).
 Proof.
-  Check map_nth.
 intros dq lq; rewrite dq, lq; apply map_nth.
 Qed.
 
