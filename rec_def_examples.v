@@ -749,6 +749,36 @@ replace (0 + 1) with 1 by ring.
 easy.
 Qed.
 
+(* Todo : understand why Elpi r_compute (89 - 5) does not work in some places. *)
+Lemma exercise_4_5_17 : exists n, choose n 5 = 17 * choose n 4.
+Proof.
+eexists ?[ex_n].
+remember ?ex_n as n eqn:Heqn.
+rewrite !choose_def1; solve_Rnat;[ | shelve | shelve | shelve | shelve].
+replace (17 * (factorial n / (factorial (n - 4) * (factorial 4)))) with
+  (factorial n / ((factorial (n - 5) * factorial 4)) * (17 / ( n - 4))).
+replace (factorial n / ((factorial (n - 5) * factorial 5))) with
+  (factorial n / ((factorial (n - 5) * factorial 4)) * (1/5)).
+apply f_equal.
+apply (Rmult_eq_reg_r (5 * (n - 4))).
+field_simplify.
+apply (Rplus_eq_reg_r 4).
+ring_simplify.
+rewrite Heqn.
+reflexivity.
+1,2: shelve.
+rewrite (fact_suc 5); ring_simplify (5 - 1); solve_Rnat.
+field.
+shelve.
+rewrite (fact_suc (n - 4)); ring_simplify (n - 4 -1).
+field.
+Unshelve.
+all: ring_simplify [Heqn] (n - 5); rewrite ?Heqn.
+all: assert (0 < factorial 4 /\ 0 < factorial 84) by
+  (split; apply factorial_gt0; solve_Rnat).
+all: solve_Rnat; lra.
+Qed.
+
 (* An example of a function where the order of recursion is
   lower than the number of base cases.  *)
 Recursive (def one_then_0 such that
