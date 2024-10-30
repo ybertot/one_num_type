@@ -492,10 +492,10 @@ translate_recursive_body Order F N RHS R :-
         =>
       fold-map RHS [] _ Uses,
     std.map Uses (real_to_int) Uses_int,
-    list_max Uses_int L,
+    list_max Uses_int MaxUses,
     % Need to generate an abstraction that gives the name L to
     % the result of the recursive call
-    std.assert! (L =< Order)
+    std.assert! (MaxUses =< Order)
     "The depth of recursive calls exceeds the number of base values",
     shift_real Order N N_plus_Order,
     % Now performing the replacement for both the recursive calls
