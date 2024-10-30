@@ -1,5 +1,5 @@
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesClass{modjflart}[2023/10/10 JFLA LaTeX class]
+\ProvidesClass{modjflart}[2024/10/29 almmost JFLA LaTeX class]
 
 \LoadClass[10pt,a4paper]{scrartcl}
 
