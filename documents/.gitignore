@@ -1,9 +1,10 @@
-*~
-*.aux
+*.bbl
+*.blg
+*.bak
 *.log
+*.aux
+*.toc
+*.vrb
 *.nav
 *.out
 *.snm
-*.toc
-*.vrb
-Bonn_2024_talk.pdf

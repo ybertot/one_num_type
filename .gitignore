@@ -31,4 +31,7 @@ lia.cache
 nia.cache
 nlia.cache
 nra.cache
+*~texput.log
+Makefile
+Makefile.conf
 *~
