@@ -118,9 +118,13 @@ ring_simplify (5 + 2).
 easy.
 Qed.
 
-Lemma prove_that_a_number_is_a_natural_number : Rnat 4 /\ Rnat 0 /\
-  Rnat (6 + 7) /\ Rnat (9 - 2) /\ Rnat (5 + (9 - 2)).
+Lemma prove_that_a_number_is_a_natural_number x y :
+  Rnat x -> Rnat y -> x < y -> Rnat 4 /\ Rnat 0 /\
+  Rnat (6 + 7) /\ Rnat (y - x) /\ Rnat (5 + (y - x)).
 Proof.
+(* Proving an implication can be done by adding the premise (right-hand side)
+  in the hypotheses and then proving the conclusion (left-hand side) *)
+intros xnat ynat xlty.
 (* Proving a conjunction can be done step by step. *)
 split.
   (* Proving that a constant like 4 is a natural number is done automatically
@@ -131,8 +135,9 @@ split.
 split.
   solve_Rnat.
 split.
-(* In the present version, the automatic tool does not take of subtractions,
-  but there is a theorem explaining that you only need to check that the
+(* In the present version, the automatic tool does not take care of
+  subtractions, but there is a theorem explaining that you only need to
+  check that the
   two numbers are already natural numbers and the first is larger than the
   second one.  This theorem is used with a command named "apply". *)
   Fail progress solve_Rnat.
@@ -183,20 +188,30 @@ ring_simplify (2 - 1).
 solve_Rnat.
 Qed.
 
+(* We can prove by induction that the sequence dd returns twice its input. *)
+Lemma dd_double n : Rnat n -> dd n = 2 * n.
+Proof.
+intros nnat.
+destruct dd_eqn as [dd0 dd_suc].
+induction nnat as [ | x xnat Ih].
+  rewrite dd0.
+  ring.
+rewrite dd_suc; cycle 1.
+  solve_Rnat.
+replace (x + 1 - 1) with x by ring.
+rewrite Ih.
+ring.
+Qed.
+
 Elpi mirror_recursive_definition dd.
 
-Check fib_eqn.
-
 R_compute (dd 212).
+
+Check fib_eqn.
 
 R_compute (fib (fib 9)).
 
 Fail R_compute (fib (-2)).
-
-(* When we want to prove equalities between formulas,
-  where the operations are addition multiplication
-  subtraction and division, we use field instead of
-  ring. *)
 
 (* The following proof is taken from a wikipedia page on the Fibonacci
  sequence and the golden ratio.  The golden ratio is the positive root
@@ -218,6 +233,10 @@ assert (s5q : sqrt 5 ^ 2 = 5).
     easy.
   lra.
 rewrite s5q.
+(* When we want to prove equalities between formulas,
+  where the operations are addition multiplication
+  subtraction and division, we use field instead of
+  ring. *)
 field.
 Qed.
 
@@ -253,6 +272,7 @@ replace (phi ^ 2 * golden_ratio_polynomial (-(1/phi))) with
   rewrite phi_root.
   ring.
 unfold golden_ratio_polynomial.
+(* TODO: this may be a bug in the behavior of field_simplify. *)
 Fail progress (field_simplify;[ | exact phi_n0]).
 field.
 exact phi_n0.

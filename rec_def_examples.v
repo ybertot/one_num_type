@@ -642,39 +642,37 @@ Proof.
 (* TODO: figure out why the notations for sums and products are not used.  *)
 induction 1 as [ | n nnat Ih].
   rewrite Rpow0.
-  rewrite big_recl; cycle 1.
-      now replace (0 + 1 - 0) with 1 by ring; solve_Rnat.
-    lra.
+  rewrite sum1.
   rewrite choose_n_n; solve_Rnat.
-  rewrite big0.
   (* TODO: figure out a way to use ring only once. *)
   replace (0 - 0) with 0 by ring.
   ring.
 replace ((x + y) ^ (n + 1)) with (x * (x + y) ^ n + y * (x + y) ^ n); cycle 1.
-  (* TODO: this shoulc be a ring no-brainer. *)
-  rewrite Rpow_add; solve_Rnat; ring.
+  (* TODO: this should be a ring no-brainer. *)
+  rewrite Rpow_succ; solve_Rnat; ring.
 rewrite Ih.
 rewrite !big_distr;[ |  rewrite Rminus_0_r | rewrite Rminus_0_r]; solve_Rnat.
-(* TODO: understand why this set command changes the name of bound variables, making
-  them inappropriate. *)
-set (w1 := \sum_(_ <= _ < _) _).
-set (w2 := \sum_(_ <= _ < _) _).
-set (w3 := \sum_(_ <= _ < _) _).
+(* TODO: understand why this set command changes the name of bound variables when i
+  is not written explicitely, making names inappropriate. *)
+set (w1 := \sum_(_ <= i < _) _).
+set (w2 := \sum_(_ <= i < _) _).
+set (w3 := \sum_(_ <= i < _) _).
 set (w4 := \sum_(1 <= i < n + 1) (choose n i * x ^ i * y ^ (n + 1 - i))).
 assert (eq2 : w2 = choose (n + 1) 0 * x ^ 0 * y ^ (n + 1) + w4).
   unfold w2.
-  rewrite big_recl; cycle 1.
-    now replace (n + 1 - 0) with (n + 1) by ring; solve_Rnat.
+  rewrite big_recl; cycle 1.  (* This step avoids having to mention choose n (-1) *)
+      now replace (n + 1 - 0) with (n + 1) by ring; solve_Rnat.
   (* TODO: encapsulate lra in a preparing tactic that exploits all possible
      uses of Rnat_ge0. *)
-  apply Rnat_ge0 in nnat; lra.
+    apply Rnat_ge0 in nnat; lra.
 (* Now the bound variable has its name from theorem big_recl *)
   apply f_equal2.
     rewrite !choose_n_0, Rpow_add; solve_Rnat.
     replace (n - 0) with n by ring.
     ring.
-  unfold w4.
   replace (0 + 1) with 1 by ring.
+  (* Here we need to use an extensionality step, because we can't rewrite inside
+    the big sum. *)
   apply big_ext_low_nat; solve_Rnat.
     replace (n + 1 - 1) with n by ring.
     solve_Rnat.
@@ -686,7 +684,7 @@ assert (eq2 : w2 = choose (n + 1) 0 * x ^ 0 * y ^ (n + 1) + w4).
   enough (i + 1 <= n + 1) by lra.
   apply Rnat_le_lt; solve_Rnat.
   tauto.
-set (w5 := \sum_(0 <= i < n) (choose n i * x ^(i + 1) * y ^(n - i))).
+set (w5 := \sum_(0 <= i < n) (choose n i * x ^ (i + 1) * y ^ (n - i))).
 assert (eq1 : w1 = choose (n + 1) (n + 1) * x ^ (n + 1) * y ^ 0 + w5).
   unfold w1.
   rewrite big_recr; auto; cycle 1.
@@ -700,6 +698,7 @@ assert (eq1 : w1 = choose (n + 1) (n + 1) * x ^ (n + 1) * y ^ 0 + w5).
     rewrite !choose_n_n; solve_Rnat.
     rewrite Rpow_add; solve_Rnat; ring.
   unfold w5.
+  (* Here again, we need to rewrite inside the sum using a extensionality step. *)
   apply big_ext_low_nat; solve_Rnat.
     replace (n - 0) with n by ring.
     solve_Rnat.
@@ -714,26 +713,27 @@ rewrite big_recr; auto; cycle 1.
   apply Rnat_ge0 in nnat; lra.
 replace (n + 1 + 1 - 1) with (n + 1) by ring.
 replace ((n + 1) - (n + 1)) with 0 by ring.
-(* This should be a strike-proof-step *)
+(* This should be a strike-proof-step---upto apply f_equal *)
 rewrite (Rplus_comm _ (choose (n + 1) _ * _ * _)), !Rplus_assoc.
 apply f_equal.
 rewrite big_recl; replace (n + 1 - 0) with (n + 1) by ring; 
   solve_Rnat; cycle 1.
   apply Rnat_ge0 in nnat; lra.
-(* This should be a strike-proof-step *)
+(* This should be a strike-proof-step---upto appl f_equal; clear w6 *)
 set (w6 := choose (n + 1) 0 * _ * _).
 rewrite <- Rplus_assoc, <- (Rplus_comm w6), Rplus_assoc.
 apply f_equal; clear w6.
 rewrite <- big_shift; cycle 1.
   replace (n - 0) with n by ring; solve_Rnat.
-(* This should be a few rewrites under the sum. *)
+(* This should be a few rewrites under the sum, but there is the question
+  of exploiting the fact that i in the 0.. (n-1) range. *)
 set (w7 := Rbigop _ _ _ _ _).
 assert (eq3 : w7 = 
          \sum_(0 <= i < n) 
            (choose n i * x ^ (i + 1) * y ^(n - i) +
            choose n (i + 1) * x ^ (i + 1) * y ^ ((n + 1) - (i + 1)))).
-  unfold w7; apply big_ext_low_nat; solve_Rnat.
-  replace (n - 0) with n by ring; solve_Rnat.
+  apply big_ext_low_nat; solve_Rnat.
+    replace (n - 0) with n by ring; solve_Rnat.
   intros i inat iint.
   replace (n + 1 - (i + 1)) with (n - i) by ring.
   rewrite choose_suc; solve_Rnat; cycle 1.
