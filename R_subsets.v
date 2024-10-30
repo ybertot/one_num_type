@@ -255,7 +255,12 @@ Qed.
 Example test_Rnat_proof x : Rnat x -> Rnat ((x + 2) * x).
 Proof. exact _. Qed.
 
-Ltac solve_Rnat := try typeclasses eauto.
+(* TODO: this command is not very principled.  *)
+Ltac solve_Rnat :=
+  exact _ || (repeat match goal with
+  |- Rnat ?x => ring_simplify x
+  end;
+  try exact _).
 
 (* Order properties for natural numbers. *)
 
@@ -362,6 +367,13 @@ Lemma Rpow_add x a b :
 Proof.
 intros anat bnat.
 unfold Rpow; rewrite IRN_add, pow_add; easy.
+Qed.
+
+Lemma Rpow_succ x a : Rnat a -> x ^ (a + 1) = x ^ a * x.
+Proof.
+intros anat.
+rewrite Rpow_add; auto; try exact _.
+now rewrite Rpow1.
 Qed.
 
 Lemma Rpow_convert_Z n m :
@@ -735,6 +747,16 @@ destruct amf as [Pa [P1 P2]].
 now rewrite Ih, Pa; replace (a + (p + 1)) with (a + 1 + p) by ring.
 Qed.
 
+Lemma big1 {A : Type}(E : R -> A) (f : A -> A -> A) (idx : A) (a : R)
+  {mf : associative_monoid f idx} :
+  \big[f / idx]_(a <= i < a + 1) E i = E a.
+Proof.
+rewrite big_recl, big0.
+    now destruct mf as [_ [it _]]; rewrite it.
+  now replace (a + 1 - a) with 1 by ring; exact _.
+lra.
+Qed.
+
 Lemma associative_monoid_Rplus : associative_monoid Rplus 0.
 Proof.
 split;[exact (fun x y z => eq_sym (Rplus_assoc x y z))| ].
@@ -755,6 +777,15 @@ Qed.
 
 #[export]
 Hint Resolve associative_mul : core.
+
+Existing Class associative_monoid.
+Existing Instances associative_monoid_Rplus associative_mul.
+
+Lemma sum1 (E : R -> R) (a : R) : \sum_(a <= i < a + 1) E i = E a.
+Proof. now apply big1. Qed.
+
+Lemma prod1 (E : R -> R) (a : R) : \prod_(a <= i < a + 1) E i = E a.
+Proof. now apply big1. Qed.
 
 Lemma sum_recr (E : R -> R) (a b : R) :
   Rnat (b - a) -> a < b ->
