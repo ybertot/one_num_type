@@ -452,15 +452,42 @@ Add Field RField_w_Rpow : Rfield
     preprocess [to_pow],
     postprocess [from_pow], power_tac R_power_theory [Rpow_tac]).
 
+(* This is only needed as long as the correction to preprocessing
+  bugs has not been incorporated into the released version of the
+  system (up to coq 8.20).  The code here is duplicated from the
+  code in the fix. *)
 Add Ring RRing_w_Rpow : RTheory
   (morphism R_rm, constants [IZR_tac], preprocess [to_pow],
     postprocess [from_pow], power_tac R_power_theory [Rpow_tac]).
 
+Ltac Field_simplify_gen f FLD lH rl :=
+  let l := fresh "to_rewrite" in
+  pose (l:= rl);
+  generalize (eq_refl l);
+  unfold l at 2;
+  get_FldPre FLD ();
+  let rl :=
+    match goal with
+    | [|- l = ?RL -> _ ] => RL
+    | _ => fail 1 "ring_simplify anomaly: bad goal after pre"
+    end in
+  let Heq := fresh "Heq" in
+  intros Heq;clear Heq l;
+  Field_norm_gen f ring_subst_niter FLD lH rl;
+  get_FldPost FLD ().
+
+Ltac Field_simplify :=
+  Field_simplify_gen ltac:(fun H => rewrite H).
+
+Tactic Notation (at level 0) "field_simplify" constr_list(rl) :=
+  let G := Get_goal in
+  field_lookup (PackField Field_simplify) [] rl G.
+
+(* End of fix code for field_simplify. *)
+
 Example test_ring3 n : n ^ 3 + 3 * n ^ 2 + 3 * n + 1 = (n + 1) ^ 3.
 Proof.
-Fail progress field_simplify ((n + 1) ^ 3).
-to_pow.
-field_simplify.
+field_simplify ((n + 1) ^ 3).
 easy.
 Qed.
 

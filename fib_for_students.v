@@ -266,16 +266,14 @@ destruct (Rmult_integral (phi ^ 2) (golden_ratio_polynomial (-(1/phi))))
   as [ abs | it].
 3: exact it.
 2: now rewrite abs in phi_square_n0; case phi_square_n0.
-(* TODO: understand why field_simplify does not do anything good here.*)
 replace (phi ^ 2 * golden_ratio_polynomial (-(1/phi))) with
  (- (golden_ratio_polynomial phi)).
   rewrite phi_root.
   ring.
 unfold golden_ratio_polynomial.
-(* TODO: this may be a bug in the behavior of field_simplify. *)
-Fail progress (field_simplify;[ | exact phi_n0]).
+field_simplify ((- (1 / phi)) ^ 2 - - (1 / phi) - 1).
 field.
-exact phi_n0.
+all: exact phi_n0.
 Qed.
 
 Lemma  phi'_eq : phi' = (1 - sqrt 5) / 2.
@@ -371,8 +369,7 @@ destruct Ih as [Ih1 Ih2].
 split;[ assumption | ].
 (* To use fib_suc, we need to show that p + 1 + 1 - 2 is a natural number. *)
 assert (pnat' : Rnat (p + 1 + 1 - 2)).
-  ring_simplify (p + 1 + 1 - 2).
-  easy.
+  solve_Rnat.
 rewrite fib_suc; solve_Rnat.
 ring_simplify (p + 1 + 1 - 2).
 ring_simplify (p + 1 + 1 - 1).
