@@ -1,6 +1,13 @@
+#[local]
+Set Warnings "-notation-overridden".
+
 Require Import Reals List Lra R_subsets rec_def R_compute rec_def_examples.
 (* TODO: remove this line when the file contains only stuff for the student's
 eyes*)
+
+#[local]
+Set Warnings "+notation-overridden".
+
 Require Import Lia.
 Open Scope R_scope.
 
@@ -204,8 +211,11 @@ ring.
 Qed.
 
 Elpi mirror_recursive_definition dd.
+Check dd.
+Check dd_Z_mirror.
+Check dd_Z_prf.
 
-R_compute (dd 212).
+R_compute (dd 212). 
 
 Check fib_eqn.
 

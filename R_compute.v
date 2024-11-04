@@ -1,6 +1,13 @@
 From elpi Require Import elpi.
 Require Import List Reals ClassicalEpsilon Lia Lra.
+
+#[local]
+Set Warnings "-notation-overridden".
+
 Require Import R_subsets rec_def.
+
+#[local]
+Set Warnings "+notation-overridden".
 
 Open Scope R_scope.
 
