@@ -3,29 +3,6 @@ Require Import Wellfounded.
 
 Open Scope R_scope.
 
-Module Type MyIZR_type.
-
-Parameter IZR : Z -> R.
-
-Axiom eq : IZR = Rdefinitions.IZR.
-
-End MyIZR_type.
-
-Module MyIZR : MyIZR_type.
-
-Definition IZR := Rdefinitions.IZR.
-
-Lemma eq : IZR = Rdefinitions.IZR.
-Proof. reflexivity. Qed.
-
-End MyIZR.
-
-Definition MyINR : N -> R :=
-  fun n => match n with
-  | N0 => 0
-  | N.pos p => MyIZR.IZR (Z.pos p)
-  end.
- 
 (* The set of integers in the type of real numbers *)
 (* ============ *)
 (* Definitions.  The beginner users may not need to see that, but
@@ -343,9 +320,6 @@ Qed.
 
 Definition Rpow (x y : R) := pow x (IRN y).
 
-Lemma Rpow_pre_ring x y : Rpow x (IZR y) = Rpow x (MyIZR.IZR y).
-Proof. rewrite MyIZR.eq; easy. Qed.
-
 #[local]
 Set Warnings "-notation-overridden".
 
@@ -381,29 +355,6 @@ Lemma Rpow_convert_Z n m :
 Proof.
 now unfold Rpow; rewrite IRN_IZR.
 Qed.
-
-Definition R_p_t : power_theory 1 Rmult (@eq R)
-  MyINR Rpow.
-constructor.
-destruct n.
-  simpl.
-  now rewrite Rpow_convert_Z.
-unfold MyINR; rewrite MyIZR.eq.
-rewrite Rpow_convert_Z.
-change (Z.abs_nat (Z.pos p)) with (N.to_nat (N.pos p)).
-now destruct R_power_theory as [ it]; apply it.
-Qed.
-
-Ltac Rpow_tac1 t :=
-  match t with
-  | MyIZR.IZR Z0 => N0
-  | MyIZR.IZR (Z.pos ?p) =>
-    match isPcst p with
-    | true => constr:(N.pos p)
-    | false => constr:(InitialRing.NotConstant)
-    end
-  | _ => constr:(InitialRing.NotConstant)
-  end.
 
 Example test_ring n :  pow n 3 + 3 * pow n 2 + 3 * n + 1 =
   pow (n + 1) 3.
@@ -637,7 +588,7 @@ Lemma rlength_Rseq x y : Rnat y -> rlength (Rseq x y) = y.
 Proof.
 intros ynat.
 rewrite rlength_nat; unfold Rseq.
-now rewrite map_length, seq_length, INR_IRN.
+now rewrite length_map, length_seq, INR_IRN.
 Qed.
 
 Lemma Rseq0 (n : R) : Rseq n 0 = nil.
