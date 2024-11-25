@@ -39,6 +39,7 @@ Print fib.
 
 Elpi mirror_recursive_definition fib.
 Check fib_Z_prf.
+Print fib_Z_mirror.
 R_compute (fib 7 - fib 2).
 Fail R_compute (fib (fib 2 - fib 7)).
 R_compute (fib (fib 7 - fib 2)) fib_f7_f2_eqn.
@@ -241,6 +242,8 @@ rec_Rnat factorial.
 Qed.
 
 Existing Instance factorial_nat.
+
+
 
 Elpi mirror_recursive_definition factorial.
 
