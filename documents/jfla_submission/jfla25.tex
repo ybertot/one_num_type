@@ -53,13 +53,13 @@
 Il y a maintenant de nombreux systèmes de preuves interactifs
 utilisables pour faire des preuves mathématiques.  Même si ces
 systèmes de preuves ont été initialement conçus pour vérifier la
-correction d'algorithmes et de logiciel, il est souvent pratique
+correction d'algorithmes et de logiciels, il est souvent pratique
 d'inclure des capacités de raisonnement sur des objets mathématiques
 pour justifier la correction de logiciels.  Par exemple, les
 primitives cryptographiques peuvent reposer sur des propriétés
 mathématiques d'objets remarquables comme des courbes elliptiques et
 la spécification même de la correction de tels algorithmes peut
-reposer sur le concept de mathématique de probabilité.
+reposer sur le concept mathématique de probabilité.
 
 Historiquement, pratiquement tous les systèmes de preuve basés sur la
 théorie des types ont commencé
@@ -95,7 +95,7 @@ d'une phrase, comprendre des phrases énonçant l'existence d'un objet
 ou des phrases énonçant qu'une propriété est universellement
 satisfaite, et faire la différence entre ces deux types de phrases.
 
-Pour de nombreux étudiants en mathématiques, le langage à utiliser est
+Pour de nombreux étudiants en mathématiques, le langage utilisé est
 une langue étrangère.  Il faut pratiquer cette langue étrangère
 fréquemment pour progresser.  En particulier, il faut apprendre à décrire
 des raisonnements en suivant correctement les implications fournies par
@@ -126,8 +126,8 @@ la multiplication et la soustraction.  Mais pour la soustraction
 il apparaît une dissonance entre les
 mathématiques telle qu'elles apparaissent dans le système de preuve et
 dans la tradition humaine.  Le système de preuve impose
-que la fonction soit totale, donc le concepteur de la bibliothèque est
-obligé de donner aux formules où le deuxième argument est supérieur au
+que la fonction soit totale, donc la conceptrice de la bibliothèque est
+obligée de donner un sens aux formules où le deuxième argument est supérieur au
 premier, comme \(3 - 5\).  Le choix fait
 dans tous les systèmes de preuve est que le résultat est le nombre
 \(0\), parce que la valeur réelle ou entière relative n'est pas un
@@ -146,7 +146,7 @@ généralement l'appartenance des arguments au domaine de définition
 comme hypothèse.  Ainsi, une mathématicienne utilisera naturellement
 le raisonnement:
 \[(m - n) + n = m\]
-en reposant sur le fait que la formule de droite a été validée (\(n
+en reposant sur le fait que la formule de gauche a été validée (\(n
 \leq m\)) plus tôt dans le discours.  En revanche, l'outil de preuve
 fournit un théorème avec l'énoncé suivant:
 \begin{verbatim}
@@ -188,7 +188,7 @@ où \(\phi\) est le nombre d'or.
 \[\phi = \frac{\sqrt{5} + 1}{2}\]
 Alors que le membre gauche de l'égalité fait intervenir une fonction définie
 seulement par récurrence sur les entiers naturels et en utilisant des
-additions de nombres naturels, la formule de gauche fait intervenir des
+additions de nombres naturels, la formule de droite fait intervenir des
 opérations qui ne sont pas stables pour les nombres naturels, les nombres
 entiers relatifs, ou même les nombres rationnels.
 
@@ -200,7 +200,7 @@ travail est complémentaire des efforts proposés par d'autres
 chercheurs pour fournir un environnement où les étudiants peuvent
 bénéficier d'une approche leur permettant de rédiger leurs preuves
 dans un style de ``langue naturelle contrôlée'' parce que ces efforts
-visent à améliorer le langage utilisés pour décrire les raisonnements
+visent à améliorer le langage utilisé pour décrire les raisonnements
 logiques, sans modifier le cadre de travail; les faits utilisés
 restent proches de la théorie des types traditionnelle et reposent sur
 plusieurs types de nombres.
@@ -237,7 +237,7 @@ est représenté par un type dénoté \texttt{R}.  Les opérations usuelles
 sur les nombres sont représentées par des fonctions \texttt{+}, \texttt{-},
 \texttt{*}, \texttt{/}.  Les constantes entières de type \texttt{R} s'écrivent
 directement dans leur représentation décimale.  De cette manière, une
-utilisatrice finale peut se contenter écrire la formule suivante
+utilisatrice finale peut se contenter d'écrire la formule suivante
 \texttt{3 - 5 * 2}.
 
 Nous reviendrons plus tard sur le dispositif qui permet cette
@@ -300,30 +300,60 @@ principe de récurrence associé avec \texttt{Rnat}.
 
 Enfin, l'utilisatrice finale ne devra pas le voir,
 mais pour nos développements, nous aurons besoin d'une
-correspondance entre l'ensemble \texttt{Rnat} et le type inductif
-\texttt{nat}.
+correspondance entre l'ensemble \texttt{Rnat} et les type inductifs
+\texttt{nat} et \texttt{Z}.
 
-La bibliothèque standard des nombres réels de Rocq fournit une fonction
-récursive \texttt{INR} de type \texttt{nat -> R}.  Cette fonction est
-définie récursivement, de telle sorte que l'on peut montrer facilement
+La bibliothèque standard des nombres réels de Rocq fournit des fonctions
+\texttt{INR} et \texttt{IZR} de type \texttt{nat -> R} et \texttt{Z -> R}.
+Ces fonctions sont définies récursivement, de telle sorte que l'on peut
+montrer facilement
 que l'image de \texttt{INR} coïncide avec l'ensemble \texttt{Rnat}.  Les
-deux énoncés sont les suivants:
+énoncés sont les suivants:
 \begin{verbatim}
 Rnat_INR n : Rnat (INR n).
 
 Rnat_exists_nat x {xnat : Rnat x} :
   exists n, x = IZR (Z.of_nat n).
+
+Rnat_cst x : Rnat (ZR (Z.pos x)).
 \end{verbatim}
 
 Les différents théorèmes exprimant que l'ensemble des nombres naturels
 est stable pour les opérations \texttt{+}, \texttt{*}, \texttt{Rabs},
-sont déclarés comme des instances de classes de types, de telle sorte que
-les preuves qu'une formule mathématique est bien un nombre naturel peuvent
-souvent être effectuées automatiquement.
+sont déclarés comme des instances de classes de types.  Ainsi,
+lorsque l'utilisatrice finale a besoin de vérifier qu'un nombre réel
+satisfait la propriété d'être un nombre naturel, cette preuve peut souvent
+être effectuée automatiquement.
 
 Un des éléments remarquables de ces théorèmes de stabilité est le théorème
-qui exprime que toute constante numériques comme \(0\), \(3\), \(42\) est
-automatiquement prouvée comme appartenant à l'ensemble \texttt{Rnat}.
+\texttt{Rnat\_cst}
+qui exprime que toute constante numérique comme \(1\), \(3\), \(42\) est
+appartien à l'ensemble \texttt{Rnat}.  Ce
+théorème ne devrait pas être montré aux utilisateurs finaux, sous peine
+d'avoir à expliquer l'existence de plusieurs types de nombres, mais il doit
+être déclenché automatiquement chaque fois que l'ont veut vérifier qu'une
+constante entière (de type \texttt{R}) est bien dans l'ensemble \texttt{Rnat}.
+Ce théorème a pour énoncé:
+\begin{verbatim}
+Rnat_cst : forall p : positive, Rnat (IZR (Z.pos p))
+\end{verbatim}
+Ainsi, le nombre \texttt{42} de type \texttt{R} est affiché \texttt{42}, mais
+est représenté en réalité par l'expression \texttt{IZR(Z.pos 42\%positive)}.
+La sous expression \texttt{42\%positive} représente le nombre \texttt{42} dans
+le type \texttt{positive}.
+La preuve que le nombre réel \texttt{42} est bien élément de \texttt{Rnat}
+est fournie par le théorème \texttt{IZR\_cst 42\%positive}.
+
+La notation \texttt{42\%positive} mérite une explication.  L'analyse
+syntaxique effectuée dans le système de preuve est paramétrable pour indiquer
+que l'on veut lire données de différentes manières.
+Ici, le suffixe \texttt{\%positive} permet d'indique que l'on veut
+mentionner un nombre de type \texttt{\%positive}.  Nous verrons plus
+tard que nous utiliserons également le suffixe \texttt{\%nat} pour
+mentionner un nombre naturel de type \texttt{nat}.  L'existence de ces
+notations obscucit notre présentation, mais c'est justement notre
+objectif de faire disparaitre ce besoin de notations distinctes pour
+différentes représentations du même nombre mathématique.
 
 En revanche, le théorème qui permet de prouver qu'une soustraction retourne un
 nombre naturel a la forme suivante:
@@ -341,12 +371,13 @@ un type inductif (et ils ne peuvent pas l'être).
 
 Pour remédier à cela, nous fournissons une commande qui permet de
 définir des fonctions de \texttt{R} dans \texttt{R} de telle sorte que leur
-valeur est spécifiée précisément pour tous les nombres naturels par un
-procédé récursif et {\em indéfinie} ailleurs.  Cet usage de valeurs
+valeur est définie précisément pour tous les nombres naturels par un
+procédé récursif et qu'elles sont {\em indéfinies} ailleurs.  Cet usage
+de valeurs
 indéfinies est très similaire à ce qui se produit déjà pour l'inverse, dont
 la valeur n'est pas définie en 0.  
 L'inverse de 0 peut être manipulé comme un nombre réel, mais aucune
-propriété ne peut obtenue par preuve pour ce nombre.
+propriété ne peut être obtenue par preuve pour ce nombre.
 
 Donnons un exemple de définition obtenue par notre commande:
 \begin{verbatim}
@@ -363,22 +394,31 @@ Il est évident que la spécification donnée ci-dessus ne permet pas de
 décrire la valeur de \texttt{factorial} pour l'entrée \texttt{0.5}.
 En revanche, elle permet bien d'obtenir le résultat que
 \texttt{factorial 3} est égal à \texttt{6}, en reposant sur plusieurs
-réécritures avec le deuxième membre de la conjonction, aux preuves que
+réécritures avec le deuxième membre de la conjonction, sur les preuves que
 \texttt{3 - 1}, \texttt{3 - 1 - 1}, \texttt{3 - 1 - 1 - 1} sont des
-nombres naturels, et à la vérification que \texttt{3 * (3 - 1) * (3 -
-  1 - 1) * (3 - 1 - 1 - 1) = 6}.  Cette égalité est prouvée en une
+nombres naturels, et sur la vérification que \texttt{3 * (3 - 1) * (3 -
+  1 - 1) = 6}.  Cette égalité est prouvée en une
 seule étape par la tactique \texttt{ring}, parce que les nombres
 considérés sont des nombres réels et la tactique \texttt{ring} n'a pas de
 restriction vis-à-vis de la soustraction pour ce type de nombres.  La
 tactique \texttt{ring} permet également de remplacer
 \texttt{3 - 1}, \texttt{3 - 1 - 1}, \texttt{3 - 1 - 1 - 1} par
 \texttt{2}, \texttt{1}, \texttt{0},
-respectively, et la preuve que ces nombres sont dans \texttt{Rnat} est
+respectivement, et la preuve que ces nombres sont dans \texttt{Rnat} est
 automatique.
 
-La commande permet
-également de définir des suites récurrentes d'ordre arbitrairement élevé
-(mais fini).  Par exemple,  la suite de Fibonacci peut se définir de la façon
+La commande permet également de définir des suites récurrentes d'ordre
+arbitrairement élevé (mais fini).  Les suites récurrentes les plus fréquentes,
+où la valeur en \(n + 1\) est déterminée seulement en utilisant la valeur de
+\(n\) et la valeur de la suite en \(n\), sont des suites d'ordre 1.  Lorsque
+la valeur en \(n + k\) est déterminée seulement en utilisant la valeur de 
+\(n\) et les valeurs déjà connues en \(n\), \(n + 1\), \dots \(n + (k - 1)\),
+on dit que la suite est d'ordre \(k\).  Un exemple connu de suite d'ordre 2
+est la suite de Fibonacci, où les valeurs en \(0\) et \(1\) sont \(0\) et \(1\)
+respectivement, et la valeur en \(n + 2\) est la somme des deux
+valeurs précédentes.
+
+Avec notre commande, la suite de Fibonacci peut se définir de la façon
 suivante (nous nommons la fonction \texttt{fib} pour gagner de la place).
 \begin{verbatim}
 Recursive (def fib such that
@@ -387,8 +427,6 @@ Recursive (def fib such that
     forall n : R, Rnat (n - 2) ->
     fib n = fib (n - 2) + fib (n - 1)).
 \end{verbatim}
-Cette définition a deux cas de base, et la valeur générale pour
-\texttt{n} plus grand que \texttt{1} utilise deux valeurs précédentes.
 
 \subsection{Techniques d'implémentation}
 Ce que nous allons décrire dans cette section est la méthode que nous avons
@@ -523,7 +561,7 @@ liste reçue en argument, mais la spécification nous indique comment
 calculer cette valeur en utilisant les valeurs présentes dans \texttt{l}.
 La liste est donc de la forme suivante:
 \begin{verbatim}
-[nth 1%nat l 0; nth 0%nat 0 + nth 1%nat 0]
+[nth 1%nat l 0; nth 0%nat l 0 + nth 1%nat l 0]
 \end{verbatim}
 
 Maintenant que nous avons vu ce que nous voulons sur deux exemples,
@@ -567,14 +605,23 @@ avec construction filtrage.
 
 Ainsi, une opération de remplacement, comme celles que nous décrivons
 dans les quatrième et cinquième points de l'algorithme peut se décrire
-en disant que l'on prend une fonction de copie de termes, sauf que les
+en disant que l'on prend une fonction existante de copie de termes, sauf que les
 instance du schéma à remplacer sont traitées par une règle prioritaire,
 qui fait le remplacement au lieu de faire une simple copie à
 l'identique.
 
-Le texte suivant montre comment les remplacements sont effectués.  La
+Le texte suivant montre comment les remplacements sont effectués.  Le principe
+mis en œuvre se résume de la façon suivante: faire un remplacement dans une
+expression, c'est produire une copie légèremet modifiée de cette expression,
+où le comportement du prédicat de copie est adapté pour reconnaitre les
+expressions que l'on veut remplacer et mettre à leur place les expressions
+cibles.  L'infrastructure du langage \texttt{Elpi} pour Rocq fournit déjà le
+prédicat de copie (appelée \texttt{copy}) nous n'avons plus qu'à spécifier
+une modification de ce prédicat en ajoutant temporairement
+des règles de comportement pour ce prédicat, qui ont priorité sur les règles
+existantes.  La
 construction \texttt{=>} permet d'ajouter des règles temporaires.
-La première règle est quantifiée universellement sur les variables
+La première règle temporaire est quantifiée universellement sur les variables
 \texttt{I}, \texttt{I'}, \texttt{In} et \texttt{In'} grâce à la construction \texttt{pi},
 Elle exprime qu'au lieu de copier, on va remplace les instances de termes
 où la fonction \texttt{F} est
@@ -587,8 +634,9 @@ motif est reconnu, il ne doit pas y avoir de retour arrière dans l'exécution.
 
 La ligne de rang 7 décrit comment les instances restantes de \texttt{N} seront
 remplacées par \texttt{N\_plus\_Order}, la valeur de
-\texttt{N\_plus\_Order} ayant été calculée une fois pour toute auparavant.
+\texttt{N\_plus\_Order} ayant été calculée une fois pour toutes auparavant.
 \begin{verbatim}
+    (pi L \
       ((pi I I' In In' \ copy {{lp:F (lp:N - lp:I)}}
          {{nth lp:I' lp:L 0}} :-
          !,
@@ -598,11 +646,18 @@ remplacées par \texttt{N\_plus\_Order}, la valeur de
        copy N N_plus_Order) =>
     copy RHS (RHS' L)),
 \end{verbatim}
-Lorsque ce code est exécuté, le terme dans la variable \texttt{RHS} est copié
-dans le terme \texttt{(RHS' L)}.  La valeur de la variable
-\texttt{RHS'} est ensuite
-obtenue en {\em abstrayant} par rapport au terme \texttt{L}, ce qui facilitera
-la construction d'une \(\lambda\)-abstraction liant la variable \texttt{l}.
+Lorsque ce code est exécuté, une nouvelle constante \texttt{L} est créée pour
+représentée temporairement une variable liée dont dépendra le résultat.
+le terme dans la variable \texttt{RHS} est
+copié dans un nouveau terme.  Alors que \texttt{RHS} ne contenait aucune
+occurrence de la constante \texttt{L}, le nouveau terme en contient, donc
+il existe une fonction \texttt{RHS'} tel que le terme obtenu soit égal
+à \texttt{(RHS' L)}.  En conséquence, le terme \texttt{(RHS' L)} dépend de
+la constante temporaire \texttt{L} mais la fonction \texttt{RHS'} n'en dépend
+pas.  Fournir cette fonction \texttt{RHS'} est une opération
+typique fournie par \(\lambda\)-prolog, et donc Elpi, et que l'on ne retrouve
+pas dans les autres langages de programmation.  Ceci nous permet de gérer
+de façon concise la notion de variable liée.
 
 Ce fragment permet également d'illustrer la fonctionnalité de {\em
   quotation} qui permet d'écrire directement des expressions dans la
@@ -612,12 +667,15 @@ syntaxe usuelle de Rocq.  Ici, le terme
 \end{center}
 permet de décrire la représentation en Elpi d'un terme de
 Rocq comportant l'application d'une fonction à une soustraction de
-nombres réels.
+nombres réels.  Le préfixe \texttt{lp} dans \texttt{lp:N}
+(pour \textit{lambda-prolog}) sert à indiquer que la variable \(\lambda\)-prolog
+\texttt{N} va être instanciée avec la valeur qui se trouve à cet endroit dans
+l'expression observée.
 
 Lorsque la fonction basée sur \texttt{nat\_rect} est finalement
-construite, on dispose d'une fonction de type \texttt{nat -> list R}, il
+construite, on dispose d'une fonction de type \texttt{nat -> list R} et il
 reste deux opérations à effectuer: prendre le premier élément du
-résultat, et fournir la bonne entrée.  Dans l'environnement de travail
+résultat et fournir la bonne entrée.  Dans l'environnement de travail
 pour l'utilisatrice finale, les seuls nombres sont de type \texttt{R},
 donc nous avons besoin d'une fonction de type \texttt{R -> nat} qui
 associe chaque nombre réel qui est un nombre naturel au nombre
@@ -637,10 +695,14 @@ INR_IRN x {xnat : Rnat x} : INR (IRN x) = x.
 
 Avec les contraintes que nous avons exprimées sur la spécification
 d'une fonction récursive, il est assez facile de prouver que les
-différents membres de la spécification sont satisfait par la fonction
+différents membres de la spécification sont satisfaits par la fonction
 obtenue.  Nous avons écrit une tactique de quelques lignes pour cela
 et la preuve est sauvegardée dans un théorème dont le nom est obtenu
-en ajoutant le suffixe \texttt{\_eqn} au nom de la fonction.
+en ajoutant le suffixe \texttt{\_eqn} au nom de la fonction.  Le code qui
+décrit toute cette commande de définition consiste en 340 lignes dans le
+langage Elpi (incluant des commentaires), plus la preuve de quelques
+théorèmes annexes, plus une tactique écrite en 16 lignes du langage
+\texttt{Ltac} pour prouver que la définition est bien satisfaite.
 
 \subsection{Effectuer des preuves avec les fonctions récursives}
 Pour effectuer des preuves sur les fonctions définies par notre
@@ -667,8 +729,8 @@ La preuve fait moins de 200 lignes écrites dans un style accessible à
 des novices, avec des commentaires.
 \subsection{Ajouter des capacités de calcul}
 Pour les utilisateurs confirmés de Rocq, les nombres de types \texttt{nat} ou
-\texttt{Z} ont l'avantage notable que l'on peut
-les utiliser pour faire des calculs
+\texttt{Z} ont l'avantage notable de pouvoir être utilisés pour faire des
+calculs
 expérimentaux, surtout les nombres entiers, dont la structure de données
 exploite le codage binaire des nombres et permet donc la représentation
 et le calcul de très grand nombres.  Cette capacité de calcul est perdue pour
@@ -676,7 +738,7 @@ les nombres réels.
 
 Par exemple, la spécification de la fonction \texttt{fib} est
 suffisamment expressive pour prouver la valeur de la fonction sur des
-entrées constantes, mais le procédé devient rapidement pénible.  Pour
+entrées constantes, mais le procédé devient rapidement impraticable.  Pour
 permettre à l'utilisatrice finale de tester la fonction définie sur des
 entrées assez grandes, nous avons fourni deux commandes.
 
@@ -696,7 +758,8 @@ Le résultat de cette commande est, comme on peut s'y attendre, 38.
 
 Il est possible de donner un second argument à notre commande qui doit
 être un nom.  Si ce second argument est donné, un théorème est créé
-qui exprime une preuve de ce résultat.  Ainsi, si l'on entre la
+pour exprimer l'égalité entre l'expression donnée à calculer et le résultat
+obtenu.  Ainsi, si l'on entre la
 commande.
 \begin{verbatim}
 R_compute (3 + (5 * 7)) name1.
@@ -718,8 +781,9 @@ La deuxième commande s'appelle \texttt{mirror\_recursive\_definition}.
 L'objectif de cette commande est d'ajouter à la commande
 \texttt{R\_compute} la possibilité de faire des calculs en utilisant
 les fonctions récursives définies grâce à la commande présentée dans
-la section précédente.  Ainsi, lorsque la fonction \texttt{fib} est
-déjà définie, la séquence de commande suivante se déroule avec succès,
+la section précédente.  Ainsi, lorsque les fonctions
+\texttt{factorial} et \texttt{fib} sont
+déjà définies, la séquence de commande suivante se déroule avec succès,
 elle affiche un nombre très grand et ajoute un théorème dans
 l'environnement qui conserve une preuve du calcul.  La réponse vient
 en moins d'une seconde (le calcul est instantané, mais la production
@@ -776,7 +840,7 @@ comportant des enregistrements à trois champs.
 \begin{enumerate}
 \item le premier champ contient une fonction \(f\) sur \texttt{R}
 \item le deuxième champ contient une fonction \(f_z\) sur \texttt{Z}
-\item le trois champ contient un théorème de {\em morphisme},
+\item le troisième champ contient un théorème de {\em morphisme},
   exprimant que la fonction \texttt{IZR} est compatible avec les deux
   fonctions \(f\) et \(f_z\):
 \begin{itemize}
@@ -914,7 +978,7 @@ donnée en argument était déjà un nombre naturel, cette fonction
 \texttt{Rabs} la laisse inchangée.
 
 Les fonctions définies par \texttt{nat\_rect} sont essentiellement
-conçues pour recevoir des arguments d type \texttt{nat}, mais les
+conçues pour recevoir des arguments de type \texttt{nat}, mais les
 fonctions utilisées dans les formules calculées doivent prendre en
 entrée des nombres de \texttt{Z}.  Pour concilier les deux, les fonctions
 que notre commande définit commencent par convertir le nombre entier en
@@ -974,7 +1038,8 @@ une notation intuitive pour décrire une telle séquence, de fournir
 des notations spécifiques pour une collection d'opérations des listes
 vers les listes, en s'inspirant de la bibliothèque \mathcomp{}
 \cite{MahboubiTassi2022} et
-de reposer sur des {\em grandes opérations}, sommes itérées ou
+de reposer sur des {\em grandes opérations} \cite{BGOBP:BIG08}, sommes
+itérées ou
 produits itérés pour les opérations qui demanderaient normalement de
 la programmation récursive.
 
@@ -984,9 +1049,17 @@ une introduction à la programmation récursive, mais seulement sur les
 listes.  Il faudrait alors étendre l'outil de calcul pour fournir une
 simulation calculatoire également pour les listes de nombres réels.
 Commencer par la programmation récursive sur les listes présente un
-avantage certain, car l'utilisation de la construction filtrage est
-plus facile à comprendre sur les schémas de constructeurs des listes
-que sur les schémas des nombres naturels.
+avantage sur la programmation récursive sur les nombres naturels.
+
+En effet,
+même pour des étudiants en informatique, nous avons constaté que les novices
+ont du mal à comprendre que l'on utilise le symbole \texttt{S} comme un
+schéma de structure (et non comme l'opération d'addition avec le nombre 1), et
+donc ils ont du mal à comprendre l'apparition de ce symbole dans le membre
+gauche d'une règle de filtrage en programmation récursive.  Lorsque l'on
+introduit la construction de filtrage sur les listes, il est plus naturel
+de voir \texttt{(\_ :: \_)} comme un schéma de donnée, qui peut être utilisé
+à la fois pour faire du filtrage et pour construire une liste.
 
 \subsection{Séquences d'entiers naturels}
 Nous proposons de fournir la fonction \texttt{Rseq} à deux arguments
@@ -1000,7 +1073,7 @@ faisons précédemment pour les suites récurrentes, mais il s'agit ici
 d'une fonction produisant des listes.
 
 Il est important de fournir deux théorèmes exprimant
-le comportement calculatoire de ces fonctions récursives, plus des
+le comportement calculatoire de cette fonctions récursive, plus des
 théorèmes de décomposition, exprimés essentiellement à l'aide des
 constructeurs du type des listes et la concaténation.
 \begin{verbatim}
@@ -1011,7 +1084,7 @@ Rseq_suc : forall n m : R, Rnat m ->
 \end{verbatim}
 A l'usage, le théorème \texttt{Rseq\_suc} n'est pas toujours pratique à
 utiliser, car il demande de préparer la formule sur laquelle on
-travaille pour faire apparaître l'expression de la forme \texttt{\(n\) +
+travaille pour faire apparaître l'expression de la forme \texttt{\(m\) +
   1} avant de permettre l'utilisation.  La forme suivante est souvent
 plus facile à mettre en œuvre.
 \begin{verbatim}
@@ -1021,7 +1094,7 @@ Rseq_suc' : forall n m : R, Rnat (m - 1) ->
 La présentation donnée jusqu'ici n'impose pas que le premier argument
 de \texttt{Rseq} soit un entier naturel.  Il y a donc un gain par rapport
 à l'approche reposant sur le type \texttt{nat}, puisque l'on peut
-utiliser la même et le même jeu de notations pour des listes de
+utiliser la même fonction et le même jeu de notations pour des listes de
 nombres réels et pour des listes de nombres naturels.  A ce stade
 préliminaire de nos expériences, ce gain est peut-être illusoire,
 parce qu'il est plus difficile d'exprimer que si le premier argument
@@ -1047,58 +1120,64 @@ pour obtenir la présentation ci-dessus.  Nous voulons nous inspirer de
 aussi les sources de confusion pour les novices.
 
 Nous proposons de réduire l'usage des grands opérateurs aux deux
-opérateurs d'addition (notation \cmd{sum} ou \cmd{prod}).
-au seul cas où
+opérateurs d'addition et multiplication (notation \cmd{sum} ou \cmd{prod})
+et au seul cas où
 l'indice parcourt les entiers compris entre \({m}\) et \({n - 1}\),
 en utilisant la notation \texttt{\(m\) <= \(i\) < \(n\)}.  Cette
 notation exprime que le domaine sur lequel s'applique l'opération
-itérée est vide si \(n \leq m\).
+itérée est vide si \(n \leq m\).  Le choix d'utiliser une comparaison
+stricte fait encore l'objet de réflexions.  Il provient de la bibliothèque
+\mathcomp{}, ou il est motivé par des questions de régularité dans les calculs,
+mais les mathématiciens utilisent
+peut-être plus naturellement des comparaisons au sens large.
 
-Pour les preuves, Nous pouvons utiliser les théorèmes de base qui
+Pour les preuves, nous pouvons utiliser les théorèmes de base qui
 expriment le comportement récursif des opérations itérées
 en enlevant de la somme ou du produit itéré des valeurs en commençant
 par l'une ou l'autre des extrémités.  Dans la bibliothèque \mathcomp{}
-qui nous sert d'inspiration, ces théorèmes sont génériques et la
-variantes \texttt{\_recr} nécessite une preuve supplémentaire que
-l'opération itérée et la valeur retournée pour la liste vide forment
- un monoide associative.  Nous fournissons les théorèmes
- instanciés et simplifiés pour la somme et le produit et ne montrons
- ici que le théorème pour la somme.
+qui nous sert d'inspiration, ces théorèmes sont génériques et s'appliquent
+sur des types quelconques.  Dans notre bibliothèque destinée à des novices,
+nous donnons l'implémentation pour les opérations usuelles.  Ainsi, la
+somme d'une collection d'entiers s'écrit
+\texttt{\cmd{}sum\_(a <= i < b) ...} et
+le théorème suivant permet de montrer qu'une telle somme peut se décomposer
+en l'addition de la somme d'une collection plus petite et de la dernière
+valeur: on enlève la valeur prise à droite, d'où l'usage du suffixe \texttt{r}
+dans le nom du théorème.  Nous avons également un théorème \texttt{sum0}
+qui exprime que la somme d'une collection vide d'entiers est nulle.
+
+
 \begin{verbatim}
-big0 {A : Type}(E : R -> A) (f : A -> A -> A) (idx : A) (a : R) :
-  \big[f / idx]_(a <= i < a) E i = idx.
-
-big_recl {A : Type}(E : R -> A)
-  (f : A -> A -> A) (idx : A) (a b : R)
-  {hnat : Rnat (b - a)} : a < b ->
-  \big[f / idx]_(a <= i < b) E i =
-   f (E a) (\big[f / idx]_((a + 1) <= i < b) E i).
-
 sum_recr (E : R -> R) (a b : R) :
   Rnat (b - a) -> a < b ->
   \sum_(a <= i < b) E i =
    (\sum_(a <= i < (b - 1)) E i) + E (b - 1).
+
+sum0
+     : forall (E : R -> R) (a : R), \sum_(a <= i < a) E i = 0
 \end{verbatim}
 
 Nous avons testé ces définitions et théorèmes sur des preuves élémentaires.
 \[\sum_{0 \leq i < n} i = \frac{n (n - 1)}{2} \qquad
 \sum_{0 \leq i < n} i ^2 = \frac{n (n - 1) (2 n - 1)}{6} \qquad
 n! = \prod_{1 \leq i < n + 1} i\]
-Dans les trois cas, l'avantage notable est que les preuves d'égalité
-sont généralement résolues par les tactiques \texttt{ring} ou \texttt{field}
+Dans les trois cas, l'avantage notable par rapport aux preuves
+utilisant le type des entiers naturels est que les preuves d'égalité
+sont généralement résolues par les tactiques \texttt{ring} ou \texttt{field},
+cette dernière étant nécessaire
 lorsqu'une division apparaît.  Le prix à payer est la nécessité de
 prouver des conditions annexes, sous forme d'appartenance à l'ensemble
 \texttt{Rnat} ou des comparaisons entre entiers.  Pour résoudre ces
 conditions, il est important d'exploiter le fait que tout nombre
 naturel est positif ou nul et le fait qu'un nombre entier
-strictement inférieur à un nombre entier \(n\), est inférieur ou égal au
+strictement inférieur à un nombre entier \(n\) est inférieur ou égal au
 prédécesseur de \(n\).
 
 La bibliothèque \mathcomp{} est une source très riche de lemmes
 supplémentaires pour effectuer des raisonnements généraux sur les
 opérations itérées.  En particulier, elle permet de faire des preuves
 où l'on exploite l'information que dans la somme itérée, l'index
-d'itération est compris entre les bonnes de la somme.  Dans nos
+d'itération est compris entre les bornes de la somme.  Dans nos
 expériences préliminaires, nous n'avons pas encore mis au point un
 théorème exprimant cette propriété.
 
