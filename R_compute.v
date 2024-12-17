@@ -75,7 +75,7 @@ Definition at_x (a b c : R) := fun x => if (Req_bool x a) then b else (c).
 
 Definition at_x_Z (a b c : Z) := fun x => if (Zeq_bool x a) then b else c.
 
-Lemma at_x_compute : forall a b c x, at_x (IZR a) (IZR b) (IZR c) (IZR x)= IZR (at_x_Z a b c x).
+Lemma at_x_compute : forall a b c x, at_x (IZR a) (IZR b) (IZR c) (IZR x) = IZR (at_x_Z a b c x).
 Proof.
   intros.
   unfold at_x.
@@ -95,6 +95,8 @@ Proof.
   unfold IZR2.
   now simpl.
 Qed.  
+
+Definition nat1 := nat.
 
 
 Lemma eq_bool_compute : forall x y, Req_bool (IZR x) (IZR y) = (Zeq_bool x y).
@@ -207,6 +209,7 @@ Elpi Accumulate lp:{{
 }}.
 
 Elpi Export add_computation.
+
 
 Elpi Command mirror_recursive_definition.
 Elpi Accumulate Db R_compute.db.
