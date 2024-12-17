@@ -660,10 +660,11 @@ Notation "\big[ f / idf ]_( a <= i < b ) E" :=
   (at level 35, a at level 30, b at level 30, E at level 36, f, idf
    at level 10, i at level 0, right associativity).
 
-Notation "\sum _( a <= i < b ) E" :=
-  (Rbigop Rplus 0 a b (fun i => E))
+Notation "\sum_ ( a <= i < b ) E" :=
+  (Rbigop Rplus (IZR 0) a b (fun i => E))
   (at level 35, a at level 30,  b at level 30, E at level 36,
-  i at level 0, right associativity).
+  i at level 0, right associativity,
+   format "'[' \sum_ ( a  <=  i  <  b ) '/  '  E ']'").
 
 Notation "\prod _( a <= i < b ) E" :=
   (Rbigop Rmult 1 a b (fun i => E))
@@ -758,6 +759,9 @@ Hint Resolve associative_mul : core.
 
 Existing Class associative_monoid.
 Existing Instances associative_monoid_Rplus associative_mul.
+
+Lemma sum0 (E : R -> R) (a : R) : \sum_(a <= i < a) E i = 0.
+Proof. now apply big0. Qed.
 
 Lemma sum1 (E : R -> R) (a : R) : \sum_(a <= i < a + 1) E i = E a.
 Proof. now apply big1. Qed.
