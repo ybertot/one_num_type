@@ -192,7 +192,7 @@ additions de nombres naturels, la formule de droite fait intervenir des
 opérations qui ne sont pas stables pour les nombres naturels, les nombres
 entiers relatifs, ou même les nombres rationnels.
 
-Nous proposons de développer une libraire d'initiation à la preuve
+Nous proposons de développer une librairie d'initiation à la preuve % TYPO libraire
 mathématique dans laquelle on n'utilise qu'un seul type de nombres,
 pour que les étudiants puissent travailler confortablement avec les
 concepts mathématiques qu'ils doivent apprendre à maîtriser.  Ce
@@ -315,7 +315,7 @@ Rnat_INR n : Rnat (INR n).
 Rnat_exists_nat x {xnat : Rnat x} :
   exists n, x = IZR (Z.of_nat n).
 
-Rnat_cst x : Rnat (ZR (Z.pos x)).
+Rnat_cst x : Rnat (IZR (Z.pos x)). %TYPO 
 \end{verbatim}
 
 Les différents théorèmes exprimant que l'ensemble des nombres naturels
@@ -327,8 +327,8 @@ satisfait la propriété d'être un nombre naturel, cette preuve peut souvent
 
 Un des éléments remarquables de ces théorèmes de stabilité est le théorème
 \texttt{Rnat\_cst}
-qui exprime que toute constante numérique comme \(1\), \(3\), \(42\) est
-appartien à l'ensemble \texttt{Rnat}.  Ce
+qui exprime que toute constante numérique comme \(1\), \(3\), \(42\)
+appartient à l'ensemble \texttt{Rnat}.  Ce
 théorème ne devrait pas être montré aux utilisateurs finaux, sous peine
 d'avoir à expliquer l'existence de plusieurs types de nombres, mais il doit
 être déclenché automatiquement chaque fois que l'ont veut vérifier qu'une
@@ -347,11 +347,11 @@ est fournie par le théorème \texttt{IZR\_cst 42\%positive}.
 La notation \texttt{42\%positive} mérite une explication.  L'analyse
 syntaxique effectuée dans le système de preuve est paramétrable pour indiquer
 que l'on veut lire données de différentes manières.
-Ici, le suffixe \texttt{\%positive} permet d'indique que l'on veut
+Ici, le suffixe \texttt{\%positive} permet d'indiquer que l'on veut
 mentionner un nombre de type \texttt{\%positive}.  Nous verrons plus
 tard que nous utiliserons également le suffixe \texttt{\%nat} pour
 mentionner un nombre naturel de type \texttt{nat}.  L'existence de ces
-notations obscucit notre présentation, mais c'est justement notre
+notations obscurcit notre présentation, mais c'est justement notre
 objectif de faire disparaitre ce besoin de notations distinctes pour
 différentes représentations du même nombre mathématique.
 
@@ -466,7 +466,7 @@ une expression bien typée dans le contexte où \texttt{f} est une fonction
 de type \texttt{R -> R} et \texttt{n} est un nombre de type \texttt{R}.
 Nous appellerons cette formule \texttt{B} {\em le corps du pas récursif}.
 Ce corps peut contenir des appels récursifs de
-la forme \texttt{f (n - \(i\))} où \(i\) est une constant entière comprise
+la forme \texttt{f (n - \(i\))} où \(i\) est une constante entière comprise
   entre \texttt{1} et \(k\).  Il doit y avoir un seul membre de la
   conjonction avec cette deuxième forme.
 
@@ -474,10 +474,10 @@ la forme \texttt{f (n - \(i\))} où \(i\) est une constant entière comprise
 Un premier parcours récursif de la spécification, paramétré par
 \texttt{f}, permet de retrouver l'ensemble des membres de la première forme
 et de construire une liste de paires \((i, v_i)\) où les \(i\) sont des
-constantes entières supérieures égale à 0 et les \(v_i\) sont les
+constantes entières supérieures ou égales à 0 et les \(v_i\) sont les
 termes représentant les valeurs spécifiées pour \(\texttt{f}~i\).  Cette
 liste est triée, et on vérifie qu'il n'y a ni duplications ni manques.
-La longueur de cette liste nous donne la valeur de \(k\).  A partir
+La longueur de cette liste nous donne la valeur de \(k\).  À partir
 de cette liste de paires triée, on construit une seconde liste qui ne
 contient que les valeurs \(v_i\) dans le même ordre.  Nous appellerons
 cette liste {\em la liste des valeurs initiales}.
@@ -501,7 +501,7 @@ des décalages d'appels récursifs est \texttt{[1]}.
 
 Si nous regardons la définition de \texttt{fib} fournie dans la section
 précédente, les membres de la première forme sont \texttt{fib 0 = 0} et
-\texttt{fib 1 = 1}, l'ordre la récursion est 2,
+\texttt{fib 1 = 1}, l'ordre de la récursion est 2,
 la liste des valeurs initiales est \texttt{[0; 1]},
 le corps du pas récursif est \texttt{fib (n - 2) + fib (n - 1)}, et
 la liste des décalages d'appels récursifs est \texttt{[2,1]}.
@@ -521,8 +521,8 @@ nat_rect : forall (A : nat -> Type) (Init : A 0)
 \end{verbatim}
 Dans notre cas, nous utiliserons \texttt{nat\_rect} de façon non
 dépendante, en instanciant \texttt{A} avec \texttt{fun \_ => list R},
-de telle sorte la
-valeurs \texttt{Init} devra être de type \texttt{list R} et \texttt{step} devra
+de telle sorte que la
+valeur \texttt{Init} devra être de type \texttt{list R} et \texttt{step} devra
 être de type \texttt{nat -> list R -> list R}.  La fonction \texttt{step} a
 pour objectif d'expliquer comment construire la valeur retournée pour
 \texttt{n + 1}, lorsque l'on connaît la valeur de \texttt{n} (reçue en argument)
@@ -623,7 +623,7 @@ existantes.  La
 construction \texttt{=>} permet d'ajouter des règles temporaires.
 La première règle temporaire est quantifiée universellement sur les variables
 \texttt{I}, \texttt{I'}, \texttt{In} et \texttt{In'} grâce à la construction \texttt{pi},
-Elle exprime qu'au lieu de copier, on va remplace les instances de termes
+Elle exprime qu'au lieu de copier, on va remplacer les instances de termes
 où la fonction \texttt{F} est
 appliquée à \texttt{N} moins \texttt{I} par l'instance
 correspondante construite avec \texttt{nth} \texttt{I'} et la liste de
@@ -943,9 +943,9 @@ par une valeur de type \texttt{Z}.
 La correction du remplacement est justifiée par le théorème général
 suivant sur le récurseur, qui se prouve par récurrence sur l'argument
 entier naturel.  L'invariant de la récurrence est que les listes de
-valeurs considérée à chaque étape sont les mêmes modulo application de
+valeurs considérées à chaque étape sont les mêmes modulo application de
 la fonction \texttt{IZR} pour convertir les valeurs numérique à chaque
-rang dans la liste (exprimé par la fonction \texttt{map}.
+rang dans la liste (exprimé par la fonction \texttt{map}).
 
 \begin{verbatim}
 private.nat_rect_list_IZR
@@ -1109,7 +1109,7 @@ la séquence de plusieurs nombres est présentée, mais séparés par un
 opérateur binaire:
 \[1 + \cdots + n  \qquad 1 ^ 2 + \cdots + n ^ 2 \]
 Soit on utilise une notation avec variable liée et un symbole
-conventionnel (parfois un version agrandie de l'opérateur binaire,
+conventionnel (parfois une version agrandie de l'opérateur binaire,
 parfois un symbole ad hoc connu de tous), la notation mathématique
 ressemble à ceci:
 \[\sum_{i=0}^{n} f(i)\]
@@ -1127,7 +1127,7 @@ en utilisant la notation \texttt{\(m\) <= \(i\) < \(n\)}.  Cette
 notation exprime que le domaine sur lequel s'applique l'opération
 itérée est vide si \(n \leq m\).  Le choix d'utiliser une comparaison
 stricte fait encore l'objet de réflexions.  Il provient de la bibliothèque
-\mathcomp{}, ou il est motivé par des questions de régularité dans les calculs,
+\mathcomp{}, où il est motivé par des questions de régularité dans les calculs,
 mais les mathématiciens utilisent
 peut-être plus naturellement des comparaisons au sens large.
 
@@ -1192,7 +1192,7 @@ C =
 fun n p : nat => INR (fact n) / (INR (fact p) * INR (fact (n - p)))
 \end{verbatim}
 Cette définition repose sur la définition récursive dans le type 
-\texttt{nat} de la fonction factorielle (ici appelée \texttt{fact}, puis
+\texttt{nat} de la fonction factorielle (ici appelée \texttt{fact}), puis
 une coercion dans les nombres réels, puis une division dans le type
 des nombres réels.
 
