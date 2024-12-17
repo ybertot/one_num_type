@@ -76,6 +76,7 @@ Definition at_x (a b c : R) := fun x => if (Req_bool x a) then b else (c).
 Definition at_x_Z (a b c : Z) := fun x => if (Zeq_bool x a) then b else c.
 
 Lemma at_x_compute : forall a b c x, at_x (IZR a) (IZR b) (IZR c) (IZR x) = IZR (at_x_Z a b c x).
+Lemma at_x_compute : forall a b c x, at_x (IZR a) (IZR b) (IZR c) (IZR x) = IZR (at_x_Z a b c x).
 Proof.
   intros.
   unfold at_x.
