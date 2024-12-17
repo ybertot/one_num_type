@@ -206,7 +206,6 @@ intros opr opz morph a b ab.
 now rewrite ab, morph.
 Qed.
 
-
 Lemma IZR_map1' {opr} {opz} : 
   (forall a, opr (IZR a) = IZR (opz a)) ->
   forall a b, a = IZR b -> opr a = IZR (opz b).
@@ -214,16 +213,6 @@ Proof.
 intros morph a b ab.
 now rewrite ab, morph.
 Qed.
-
-Lemma IZR_map1' {opr} {opz} : 
-  (forall a, opr (IZR a) = IZR (opz a)) ->
-  forall a b, a = IZR b -> opr a = IZR (opz b).
-Proof.
-intros morph a b ab.
-now rewrite ab, morph.
-Qed.
-
-
 
 (* This may be dead code. *)
 Lemma IZR_map1_abs : forall opr opz,
