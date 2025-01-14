@@ -405,8 +405,9 @@ Proof.
   now apply H.
 Qed.
 
-Lemma fun1_trf (g : R -> R) (g' : Z -> Z) (f : Z -> R) : 
-(forall x, g (f x) = f (g' x)) <-> (forall x y, x = (f y) -> (g x) = f (g' y)).
+Lemma funN_trf {n : nat} (g : ty_R n) (g' : ty_Z n) (f : Z -> R) : 
+(forall x, MappR g (map f x) = f (MappZ g' x)) <->
+(forall x y, x = map f y -> MappR g x = f (MappZ g' y)).
 Proof.
   split.
     intros H x y xy.
@@ -561,6 +562,26 @@ Elpi Accumulate File recursive.
 Elpi Export Recursive.
   
 
+
+Notation "'def' id 'such' 'that' bo" := (fun id => bo)
+ (id binder, bo at level 100, at level 1, only parsing).
+ Definition Req_bool (x y :R) := if (Req_dec_T x y) then true else false.
+Notation "x =? y" := (Req_bool x y) : R_scope.
+Recursive (def bin such that 
+    bin 0 = (fun n : R => n) /\ 
+    forall n, Rnat (n-1) -> bin n = 
+    (fun m => if (m =? 0) then 1 else (bin (n-1)) (m-1) + (bin (n-1)) m)).
+
+Elpi Query lp:{{
+% coq.reduction.vm.norm {{ty_R 1}} _ V,
+% coq.term->string V VS,
+% coq.typecheck {{eq_refl : ty_R 1 = (R -> R)}} _ Diag,
+% coq.typecheck {{id_R 1}} {{(R -> R)}} Diag,
+coq.typecheck {{fun v : list (R -> R)=> @nth (ty_R 1) 0%nat v (id_R 1)}} A Diag
+ }}.
+
+
+  
 
 Notation "'def' id 'such' 'that' bo" := (fun id => bo)
  (id binder, bo at level 100, at level 1, only parsing).
