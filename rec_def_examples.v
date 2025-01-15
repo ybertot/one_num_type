@@ -427,7 +427,7 @@ Lemma sum_integers n : Rnat n ->
 Proof.
 intros nnat.
 induction nnat as [ | n nnat Ih].
-  rewrite big0.
+  rewrite sum0.
   now field.
 rewrite sum_recr.
     replace (n + 1 - 1) with n by ring.
@@ -444,7 +444,7 @@ Lemma sum_squares n : Rnat n ->
 Proof.
 intros nnat.
 induction nnat as [ | n nnat Ih].
-  rewrite big0.
+  rewrite sum0.
   now field.
 rewrite sum_recr.
     replace (n + 1 - 1) with n by ring.
@@ -776,7 +776,8 @@ Unshelve.
 all: ring_simplify [Heqn] (n - 5); rewrite ?Heqn.
 all: assert (0 < factorial 4 /\ 0 < factorial 84) by
   (split; apply factorial_gt0; solve_Rnat).
-all: solve_Rnat; lra.
+all: solve_Rnat.
+all: lra.
 Qed.
 
 (* An example of a function where the order of recursion is
