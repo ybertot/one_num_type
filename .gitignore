@@ -8,6 +8,7 @@
 *.cmxa
 *.cmxs
 *.glob
+*.json
 *.ml.d
 *.ml4.d
 *.mli.d
@@ -15,6 +16,7 @@
 *.mlpack.d
 *.native
 *.o
+*.pdf
 *.v.d
 *.vio
 *.vo
