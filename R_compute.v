@@ -97,16 +97,6 @@ translate_collect_prf {{lp:F (IZR (Zpos lp:P))}}
   {{private.cancel_Rabs_pos lp:F lp:Fz lp:Prf lp:P}} [] :-
   nat_thm_table F Fz Prf.
 
-translate_prf (app [F, {{lp:F (IZR 0%Z)}}])
-  {{lp:Fz 0%Z}}
-  {{private.cancel_Rabs_0 lp:F lp:Fz lp:Prf}} :-
-  nat_thm_table F Fz Prf.
-
-translate_collect_prf (app [F, {{lp:F (IZR 0%Z)}}])
-  {{lp:Fz 0%Z}}
-  {{private.cancel_Rabs_0 lp:F lp:Fz lp:Prf}} [] :-
-  nat_thm_table F Fz Prf.
-
 translate_prf (app [F, A]) (app [F1, A1])
   {{private.IZR_map1 lp:F lp:F1 lp:PFF1 lp:A lp:A1 lp:PFRA}} :-
   std.do! [
@@ -226,8 +216,6 @@ pred nat_thm_table o:term, o:term, o:term.
 
 }}.
 
-Elpi Typecheck.
-
 Elpi Command R_compute.
 
 Elpi Accumulate Db R_compute.db.
@@ -258,8 +246,6 @@ main [trm E, str THM_name] :-
 
 }}.
 
-Elpi Typecheck.
-
 Elpi Export R_compute.
 
 Elpi Command add_computation.
@@ -279,8 +265,6 @@ Elpi Accumulate lp:{{
   main L :-
     coq.error "Usage: Elpi add_computation Name1 Name2 Name3.\n instead received: " L.
 }}.
-
-Elpi Typecheck.
 
 Elpi Export add_computation.
 
@@ -360,7 +344,6 @@ main L :-
   coq.error "Usage: Elpi mirror_recursive_definition Name.\n instead received: " L.
 }}.
 
-Elpi Typecheck.
 Ltac r_compute_rewrite P := rewrite P.
 
 Elpi Tactic r_compute.
@@ -383,8 +366,6 @@ solve (goal _ _ _ _ [trm X] as G) GL :-
 solve A B :-
   coq.say "wrong" A B.
 }}.
-
-Elpi Typecheck.
 
 (* The following experiment prefigures what can be done
    so that R_compute returns not only the value but also
