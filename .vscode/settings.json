@@ -1,0 +1,12 @@
+{
+  "files.exclude": {
+    "**/*.aux": true,
+    "**/*.vos": true,
+    "**/*.vok": true,
+    "**/*.glob": true,
+    "**/.lia.cache": true,
+    "**/*.generated.*": true,
+    "**/*.vo": true,
+    "**/*.generated": true,
+  },
+}
