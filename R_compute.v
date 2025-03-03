@@ -62,8 +62,8 @@ Proof.
   rewrite <- Z.eqb_neq in neqR.
   now rewrite <- Z.eqb_compare, neqR.
 Qed.
-(* 
-Lemma if_compute : (forall x y z, if 
+(*
+Lemma if_compute : (forall x y z, if
 Search (if _ then _ else _ ). *)
 Definition MyINR : N -> R :=
 fun n => match n with
@@ -95,7 +95,7 @@ Lemma nil_2 :  nil = @map (ty_Z 1) (ty_R 1) IZR2 nil.
 Proof.
   unfold IZR2.
   now simpl.
-Qed.  
+Qed.
 
 Definition nat1 := nat.
 

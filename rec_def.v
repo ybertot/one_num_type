@@ -206,6 +206,7 @@ intros opr opz morph a b ab.
 now rewrite ab, morph.
 Qed.
 
+
 Lemma IZR_map1' {opr} {opz} : 
   (forall a, opr (IZR a) = IZR (opz a)) ->
   forall a b, a = IZR b -> opr a = IZR (opz b).
@@ -237,24 +238,6 @@ intros opr opz morph a b c d ac bd.
 now rewrite ac, bd, morph.
 Qed.
 Lemma IZR_map3 : forall opr opz,
-  (forall a b c, opr (IZR a) (IZR b) (IZR c)= IZR (opz a b c)) ->
-  forall a b c d e f, a = IZR d -> b = IZR e -> c = IZR f ->
-  opr a b c = IZR (opz d e f).
-Proof.
-intros opr opz morph a b c d e f ad be cf.
-now rewrite ad, be, cf, morph.
-Qed.
-
-Lemma IZR_map4 : forall opr opz,
-  (forall a b c d, opr (IZR a) (IZR b) (IZR c) (IZR d)= IZR (opz a b c d)) ->
-  forall a b c d e f g h, a = IZR e -> b = IZR f -> c = IZR g -> d = IZR h ->
-  opr a b c d = IZR (opz e f g h).
-Proof.
-intros opr opz morph a b c d e f g h ae bf cg dh.
-now rewrite ae, bf, cg, dh, morph.
-Qed.
-
-Lemma IZR_map3 : forall opr opz,
   (forall a b c, opr (IZR a) (IZR b) (IZR c) = IZR (opz a b c)) ->
   forall a b c d e f, a = IZR d -> b = IZR e -> c = IZR f ->
   opr a b c = IZR (opz d e f).
@@ -271,7 +254,6 @@ Proof.
 intros opr opz morph a b c d e f g h ae bf cg dh.
 now rewrite ae, bf, cg, dh, morph.
 Qed.
-
 Lemma IZR_mapN {n opr opz}:
   (forall (lz : list Z), @MappR n opr (List.map IZR lz) = IZR (@MappZ n opz lz))->
   forall (lr : list R)  (lz : list Z), lr = List.map IZR lz ->
@@ -281,7 +263,7 @@ Proof.
   rewrite eql.
   apply morph.
 Qed.
-                      
+
 Lemma nth_map {A B : Type} (da : A) (db : B) (f : A -> B) (la : list A)
   (lb : list B) (k : nat):
   db = f da ->
