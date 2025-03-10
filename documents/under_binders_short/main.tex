@@ -1,0 +1,129 @@
+\documentclass[compress]{beamer}
+\usepackage[latin1]{inputenc}
+\usepackage{cancel}
+\usepackage{alltt}
+
+\definecolor{ttblue}{RGB}{48,48,170}
+\newdimen\topcrop
+\topcrop=10cm  %alternatively 8cm if the pdf inclusions are in letter format
+\newdimen\topcropBezier
+\topcropBezier=19cm %alternatively 16cm if the inclusions are in letter format
+
+\setbeamertemplate{footline}[frame number]
+\title{Rewriting under binders, comfortably}
+\author{Yves Bertot}
+\date{June 2024}
+\mode<presentation>
+\begin{document}
+
+\maketitle
+\begin{frame}
+\frametitle{Plan}
+\begin{itemize}
+\item difficulty proving \[\sum_{i = 0}^{n} i = \sum_{i = 0}^{n} \sqrt{i^2}\]
+\item Formal proofs have several steps, 
+\item Math teachers proofs are very different,
+\item A proposed solution.
+\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{The context}
+\begin{itemize}
+\item Mathematical construction like integrals and iterated sums have
+{\em bound variables}
+\item From the formal point of view, a bound variable does not really exist
+\item Type theory promotes {\em Leibniz} equality as the main tool
+to reason modulo equality
+\begin{itemize}
+\item especially for rewriting
+\end{itemize}
+\item But Leibniz equality requires objects that \underline{really exist}
+\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{Discrepancy in idioms}
+\[\sum_{i = 0}^{n} i = \sum_{i = 0}^{n} \sqrt{i ^ 2}\]
+\begin{itemize}
+\item The math teacher's proof (I believe)
+\begin{itemize}
+\item {\em Replace \(\sqrt{i^2}\) with \(i\) in the right-hand side sum.}
+\item {\em Note that the sum ranges over positive values}
+\end{itemize}
+\item The formally verified proof
+\begin{enumerate}
+\item Establish \(\forall i, 0 \leq i \leq n \Rightarrow i = \sqrt{i ^ 2}\)
+\item For this, fix \(i\) such that \(0 \leq i \leq n\),
+\item Then \(i = \sqrt{i ^ 2}\) (by reasoning),
+\item then apply the extensionality lemma for sums:
+\[\forall f g, (\forall i, 0 \leq i \leq n \Rightarrow f(i) = g(i)) \Rightarrow
+\sum_{i = 0}^{n} f i = \sum_{i = 0}^{n} g i\]
+\end{enumerate}
+\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{The curse of \(\alpha\)-conversion}
+\begin{itemize}
+\item There is no doubt that, if \(i\) exists and is larger than 0,
+\(i = \sqrt{i^2}\),
+\item Leibniz says: if \(n = m\), you can replace \(n\) with \(m\) in
+any formula
+\begin{itemize}
+\item But the numbers \(i\) and \(\sqrt{i}\) \underline{do not even exist}
+in the formula
+\[\sum_{i = 0}^{n} \sqrt{i^2}\]
+\item Bound variable names do not count for logical reasoning
+\item \[\sum_{i = 0}^{n} {\sqrt{i^2}} = 
+\sum_{j = 0}^{n} {\sqrt{j^2}}\]
+\item \(\sqrt{i ^ 2}\) does not occur in the right-hand side formula!
+\item So you cannot use Leibniz' principle directly
+\end{itemize}
+\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{A preliminary solution}
+\begin{itemize}
+\item Make the sentence {\em Replace \(\sqrt{i^2}\) with \(i\) in the sum.}
+understandable by the proof system
+\item Do not work modulo \(\alpha\)-conversion
+\end{itemize}
+\begin{enumerate}
+\item Recognize that \(\sqrt{i^2}\) is not well-formed because we are missing
+a variable with the name \(i\)
+\item By scanning the formula, detect that \(i\) is bound in at least one place,
+\item Search for instances of \(\sqrt{i^2}\) in the multiple places where
+this may occur
+\item Do this again if there are nested binding patterns
+\item Everytime one enters inside an operator with bound variables, apply
+a suitable ``observational equality'' theorem
+\end{enumerate}
+\end{frame}
+\begin{frame}
+\frametitle{Example using the solution}
+
+\begin{center}
+\Huge DEMO
+\end{center}
+\end{frame}
+
+\begin{frame}
+\frametitle{A prototype implementation}
+\begin{itemize}
+\item Required an extension of the {\tt Elpi} meta-programming language
+\item Authorize passing ``open terms'' as argument to tactics
+\begin{itemize}
+\item An open term is well typed in an extension of the context
+\item Example, if \(i\) does not exist in the context\\
+ \(\sqrt{i^2}\) is not well-typed,\\
+ but \(\lambda i : {\mathbb R}, \sqrt{i^2}\) is well typed
+\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\end{document}
+
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: t
+%%% End: 
