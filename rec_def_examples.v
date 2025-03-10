@@ -30,10 +30,10 @@ intros m l lnat mnat [ | [ | [ | k]]]; typeclasses eauto.
 Qed.
 *)
 
-Recursive (def fib such that 
-    fib 0 = 0 /\ 
+Recursive (def fib such that
+    fib 0 = 0 /\
     fib 1 = 1 /\
-    forall n : R, Rnat (n - 2) -> 
+    forall n : R, Rnat (n - 2) ->
     fib n = fib (n - 2) + fib (n - 1)).
 
 Elpi mirror_recursive_definition fib.
@@ -48,7 +48,7 @@ Check fib_subproof.
 
 R_compute (fib 7) fib_7_eqn.
 
-Recursive (def monster such that 
+Recursive (def monster such that
   monster 0 = 1 /\
   forall n, Rnat (n - 1) -> monster n = fib (Rabs (monster (n - 1) + n))).
 
@@ -180,7 +180,7 @@ assert (fib2 : fib 2 = 1).
 assert (fib3 : fib 3 = 2);[ |
 assert (fib4 : fib 4 = 3);[ |
 assert (fib5 : fib 5 = 5);[ |
-assert (fib6 : fib 6 = 8);[ | 
+assert (fib6 : fib 6 = 8);[ |
 assert (fib7 : fib 7 = 13);[ |
 assert (fib8 : fib 8 = 21)]]]]].
 all: match goal with |- fib ?v = _ =>
@@ -636,7 +636,7 @@ Qed.
 (* This lemma is made approximately in a way that could be shown to students. *)
 (* Even for an expert, it is an exercise that requires more than an hour. *)
 Lemma binomial_poly (x y n : R) : Rnat n -> (x + y) ^ n =
-  \sum_(0 <= i < n + 1) 
+  \sum_(0 <= i < n + 1)
        (choose n i * x ^ i * y ^ (n - i)).
 Proof.
 (* TODO: figure out why the notations for sums and products are not used.  *)
@@ -716,7 +716,7 @@ replace ((n + 1) - (n + 1)) with 0 by ring.
 (* This should be a strike-proof-step---upto apply f_equal *)
 rewrite (Rplus_comm _ (choose (n + 1) _ * _ * _)), !Rplus_assoc.
 apply f_equal.
-rewrite big_recl; replace (n + 1 - 0) with (n + 1) by ring; 
+rewrite big_recl; replace (n + 1 - 0) with (n + 1) by ring;
   solve_Rnat; cycle 1.
   apply Rnat_ge0 in nnat; lra.
 (* This should be a strike-proof-step---upto appl f_equal; clear w6 *)
@@ -728,8 +728,8 @@ rewrite <- big_shift; cycle 1.
 (* This should be a few rewrites under the sum, but there is the question
   of exploiting the fact that i in the 0.. (n-1) range. *)
 set (w7 := Rbigop _ _ _ _ _).
-assert (eq3 : w7 = 
-         \sum_(0 <= i < n) 
+assert (eq3 : w7 =
+         \sum_(0 <= i < n)
            (choose n i * x ^ (i + 1) * y ^(n - i) +
            choose n (i + 1) * x ^ (i + 1) * y ^ ((n + 1) - (i + 1)))).
   apply big_ext_low_nat; solve_Rnat.
@@ -742,7 +742,7 @@ assert (eq3 : w7 =
 rewrite eq3, <- big_add; cycle 1.
   replace (n - 0) with n by ring; solve_Rnat.
 apply f_equal.
-rewrite big_shift with 
+rewrite big_shift with
   (f := fun j => choose n j * x ^ j * y ^ (n + 1 - j)); cycle 1.
     replace (n - 0) with n by ring; solve_Rnat.
 replace (0 + 1) with 1 by ring.

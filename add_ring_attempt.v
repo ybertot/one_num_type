@@ -9,7 +9,7 @@ Example test0_1 (n : R) : n ^ 3 * n ^ 4 = n ^ 7.
 Proof. ring_simplify. easy. Qed.
 
 Example test0_2 (n : R) : n ^ (3 + 4) = n ^ 7.
-Proof. 
+Proof.
 Fail progress ring_simplify.
 ring_simplify (3 + 4)%nat.
 easy.
@@ -91,7 +91,7 @@ end.
   R_subset, but assume the existence of the relevant function,
   with two axioms describing the expected properties. *)
  Parameter Rpow : R -> R -> R.
- 
+
 Disable Notation "^" := pow.
 
 #[local]
@@ -162,7 +162,7 @@ Ltac Rpow_tac1 t :=
 (* This field declaration is inspired from the sources of Coq in file
   theories/Reals/RIneq.v *)
 Add Field RField3 : Rfield
-  (completeness Zeq_bool_IZR, morphism R_rm, constants [IZR_tac], 
+  (completeness Zeq_bool_IZR, morphism R_rm, constants [IZR_tac],
     power_tac R_p_t [Rpow_tac1]).
 
 (* Testing the simplification of ground expressions containing
@@ -182,7 +182,7 @@ easy.
 Qed.
 
 Add Field RField4 : Rfield
-  (completeness Zeq_bool_IZR, morphism R_rm, constants [IZR_tac], 
+  (completeness Zeq_bool_IZR, morphism R_rm, constants [IZR_tac],
     power_tac R_p_t1 [Rpow_tac1]).
 
 (* Testing the simplification of ground expressions containing
@@ -201,18 +201,18 @@ rewrite MyIZR.eq.
 easy.
 Qed.
 
-Lemma Rpow_IZR_to_myIZR x y : 
+Lemma Rpow_IZR_to_myIZR x y :
    x ^ (IZR y) = x ^ (MyIZR.IZR y).
 Proof. now rewrite MyIZR.eq. Qed.
 
 Ltac r_simplify_pre :=
   rewrite ?Rpow_IZR_to_myIZR.
 
-Ltac r_simplify_post := 
+Ltac r_simplify_post :=
   rewrite ?MyIZR.eq.
 
 Add Field RField5 : Rfield
-  (completeness Zeq_bool_IZR, morphism R_rm, constants [IZR_tac], 
+  (completeness Zeq_bool_IZR, morphism R_rm, constants [IZR_tac],
     power_tac R_p_t1 [Rpow_tac1], preprocess [r_simplify_pre],
     postprocess [r_simplify_post]).
 

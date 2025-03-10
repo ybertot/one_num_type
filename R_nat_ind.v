@@ -131,7 +131,7 @@ Definition Rnat_iter {A : Type} (n : R) (f : A -> A) (e : A) :=
   epsilon (inhabits e)
     (fun v => forall n', n = INR n' -> Nat.iter n' f e = v).
 
-Lemma Rnat_iter0 {A : Type} (f : A -> A) (e : A) : 
+Lemma Rnat_iter0 {A : Type} (f : A -> A) (e : A) :
   Rnat_iter 0 f e = e.
 Proof.
 unfold Rnat_iter.
@@ -182,7 +182,7 @@ now rewrite Rnat_iter0.
 Qed.
 
 Lemma Rnat_iter_add {A : Type} (n m : R) (f : A -> A) (e : A) :
-  Rnat n -> Rnat m -> Rnat_iter (n + m) f e = 
+  Rnat n -> Rnat m -> Rnat_iter (n + m) f e =
     Rnat_iter n f (Rnat_iter m f e).
 Proof.
 intros nnat mnat.
@@ -508,7 +508,7 @@ assert (Rnat (p + 1 - 0)) by now rewrite Rminus_0_r; auto.
 assert (0 < p + 1) by now assert (tmp := Rnat_ge0 _ Np); lra.
 rewrite big_recr; auto.
 replace (p + 1 - 1) with p by ring.
-rewrite Ih. 
+rewrite Ih.
 field.
 Qed.
 
@@ -567,7 +567,7 @@ destruct Ih as [Ih1 Ih2].
 replace (p + 1 + 1) with (p + 2) by ring.
 intros evenpp2.
 assert (evenp : multiple 2 p).
-  replace p with (p + 2 - 2) by ring; apply multiple_sub; auto; try lra. 
+  replace p with (p + 2 - 2) by ring; apply multiple_sub; auto; try lra.
   assert (tmp := Rnat_ge0 _ pnat); lra.
   exists 1; split; auto; ring.
 intros [k [knat evenpp1]]; case (Ih1 evenp).
@@ -684,7 +684,7 @@ destruct (main p q) as [r [rlt1 [rnat [rn0 req]]]].
   now repeat split; auto.
 now revert req; apply Ih; auto.
 Qed.
-  
+
 End sqrt2_not_rational.
 
 Lemma associative_mul : associative_monoid Rmult 1.

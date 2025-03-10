@@ -91,7 +91,7 @@ rewrite <- (Rabs_right n);[ | assert (tmp := Rnat_ge0 n nnat); lra].
 now apply abs_morph.
 Qed.
 
-Lemma nat_rect_list_IZR (l0 : list Z) 
+Lemma nat_rect_list_IZR (l0 : list Z)
   (l' : list R) (f : nat -> list Z -> list Z)
   (f' : nat -> list R -> list R)
   (n : nat) :
@@ -251,7 +251,7 @@ Elpi Accumulate File recursive.
 
 Elpi Export Recursive.
 
-Notation "'def' id 'such' 'that' bo" := (fun id => bo) 
+Notation "'def' id 'such' 'that' bo" := (fun id => bo)
  (id binder, bo at level 100, at level 1, only parsing).
 
 Ltac rec_Rnat fun_name :=

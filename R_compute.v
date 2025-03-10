@@ -128,10 +128,10 @@ main_translate_prf
            lp:Fz (Z.abs_nat x)) 0%Z}},
   std.assert-ok! (coq.typecheck F {{Z->Z}})
     "failed to typecheck mirror function",
-  Prf1 = 
+  Prf1 =
     {{fun (n : R) (z : Z) (nzq : n = IZR z) =>
        eq_ind_r
-         (fun x : nat => 
+         (fun x : nat =>
            nth 0 (nat_rect _ lp:L lp:Fnstep x) 0 =
            IZR (nth 0 (nat_rect _ lp:Lz lp:Fz (Z.abs_nat z)) 0%Z))
         (lp:Prf n z)
@@ -141,7 +141,7 @@ main [str F] :-
 std.do! [
   std.assert! (coq.locate F (const FGR))
     "the argument is not a known constant",
-  std.assert! (coq.env.const-body FGR (some Bo)) 
+  std.assert! (coq.env.const-body FGR (some Bo))
     "the constant does not have a value",
   std.assert! (main_translate_prf Bo T1 Prf)
     "translation failed.  Possible causes are:\n
@@ -252,7 +252,7 @@ Recursive (def fib such that
    (forall n, Rnat (n - 2) ->
      fib n = fib (n - 2) + fib (n - 1)))).
 
-Recursive (def monster such that 
+Recursive (def monster such that
   monster 0 = 1 /\
   forall n, Rnat (n - 1) -> monster n = fib (Rabs (monster (n - 1) + 2))).
 

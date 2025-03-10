@@ -56,7 +56,7 @@ preserve_bound_variables I O :-
     copy (fun N T F) (fun N1 T1 F1) :-
     copy T T1,
     fresh-name N T N1,
-    (@pi-decl N1 T1 x\ 
+    (@pi-decl N1 T1 x\
       copy (F x) (F1 x))),
     (pi B B1 N T F N1 T1 F1 \
       copy (let N T B F)(let N1 T1 B1 F1) :-
@@ -132,7 +132,7 @@ pred remove_one_unknown i:name, i:term, i:term, i:term, o:term.
 remove_one_unknown N _T C (fun N1 _T1 F) Res :-
   {coq.name->id N} = {coq.name->id N1},!,
   Res = (F C),!.
- 
+
  remove_one_unknown N T C (fun N1 T1 F) (fun N1 T1 Res) :-
   (@pi-decl N1 T1 x \
      remove_one_unknown N T C (F x) (Res x)),!.

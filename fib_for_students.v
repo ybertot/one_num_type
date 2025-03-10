@@ -43,7 +43,7 @@ Check add5 (3 + 5).
 
 Fail Check add5 (add5).
 
-(* Similarly, a number is not a function so, it cannot be applied to another number. 
+(* Similarly, a number is not a function so, it cannot be applied to another number.
   This kind of consistency checking of formulas is one of the first benefits of
   using a proof assistant to write mathematics. *)
 
@@ -73,7 +73,7 @@ Proof.
 unfold add5. (* rewrite add5_def. *)
 (* On the other hand, once we have a formula that contains only operations
   it already knows, it can berform the computation for us.  The command
-  to perform the computation of a subformula in the goal is called 
+  to perform the computation of a subformula in the goal is called
   ring_simplify. *)
 ring_simplify (3 * 5 + 5).
 (* After this step, it is easy to recognize that we want to prove an
@@ -89,7 +89,7 @@ Qed.
   using the value at the previous position.  We call this function dd because
   it actually returns the double of n. *)
 Recursive
-  (def dd such that dd 0 = 0 /\ 
+  (def dd such that dd 0 = 0 /\
    forall n, Rnat (n - 1) -> dd n = 2 + dd (n - 1)).
 
 (* When you use the this command, it constructs the function dd and also
@@ -120,7 +120,7 @@ Proof.
 ring_simplify (5 + 2).
 (* Where initially there was (5 + 2) we now have the result of the computation
 *)
-(* Now, when a statement to prove is an equality with the same thing on 
+(* Now, when a statement to prove is an equality with the same thing on
   both side, we can use an simple automation tactic called "easy". *)
 easy.
 Qed.
@@ -166,7 +166,7 @@ Qed.
 
 Lemma dd2 : dd 2 = 4.
 Proof.
-(* The statement of dd_eqn is a conjunction (in other words, an "and" 
+(* The statement of dd_eqn is a conjunction (in other words, an "and"
   statement).  We give separate names to the two parts of this conjunction. *)
 destruct dd_eqn as [dd0 dd_suc].
 (* dd_suc is an equality available under some condition.  We can rewrite
@@ -215,7 +215,7 @@ Check dd.
 Check dd_Z_mirror.
 Check dd_Z_prf.
 
-R_compute (dd 212). 
+R_compute (dd 212).
 
 Check fib_eqn.
 

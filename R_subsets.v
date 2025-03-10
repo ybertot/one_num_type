@@ -187,7 +187,7 @@ induction 1; lra.
 Qed.
 
 Lemma Rnat_INR n : Rnat (INR n).
-Proof. 
+Proof.
 apply Rint_Rnat.
   now rewrite INR_IZR_INZ; apply Rint_Z.
 now apply pos_INR.
@@ -304,7 +304,7 @@ Proof. now rewrite IRN_IZR, Zabs2Nat.inj_pos. Qed.
 Example IRN_42 : IRN 42 = 42%nat.
 Proof. now rewrite IRN_pos. Qed.
 
-Lemma IRN_add n m : 
+Lemma IRN_add n m :
 Rnat n -> Rnat m -> IRN (n + m) = (IRN n + IRN m)%nat.
 Proof.
 intros nnat mnat.
@@ -336,7 +336,7 @@ Proof.  unfold Rpow; rewrite IRN0, pow_O; easy. Qed.
 Lemma Rpow1 x : x ^ 1 = x.
 Proof.  unfold Rpow; rewrite IRN1, pow_1; easy. Qed.
 
-Lemma Rpow_add x a b : 
+Lemma Rpow_add x a b :
   Rnat a -> Rnat b -> x ^ (a + b) = x ^ a * x ^ b.
 Proof.
 intros anat bnat.
@@ -376,7 +376,7 @@ Qed.
 
 Ltac to_pow :=
   repeat
-    (match goal with 
+    (match goal with
       |- context [Rpow ?x (IZR (Z.pos ?n))] =>
       let nN := constr:(Z.abs_nat (Z.pos n)) in
       let v := eval compute in nN in
@@ -787,7 +787,7 @@ Qed.
 
 Lemma big_add (f g : R -> R) (b n : R) : Rnat (n - b) ->
   \sum_(b <= i < n) f i +
-  \sum_(b <= i < n) g i = 
+  \sum_(b <= i < n) g i =
   \sum_(b <= i < n) (f i + g i).
 Proof.
 unfold Rbigop.
