@@ -1,0 +1,137 @@
+pred thm_table o:term, o:term, o:term.
+pred nat_thm_table o:term, o:term, o:term.
+
+pred translate_prf i:term, o:term, o:term.
+pred main_translate_prf i:term, o:term, o:term.
+pred translate_collect_prf i:term, o:term, o:term, o:list (pair int term).
+
+translate_prf (fun N {{nat}} F) (fun N {{nat}} F1)
+  (fun N {{nat}} PF) :-
+  (pi CN \
+    translate_prf {{INR lp:CN}} {{Z.of_nat lp:CN}} {{INR_IZR_INZ lp:CN}} =>
+    translate_prf (F CN) (F1 CN) (PF CN)).
+
+translate_prf (fun L {{list R}} F) (fun L {{list Z}} F1)
+  PF0 :-
+  (pi Cl1 Cl2 Hll \
+    translate_prf Cl1 Cl2 Hll =>
+    translate_prf (F Cl1) (F1 Cl2) (PF Cl1 Cl2 Hll)),
+    PF0 = {{fun (lr : list R) (lz : list Z)
+      (h : lr = @map Z R IZR lz :> list R) => lp:(PF lr lz h)}}.
+
+translate_prf {{nth lp:K lp:L 0}} {{nth lp:K lp:Lz 0%Z}}
+  {{private.nth_map 0%Z 0 IZR lp:Lz lp:L lp:K eq_refl lp:H}} :-
+  translate_prf L Lz H.
+
+translate_prf {{@nil R}} {{@nil Z}} {{eq_refl : nil = @map Z R IZR nil}}.
+
+translate_prf {{cons lp:A lp:L}} {{cons lp:A1 lp:L1}}
+  {{f_equal2 (@cons R) lp:Pfa lp:Pfl}}:-
+  std.do! [
+    translate_prf A A1 Pfa,
+    translate_prf L L1 Pfl
+  ].
+
+translate_prf {{IZR lp:A}} {{lp:A}} {{eq_refl: IZR lp:A = IZR lp:A}}.
+
+translate_collect_prf {{IZR lp:A}} {{lp:A}} {{eq_refl: IZR lp:A = IZR lp:A}}
+  [].
+
+translate_prf (app [F, {{Rabs lp:A}}]) (app [F1, A1])
+  {{lp:PFF1 lp:A lp:A1 lp:PRFA}} :-
+  std.do![
+    nat_thm_table F F1 PFF1,
+    translate_prf A A1 PRFA
+  ].
+
+translate_collect_prf (app [F, {{Rabs lp:A}}]) (app [F1, A1])
+  {{lp:PFF1 lp:A lp:A1 lp:PRFA}} L :-
+  std.do![
+    nat_thm_table F F1 PFF1,
+    translate_collect_prf A A1 PRFA L
+  ].
+
+translate_prf {{lp:F (IZR (Zpos lp:P))}}
+  {{lp:Fz (Zpos lp:P)}}
+  {{private.cancel_Rabs_pos lp:F lp:Fz lp:Prf lp:P}} :-
+  nat_thm_table F Fz Prf.
+
+translate_collect_prf {{lp:F (IZR (Zpos lp:P))}}
+  {{lp:Fz (Zpos lp:P)}}
+  {{private.cancel_Rabs_pos lp:F lp:Fz lp:Prf lp:P}} [] :-
+  nat_thm_table F Fz Prf.
+
+translate_prf (app [F, A]) (app [F1, A1])
+  {{private.IZR_map1 lp:F lp:F1 lp:PFF1 lp:A lp:A1 lp:PFRA}} :-
+  std.do! [
+  thm_table F F1 PFF1,
+  translate_prf A A1 PFRA
+  ].
+
+translate_collect_prf (app [F, A]) (app [F1, A1])
+  {{private.IZR_map1 lp:F lp:F1 lp:PFF1 lp:A lp:A1 lp:PFRA}} L :-
+  std.do! [
+  thm_table F F1 PFF1,
+  translate_collect_prf A A1 PFRA L
+  ].
+
+type marker int -> term.
+
+translate_collect_prf (app [F, A]) (app [F1, A1])
+  {{private.Rnat_Rabs lp:PFF1 lp:A lp:A1 lp:Nat_prf lp:PRFA}} L' :-
+  std.do![
+    nat_thm_table F F1 PFF1,
+    translate_collect_prf A A1 PRFA L,
+    coq.typecheck Hole {{Rnat lp:A}} ok,
+    coq.ltac.collect-goals Hole [G] [],
+    if (coq.ltac.open (coq.ltac.call-ltac1 "solve_Rnat") G [])
+       (Nat_prf = Hole, L' = L)
+       (
+        Test = {{(0 <=? lp:A1)%Z}},
+        coq.reduction.vm.norm Test _ Tv,
+        if (Tv = {{false}})
+          ( coq.reduction.vm.norm A1 _ V1,
+            coq.term->string {{IZR lp:V1}} V1R,
+            Diagnostic is
+              {coq.term->string F} ^ " has a negative input "
+              ^ V1R,
+           coq.error Diagnostic)
+          (GPRF = {{private.compute_Rnat lp:A lp:A1 lp:PRFA eq_refl}},
+           Nat_prf = GPRF),
+        L' = L)
+        %new_int Fresh,
+        % Nat_prf = marker Fresh,
+        % L' = [pr Fresh {{Rnat lp:A}} | L])
+  ].
+
+translate_prf (app [F, A, B]) (app [F1, A1, B1])
+  {{private.IZR_map2 lp:F lp:F1 lp:PFF1 lp:A lp:B lp:A1 lp:B1 lp:PFRA lp:PFRB}}
+  :-
+  std.do! [
+  thm_table F F1 PFF1,
+  translate_prf A A1 PFRA,
+  translate_prf B B1 PFRB
+  ].
+
+translate_collect_prf (app [F, A, B]) (app [F1, A1, B1])
+  {{private.IZR_map2 lp:F lp:F1 lp:PFF1 lp:A lp:B lp:A1 lp:B1 lp:PFRA lp:PFRB}}
+     LPRF :-
+  std.do! [
+  thm_table F F1 PFF1,
+  translate_collect_prf A A1 PFRA LA,
+  translate_collect_prf B B1 PFRB LB,
+  std.append LA LB LPRF
+  ].
+
+pred abstract_markers i:list (pair int term) i:term i:term
+   i:term o:term o:term.
+
+abstract_markers [] T LHS RHS T1 {{lp:LHS = lp:RHS :> R}} :-
+  copy T T1.
+
+abstract_markers [pr N Ty | L] T LHS RHS (fun _ Ty Prf) {{lp:Ty -> lp:T1TY}}:-
+  @pi-decl _ Ty x \
+    (
+    (copy (marker N) x :- !)
+      =>
+    abstract_markers L T LHS RHS (Prf x) T1TY).
