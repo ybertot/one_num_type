@@ -1,4 +1,4 @@
-Require Import List FunctionalExtensionality.
+Require Import List FunctionalExtensionality Lra.
 From elpi Require Import elpi.
 
 Require Import Reals.
@@ -15,9 +15,9 @@ lazy zeta; apply fq.
 Qed.
 
 Lemma big_ext_low_nat3 {A : Type} op (v : A) f g b1 b2 n1 n2 :
+  (forall x, Rnat x -> b1 <= x < n1 -> f x = g x) ->
   Rnat b1 ->
   Rnat (n1 - b1) ->
-  (forall x, Rnat x -> b1 <= x < n1 -> f x = g x) ->
   b1 = b2 ->
   n1 = n2 ->
   \big[op/v]_(b1 <= i < n1) f i = \big[op/v]_(b2 <= i < n2) g i.
@@ -43,6 +43,10 @@ Lemma app_prf1 [A : Type] [B : A -> Type] (f g : forall x, B x) (v : A) :
 Proof. now intros fg; rewrite fg. Qed.
 
 Ltac lazy_beta := lazy beta.
+
+Lemma eq_trans_rev {A : Type} (x y z : A) :
+  y = z -> x = y -> x = z.
+Proof. exact (fun h1 h2 => @eq_trans A x y z h2 h1). Qed.
 
 Elpi Tactic replace.
 
@@ -228,7 +232,7 @@ mk-equality RW {{@map lp:T1 lp:T2 lp:{{fun N _ F}} lp:L}}
 
 mk-equality RW {{@Rbigop lp:Ty lp:Op lp:E lp:B1 lp:B2 lp:{{fun N _ F}}}}
   A
-  {{@Rbigop lp:Ty lp:Op lp:E lp:B3 lp:B4 lp:{{fun N1 _ F1}}}}
+  {{@Rbigop lp:Ty lp:Op lp:E lp:B3 lp:B4 lp:{{fun N1 {{R}} F1}}}}
   R A3 :- !,
   fresh-name N T1 N1,
   @pi-decl N1 T1 x\
@@ -240,11 +244,10 @@ mk-equality RW {{@Rbigop lp:Ty lp:Op lp:E lp:B1 lp:B2 lp:{{fun N _ F}}}}
   mk-equality RW B2 A2 B4 Pb2 A3,
   R = {{big_ext_low_nat3 lp:Op lp:E
         lp:{{fun N1 _ F}} lp:{{fun N1 _ F1}} lp:B1 lp:B3 lp:B2 lp:B4
-        lp:P1_ lp:P2_
         lp:{{fun N1 T1 x\
              (fun `Hnat` (Hnat x) hn\
                (fun `H` (Ext_Hyp x) h\ Pf x hn h))}}
-        lp:Pb1 lp:Pb2}}.
+        lp:P1_ lp:P2_ lp:Pb1 lp:Pb2}}.
 
 
 mk-equality RW (app L) A (app L1) Prf A1 :-
@@ -300,21 +303,24 @@ argument->string (open-trm N F) S :-
   display-open N F S.
 
 solve (goal _ _ {{lp:X = lp:Y }} _ [Arg1, Arg2] as G) GL1 :-
-  %coq.say Arg1 Arg2,
-  mk-equality (pr Arg1 Arg2) Y [] Y2 P _,
+  mk-equality (pr Arg1 Arg2) Y [] Y2 P1 _,
   if (Y == Y2) (
-    coq.error "tactic repl: the pattern" {argument->string Arg1}
-    "does not occur in the right hand side"
-      {coq.term->string Y})
-    (true),
-  std.assert-ok! (coq.typecheck P {{lp:Y = lp:Y2}}) "proof incorrect",!,
-  preserve_bound_variables X X1,
-  refine {{@eq_trans _ lp:X1 lp:Y2 _ _ (eq_sym lp:P)}} G GL,
-  if (GL = [Ng, Ng2])
-    (coq.ltac.open (coq.ltac.call "lazy_beta" []) Ng2 GL_aux,
-     GL1 = [Ng | GL_aux])
+    coq.say "attempting left hand side",
+    mk-equality (pr Arg1 Arg2) X [] X2 P _,
+    coq.say "equality succeeded",
+    if (X == X2) (
+      coq.error "tactic repl: the pattern" {argument->string Arg1}
+        "does not occur in the goal")
+      (std.assert-ok! (coq.typecheck P {{lp:X = lp:X2}}) "proof incorrect",!,
+       preserve_bound_variables Y Y1,
+       refine {{@eq_trans_rev _ _ lp:X2 lp:Y1 _ lp:P}} G GL))
+    (std.assert-ok! (coq.typecheck P1 {{lp:Y = lp:Y2}}) "proof incorrect",!,
+     preserve_bound_variables X X1,
+     refine {{@eq_trans _ lp:X1 lp:Y2 _ _ (eq_sym lp:P1)}} G GL),
+  if (GL = [Ng, Ng2 | Extras])
+    (coq.ltac.open (coq.ltac.call "lazy_beta" []) Ng2 [GL_aux],
+     GL1 = [Ng, GL_aux | Extras])
     (GL1 = GL).
-  % refine {{eq_sym (@eq_trans lp:Y lp:Y2 lp:X lp:P (eq_sym _))}} G GL.
 
 solve (goal _ _ _ _ [Arg1, Arg2]) _ :-
   coq.say Arg1,
@@ -330,10 +336,27 @@ Tactic Notation (at level 0) "repl" uconstr(x) uconstr(y) :=
 
 Section demo_zone.
 
-Lemma test1 : \sum_(0 <= i < 10) (i + 1) = \sum_(0 <= i < 10) (1 + i).
+Lemma test1 :   \sum_(0 <= i < 10) (i + 1) =
+  \sum_(0 <= i < 10) (sqrt (i ^ 2) + 1).
 Proof.
-Fail (replace (i + 1) with (1 + i)).
-repl (1 + i) (i + 1).
-Show Proof.
-Show Proof.
+repl (sqrt (i ^ 2)) i.
+  easy.
+rewrite sqrt_pow_2.
+    easy.
+  lra.
+solve_Rnat.
+Qed.
+
+Lemma test_as_before :
+  \sum_(0 <= i < 10) i = \sum_(0 <= i < 10) (sqrt (i ^ 2)).
+Proof.
+apply big_ext_low_nat.
+    solve_Rnat.
+  solve_Rnat.
+intros x Hnat H.
+rewrite sqrt_pow_2.
+  easy.
+lra.
+Qed.
+
 End demo_zone.
