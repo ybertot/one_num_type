@@ -22,14 +22,14 @@
 \begin{itemize}
 \item difficulty proving \[\sum_{i = 0}^{n} i = \sum_{i = 0}^{n} \sqrt{i^2}\]
 \item Formal proofs have several steps, 
-\item Math teachers proofs are very different,
+\item Math teacher proofs are very different,
 \item A proposed solution.
 \end{itemize}
 \end{frame}
 \begin{frame}
 \frametitle{The context}
 \begin{itemize}
-\item Mathematical construction like integrals and iterated sums have
+\item Mathematical constructions like integrals and iterated sums have
 {\em bound variables}
 \item From the formal point of view, a bound variable does not really exist
 \item Type theory promotes {\em Leibniz} equality as the main tool
@@ -53,10 +53,10 @@ to reason modulo equality
 \begin{enumerate}
 \item Establish \(\forall i, 0 \leq i \leq n \Rightarrow i = \sqrt{i ^ 2}\)
 \item For this, fix \(i\) such that \(0 \leq i \leq n\),
-\item Then \(i = \sqrt{i ^ 2}\) (by reasoning),
+\item Then \(i = \sqrt{i ^ 2}\) (by some proof),
 \item then apply the extensionality lemma for sums:
 \[\forall f g, (\forall i, 0 \leq i \leq n \Rightarrow f(i) = g(i)) \Rightarrow
-\sum_{i = 0}^{n} f i = \sum_{i = 0}^{n} g i\]
+\sum_{i = 0}^{n} f(i) = \sum_{i = 0}^{n} g(i)\]
 \end{enumerate}
 \end{itemize}
 \end{frame}
@@ -72,7 +72,7 @@ any formula
 in the formula
 \[\sum_{i = 0}^{n} \sqrt{i^2}\]
 \item Bound variable names do not count for logical reasoning
-\item \[\sum_{i = 0}^{n} {\sqrt{i^2}} = 
+ \[\sum_{i = 0}^{n} {\sqrt{i^2}} = 
 \sum_{j = 0}^{n} {\sqrt{j^2}}\]
 \item \(\sqrt{i ^ 2}\) does not occur in the right-hand side formula!
 \item So you cannot use Leibniz' principle directly
@@ -93,8 +93,8 @@ a variable with the name \(i\)
 \item Search for instances of \(\sqrt{i^2}\) in the multiple places where
 this may occur
 \item Do this again if there are nested binding patterns
-\item Everytime one enters inside an operator with bound variables, apply
-a suitable ``observational equality'' theorem
+\item Every time one enters inside an operator with bound variables, apply
+a suitable ``extensionality'' theorem
 \end{enumerate}
 \end{frame}
 \begin{frame}
