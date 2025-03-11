@@ -116,6 +116,40 @@ a suitable ``extensionality'' theorem
  \(\sqrt{i^2}\) is not well-typed,\\
  but \(\lambda i : {\mathbb R}, \sqrt{i^2}\) is well typed
 \end{itemize}
+\item The tactic receives two open terms, which can be viewed has a
+{\em rewrite rule}
+\item the context is search for a subcontext where:
+\begin{itemize}
+\item All ``open variables'' are accounded
+\item The left-hand side of the rewrite rule occurs
+\end{itemize}
+\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{Building a proof}
+\begin{itemize}
+\item Default extensionality: two functions that are equal everywhere can
+be substituted for each other
+\begin{itemize}
+\item Axiom {\tt functional\_extensionality} provided by Rocq
+\end{itemize}
+\item Ad hoc extensionality: compare functions only on a subset
+\begin{itemize}
+\item For integrals: the subset is the interval between the bounds
+\item For discrete sums with integer bounds: the subset is the intersection
+of the integers and the interval between the bounds
+\end{itemize}
+\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{Future work}
+\begin{itemize}
+\item Provide a comfortable interface to add new ad-hoc extensionality
+principles
+\item Rely on {\tt setoid rewrite}, advanced location selection
+\item Handle goals that are not equalities
+\item perform replacement modulo orders
+\item Find links with {\em observational type theory}
 \end{itemize}
 
 \end{frame}
