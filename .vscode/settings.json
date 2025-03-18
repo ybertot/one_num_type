@@ -9,4 +9,5 @@
     "**/*.vo": true,
     "**/*.generated": true,
   },
+  "makefile.configureOnOpen": false,
 }
