@@ -1,0 +1,298 @@
+\documentclass[compress]{beamer}
+\usepackage[french]{babel}
+\usepackage[latin1]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{cancel}
+\usepackage{alltt}
+\usepackage{graphicx}
+\graphicspath{ {./images/} }
+
+\newdimen\topcrop
+\topcrop=10cm  %alternatively 8cm if the pdf inclusions are in letter format
+\newdimen\topcropBezier
+\topcropBezier=19cm %alternatively 16cm if the inclusions are in letter format
+
+\setbeamertemplate{footline}[frame number]
+\title{Chassez le naturel\\ dans la formalisation des math\'ematiques\\
+}
+\author{Thomas Portet}
+\date{JFLA Janvier 2025
+\newline
+\newline\newline
+\newline
+\includegraphics[width=2cm]{Inr_logo_rouge.svg}\\[2cm] }
+\mode<presentation>
+\begin{document}
+% Nous affirmons que les tactiques des outils de preuves suivent une certaine logique et nous voulons que cette logique puisse être semblables à celles des preuves mathématiques. Ainsi, les étudiants en tirent de la connaissance sur comment faire des preuves.
+%
+
+\maketitle
+\begin{frame}
+\frametitle{Contexte}
+\begin{itemize}
+\item Utiliser des outils de preuves pour l'enseignement
+\item Capacit\'es du langage, documentation, message d'erreur
+\begin{itemize}
+\item Inspiration : Waterproof
+\item Exp\'eriences similaires sur Lean (Lean Verbose)
+\end{itemize}
+\item Le contenu des preuves joue un role primordial pas seulement leur pr\'esentation
+\begin{itemize}
+\item Plusieurs types de nombres, plusieurs versions d'op\'erateurs
+\item Des coercions peuvent \^etre cach\'ees bloquant certaines op\'erations
+\item La th\'eorie des types oblige les d\'eveloppeurs \`a d\'efinir des fonctions l\`a o\`u elles ne devraient pas \^etre d\'efinies.
+\end{itemize}
+\item Le typage aide les jeunes math\'ematiciens, mais pas le type des entiers naturels
+\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{Caract\'eristiques des entiers naturels}
+\begin{itemize}
+\item Aspects positifs
+\begin{itemize}
+\item Un type inductif
+\item Calcul par r\'eduction (plus rapide que la r\'e\'ecriture)
+\item Les d\'efinitions r\'ecursives sont le plus souvent avec des entiers naturels
+\end{itemize}
+\item Aspects n\'egatifs
+\begin{itemize}
+\item La soustraction est \'etrange : la valeur de \(3-5\) est contre-intuitive
+\item Le statut de la fonction/constructeur {\tt S} est un obstacle pour les \'etudiants
+\item Dans Coq, {\tt S 4} et {\tt 5} sont interchangeables,
+mais {\tt S x} et {\tt x + 1} ne le sont pas.
+\item Le temps consacr\'e \`a l'apprentissage du pattern matching n'est pas consacr\'e aux math\'ematiques
+\item La charge cognitive est trop importante
+\end{itemize}
+\end{itemize}
+\end{frame}
+\iffalse 
+\begin{frame}
+\frametitle{Les nombres dans l'esprit des d\'ebutants en math\'ematiques}
+\begin{itemize}
+\item D\`es l'\^age de 15 ans, les enfants connaissent probablement les nombres entiers, rationnels et r\'eels.
+
+\item Le nombre \(3 - 5\) existe en tant que nombre, il n'est pas 0.
+\item Le calcul de \(127 - 42\) donne un nombre naturel, \(3 - 5\) un nombre entier,
+et \(1 / 3\) un rationnel
+\item Le calcul de \(42 / 6\) donne un nombre naturel
+\item Cette perception est {\em juste}, la respecter permet de gagner du temps
+\end{itemize}
+\end{frame}
+\fi
+\begin{frame}
+\frametitle{Proposition}
+\begin{itemize}
+\item N'utiliser qu'un seul type de nombres : les nombres r\'eels
+\begin{itemize}
+\item Choisi pour \^etre intuitif pour les \'el\`eves \`a la fin du lyc\'ee
+\item Incluant la relation d'ordre
+\end{itemize}
+\item Consid\'erer les autres types connus comme des sous-ensembles
+\item Inclure les lois de stabilit\'e dans l'automatisation des preuves
+\item Inspiration forte : l'approche PVS
+\begin{itemize}
+\item Cependant, PVS est trop agressif en mati\`ere d'automatisation pour l'\'education.
+\end{itemize}
+\item Entiers naturels, relatifs sont encore utilis\'es de mani\`ere cach\'ee
+\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{Plan}
+\begin{itemize}
+\item Revue des usages des entiers naturels et relatifs
+\item D\'efinir des sous-ensembles de \(\mathbb R\) pour les types inductifs
+\item De \(\mathbb Z\) et \(\mathbb N\) \`a \(\mathbb R\) et vice-versa
+\item Preuves ad hoc d'appartenance
+\item D\'efinitions r\'ecursives et fonctions it\'er\'ees
+\item Exemple pratique : autour de Fibonacci
+
+\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{Utilisation des entiers naturels et relatifs}
+\begin{itemize}
+\item Une base pour les preuves par r\'ecurrence
+\item D\'efinition d'une suite r\'ecursive
+\item  It\'erer une op\'eration un certain nombre de fois \(f^n(k)\)
+\item  La s\'equence \(0, \ldots, n\)
+
+\item Indices pour les op\'erations it\'er\'ees \(\sum_{i=m}^{n} f(i)\)
+\iffalse
+\item  Indices pour les collections finies, % TODO  A_1 ...
+\item Sp\'ecifique \`a Coq+Lean+Agda : formes normales des constructeurs comme cibles de la r\'eduction
+\item \fi
+\item  Dans les nombres r\'eels de Coq, les nombres 0, 1, ..., 37, ... s'appuient sur le type inductif des entiers relatifs pour la repr\'esentation. 
+\begin{itemize}
+\item En Coq, vous pouvez d\'efinir {\tt Zfact} comme un \'equivalent efficace de la factorielle et calculer 100!
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{D\'efinir des sous-ensembles de \(\mathbb R\) pour les types inductifs}
+\begin{itemize}
+\item Approche inductive des pr\'edicats
+\begin{itemize}
+\item H\'eriter du principe de r\'ecurrence
+\item Prouver l'existence d'un entier naturel ou relatif correspondant
+
+
+\end{itemize}
+\end{itemize}
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{Principe de r\'ecurrence en Coq}
+\begin{alltt}
+Require Import Reals.
+Open Scope R_scope.
+
+Inductive Rnat : R -> Prop :=
+  Rnat0 : Rnat 0
+| Rnat_succ : forall n, Rnat n -> Rnat (n + 1).
+\end{alltt}
+Principe de r\'ecurrence g\'en\'er\'e:
+\begin{alltt}
+nat_ind
+     : forall P : R -> Prop,
+       P 0 ->
+       (forall n : R, Rnat n -> P n -> P (n + 1)) ->
+       forall r : R, Rnat r -> P r 
+\end{alltt}%bien insister
+\end{frame}
+\begin{frame}
+\frametitle{De \(\mathbb N\) et \(\mathbb Z\) vers \(\mathbb R\) et vice-versa}
+\begin{itemize}
+\item Rappel : les types \(\mathbb N\) ({\tt nat}) et \(\mathbb Z\) ({\tt Z}),
+ne doivent pas \^etre expos\'es
+\item Les injections {\tt INR} et {\tt IZR} existent d\'ej\`a
+\item Nouvelles fonctions {\tt IRN} et {\tt IRZ}
+\item D\'efinissables \`a l'aide d'outils de logique classiques comme l'axiome de choix d'Hilbert ou la partie enti\`ere.
+
+\end{itemize}
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{Typage d\'egrad\'e}
+\begin{itemize}
+\item Les lois de stabilit\'e fournissent des preuves automatisables de l'appartenance \`a un sous-ensemble.
+\end{itemize}
+\begin{small}
+\begin{alltt}
+Existing Class Rnat.
+
+Lemma Rnat_add x y : Rnat x -> Rnat y -> Rnat (x + y).
+Proof. ... Qed.
+
+Lemma Rnat_mul x y : Rnat x -> Rnat y -> Rnat (x * y).
+Proof. ... Qed.
+
+Lemma Rnat_pos : Rnat (IZR (Z.pos _)).
+Proof. ... Qed.
+
+Existing Instances Rnat0 Rnat_succ Rnat_add Rnat_mul Rnat_pos.
+\end{alltt}
+\end{small}
+\begin{itemize}
+\item {\tt typeclasses eauto} ou {\tt exact \_.} r\'esoudra automatiquement
+   {\tt Rnat x -> Rnat ((x + 2) * x)}.
+\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{Preuves ad hoc d'appartenance}
+\begin{itemize}
+\item Quand \(n, m \in {\mathbb N}, m \leq n\), \((n - m) \in {\mathbb N}\) peut aussi \^etre prouv\'e
+\item Cela n\'ecessite une preuve explicite
+\item Probablement bon dans un contexte de formation pour les \'etudiants
+\item Idem pour la division
+\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{Fonctions r\'ecursives}
+\begin{itemize}
+\item Les suites r\'ecurrentes sont \'egalement un sujet d'introduction typique
+\item \`A titre d'illustration, consid\'erons la suite de Fibonacci.
+{\em La suite de Fibonacci est la fonction \(F\) telle que \(F_0= 0\), \(F_1=1\), et \(F_{n+2} = F_{n} + F_{n + 1}\) pour tout nombre naturel \(n\)}.
+\item La preuve par r\'ecurrence et les \'equations de d\'efinition suffisent \`a
+{\em \'etudier} une suite
+\item Mais il faut encore la d\'efinir
+\item Solution : d\'efinir une commande de d\'efinition r\'ecursive \`a l'aide d'ELPI
+\end{itemize}
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{D\'efinition de fonctions r\'ecursives}
+\begin{itemize}
+\item On peut utiliser un {\em r\'ecurseur}, miroir du r\'ecurseur sur les entiers naturels
+\item {\tt Rnat\_rec : ?A -> (R -> ?A -> ?A) -> R -> ?A}
+\item La r\'ecursivit\'e d'ordre sup\'erieur \`a 1 peut \^etre mise en \oe{}uvre en utilisant des tuples de la bonne taille
+\end{itemize}
+\begin{small}
+\begin{alltt}
+(* fib 0 = 0  fib 1 = 1              *)
+(* fib n = fib (n - 1) + fib (n - 2) *)
+
+Definition fibr := Rnat_rec [0; 1]
+   (fun n l => [nth 1 l 0; nth 0 l 0 + nth 1 l 0]).
+
+Definition fib n := nth 0 (fibr n) 0. 
+\end{alltt}
+\end{small}%parler du temps de calcul gagné 
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{Meta-programmation d'une commande de d\'efinition r\'ecursive}
+\begin{itemize}
+\item La d\'efinition du transparent pr\'ec\'edent peut \^etre g\'en\'er\'ee
+\item En prenant comme entr\'ee les \'equations (dans les commentaires)
+\item Les r\'esultats de la d\'efinition sont en deux parties
+\begin{itemize}
+\item La fonction de type {\tt R -> R}
+\item La preuve, l'\'enonc\'e logique de cette fonction
+\end{itemize}
+\end{itemize}
+\begin{small}
+\begin{verbatim}
+Recursive (def fib such that
+             fib 0 = 0 /\
+             fib 1 = 1 /\
+             forall n : R, Rnat (n - 2) ->
+                fib n = fib (n - 2) + fib (n - 1)).
+\end{verbatim}
+\end{small}
+\end{frame}
+\begin{frame}
+\frametitle{Calculer avec des nombres r\'eels}
+\begin{itemize}
+\item {\tt Compute 42 - 67.} donne une r\'eponse surprenante
+\begin{itemize}
+\item Des tas de {\tt R1}, {\tt +}, {\tt *} et de parenth\`eses.
+\end{itemize}
+\item {\tt Compute (42 - 67)\%Z.} donne la bonne r\'eponse
+\begin{itemize}
+\item  Sauf qu'elle n'a pas le bon type
+\end{itemize}
+\end{itemize}
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{Calculer avec des nombres r\'eels : notre solution}
+\begin{itemize}
+\item Nouvelle commande {\tt R\_compute}.
+\item {\tt R\_compute (42 - 67).} r\'eussit et affiche {\tt -25}
+\item {\tt R\_compute (fib (42 - 67)).} \'echoue!
+\item {\tt R\_compute (fib 42) th\_name.} r\'eussit et enregistre la preuve de l'\'egalit\'e.
+\iffalse
+\begin{itemize}
+\item En respectant le fait que {\tt fib} n'est d\'efini que pour des entr\'ees en nombres naturels
+\end{itemize}
+\fi
+\item Impl\'ement\'e  en exploitant une correspondance entre les op\'erations \'el\'ementaires sur {\tt R}, {\tt Z} (avec preuves)
+\item Programme en ELPI
+\item Miroir automatique d'une d\'efinition r\'ecursive dans {\tt R} vers une d\'efinition dans {\tt Z}
+\item Th\'eor\`eme de correction du processus miroir a une pr\'econdition {\tt Rnat} sur l'entr\'ee.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+   \frametitle{D\'emonstration}
+  
+   \end{frame}
+\end{document}
+
+
