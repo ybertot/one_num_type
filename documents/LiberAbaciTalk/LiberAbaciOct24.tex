@@ -240,7 +240,7 @@ Definition fibr := Rnat_rec [0; 1]
 \item The results of the definition are in two parts
 \begin{itemize}
 \item The function of type {\tt R -> R}
-\item The proof the logical statement for that function
+\item The proof of the logical statement for that function
 \end{itemize}
 \end{itemize}
 \begin{small}
@@ -256,7 +256,7 @@ Recursive (def fib such that
 \begin{frame}
 \frametitle{Compute with real numbers}
 \begin{itemize}
-\item {\tt Compute 42 - 67.} yields a puzzling answer
+\item {\tt Compute 42 - 67.} in plain Coq yields a puzzling answer
 \begin{itemize}
 \item Tons of {\tt R1}, {\tt +}, {\tt *}, and parentheses.
 \end{itemize}
@@ -272,10 +272,10 @@ Recursive (def fib such that
 \item New command {\tt R\_compute}.
 \item {\tt R\_compute (42 - 67).} succeeds and displays {\tt -25}
 \item {\tt R\_compute (fib (42 - 67)).} fails!
-\item {\tt R\_compute (fib 42) th\_name.} succeeds and saves a proof of equality.
 \begin{itemize}
 \item Respecting the fact that {\tt fib} is only defined for natural number inputs
 \end{itemize}
+\item {\tt R\_compute (fib 42) th\_name.} succeeds and saves a proof of equality.
 \item Implemented by exploiting a correspondance between elementary operations
 on {\tt R}, {\tt Z} (with proofs)
 \item ELPI programming
@@ -288,7 +288,7 @@ on {\tt R}, {\tt Z} (with proofs)
 \frametitle{Finite sets of indices}
 \begin{itemize}
 \item Usual mathematical idiom : \(1 \ldots n\), \(0 \ldots n\), \((v_i)_{i = 1 \ldots n}\)
-\item Provide a {\tt Rseq : R -> R -> R}
+\item Provide a function {\tt Rseq : R -> R -> R}
 \begin{itemize}
 \item {\tt Rseq 0 3 = [0; 1; 2]}
 \end{itemize}
@@ -314,7 +314,20 @@ on {\tt R}, {\tt Z} (with proofs)
 \item Shuffling the indices
 \end{itemize}
 \item Mathematical Components {\tt bigop} library provides a guideline
+\item Future work: {\tt \char'134{}sum\_(a <= i <= b) f(i)} is more idiomatic
 \end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{Manipulating bound variables}
+\[\sum_{i=0}^{10}\sqrt{i^2} = \sum_{i=0}^{10}i\]
+\begin{itemize}
+\item Is the sentence {\em replace \(\sqrt{i^2}\) with \(i\)} acceptable?
+\item Can this sentence server as the start of the argument?
+\item Does the proof language of the theorem prover allow mentioning \(i\)?
+\item In the outer context, \(\sqrt{i ^ 2}\) is flawed, as \(i\) does not exist
+\item In the mind of the teacher \(\sqrt{i ^ 2}\) exists, because it is written on the board!
+\end{itemize}
+
 \end{frame}
 \begin{frame}[fragile]
 \frametitle{Iterated functions}
