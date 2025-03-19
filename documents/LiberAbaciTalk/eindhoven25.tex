@@ -58,7 +58,7 @@
 \begin{itemize}
 \item Starting at age 12, kids probably know about integer, rational, and
 real numbers
-\item \(3 - 5\) exists, you don´t need to think about the type of \(3\) and
+\item \(3 - 5\) exists, you don't need to think about the type of \(3\) and
   \(5\), and the value is not \(0\)
 \item Computing \(127 - 42\) yields a natural number, \(3 - 5\) an integer,
 and \(1 / 3\) a rational
@@ -74,11 +74,11 @@ and \(1 / 3\) a rational
 \item Chosen to be intuitive for students at end of K12
 \item Including the order relation
 \end{itemize}
-\item View other known types as subsets
+\item Use subsets
 \item Include stability laws in silent proof automation
 \item Strong inspiration: the PVS approach
 \begin{itemize}
-\item However PVS is too aggressive on automation for education
+\item However PVS is too aggressive on automation
 \end{itemize}
 \item Natural numbers, integers, still used in the background
 \item Only postpone the introduction of {\tt nat} as a type
@@ -88,7 +88,7 @@ and \(1 / 3\) a rational
 \frametitle{Plan}
 \begin{itemize}
 \item Review of usages of natural numbers and integers
-\item Defining subsets of \(\mathbb R\) for inductive types
+\item Defining inductive subsets of \(\mathbb R\)
 \item Ad hoc proofs of membership
 \item Recursive definitions and iterated functions
 \item Finite sets and big operations
@@ -112,7 +112,7 @@ type of integers for representation
 \end{itemize}
 \end{frame}
 \begin{frame}
-\frametitle{Defining subsets of \(\mathbb R\) for {\tt nat}, {\tt Z}}
+\frametitle{Defining subsets of \(\mathbb R\) for \(\mathbb N\), \(\mathbb Z\)}
 \begin{itemize}
 \item Use inductive predicates
 \item Inherit the induction principle
