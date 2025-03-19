@@ -1,0 +1,302 @@
+\documentclass[compress]{beamer}
+\usepackage[latin1]{inputenc}
+\usepackage{cancel}
+\usepackage{alltt}
+\newdimen\topcrop
+\topcrop=10cm  %alternatively 8cm if the pdf inclusions are in letter format
+\newdimen\topcropBezier
+\topcropBezier=19cm %alternatively 16cm if the inclusions are in letter format
+
+\definecolor{craneblue}{rgb}{0.2,0.2,0.7}
+\setbeamertemplate{footline}[frame number]
+\title{A single number type for Math education\\in Type Theory}
+\author{Yves Bertot}
+\date{March 2025}
+\mode<presentation>
+\begin{document}
+
+\maketitle
+\begin{frame}
+\frametitle{The context}
+\begin{itemize}
+\item Efforts to use theorem provers like Lean, Isabelle, or Rocq in teaching
+\item language capabilities, documentation, error messages
+\begin{itemize}
+\item Strong inspiration: Waterproof
+\item similar experiment on Lean (Lean Verbose, for instance)
+\end{itemize}
+\item Our contention: the contents needs adapting
+\begin{itemize}
+\item Several types for numbers, several versions of each operation
+\item Coercions may be hidden, they can still block some operations
+\end{itemize}
+\item Typing helps young mathematicians, but not the type of natural numbers
+\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{Characteristics of the natural numbers}
+\begin{itemize}
+\item Positive sides
+\begin{itemize}
+\item An inductive type
+\item computation by reduction (faster than rewriting)
+\item Proof by induction as instance of a general scheme
+\item Recusive definitions are almost natural
+\end{itemize}
+\item Negative sides
+\begin{itemize}
+\item Subtraction is odd: the value of \(3-5\) is counterintuitive
+\item The status of function/constructor {\tt S} is a hurdle for students
+\item In Coq, {\tt S 4} and {\tt 5} and interchangeable,
+   but\\ {\tt S x} and {\tt x + 1} are not
+\item The time spent to learn pattern matching is not spent on math
+\end{itemize}
+\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{Numbers in the mind of math beginners}
+\begin{itemize}
+\item Starting at age 12, kids probably know about integer, rational, and
+real numbers
+\item \(3 - 5\) exists, you don´t need to think about the type of \(3\) and
+  \(5\), and the value is not \(0\)
+\item Computing \(127 - 42\) yields a natural number, \(3 - 5\) an integer,
+and \(1 / 3\) a rational
+\item \(42 / 6\) yields a natural number
+\item These perception are {\em right}, respecting them is time efficient
+\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{Proposal}
+\begin{itemize}
+\item Use only one type of numbers: real numbers
+\begin{itemize}
+\item Chosen to be intuitive for students at end of K12
+\item Including the order relation
+\end{itemize}
+\item View other known types as subsets
+\item Include stability laws in silent proof automation
+\item Strong inspiration: the PVS approach
+\begin{itemize}
+\item However PVS is too aggressive on automation for education
+\end{itemize}
+\item Natural numbers, integers, still used in the background
+\item Only postpone the introduction of {\tt nat} as a type
+\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{Plan}
+\begin{itemize}
+\item Review of usages of natural numbers and integers
+\item Defining subsets of \(\mathbb R\) for inductive types
+\item Ad hoc proofs of membership
+\item Recursive definitions and iterated functions
+\item Finite sets and big operations
+\item Minimal set of tactics
+\item Practical examples, around Fibonacci, factorials and binomials
+\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{Usages of natural numbers and integers}
+\begin{itemize}
+\item A basis for proofs by induction
+\item Recursive sequence definition
+\item iterating an operation a number of time \(f^n(k)\)
+\item The sequence \(0\ldots n\)
+\item indices for finite collections, \(a_1, \ldots a_n\)
+\item indices for iterated operations \(\sum_{i=m}^{n} f(i)\)
+\item Specific to Coq+Lean+Agda: constructor normal forms as targets of
+reduction
+\item In Coq real numbers, numbers 0, 1, ..., 37, ... rely on the inductive
+type of integers for representation
+\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{Defining subsets of \(\mathbb R\) for {\tt nat}, {\tt Z}}
+\begin{itemize}
+\item Use inductive predicates
+\item Inherit the induction principle
+\end{itemize}
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{Inductive predicate in Coq}
+\begin{alltt}
+Require Import Reals.
+Open Scope R_scope.
+
+Inductive Rnat : R -> Prop :=
+  Rnat0 : Rnat 0
+| Rnat_succ : forall n, Rnat n -> Rnat (n + 1).
+\end{alltt}
+Generated induction principle:
+\begin{alltt}
+nat_ind
+     : forall P : R -> Prop,
+       P 0 ->
+       (forall n : R, Rnat n -> P n -> P (n + 1)) ->
+       forall r : R, \textcolor{craneblue}{Rnat} r -> P r
+\end{alltt}
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{Degraded typing}
+\begin{itemize}
+\item Stability laws provide automatable proofs of membership
+\end{itemize}
+\begin{small}
+\begin{alltt}
+Existing Class Rnat.
+
+Lemma Rnat_add x y : Rnat x -> Rnat y -> Rnat (x + y).
+Proof. ... Qed.
+
+Lemma Rnat_mul x y : Rnat x -> Rnat y -> Rnat (x * y).
+Proof. ... Qed.
+
+Lemma Rnat_pos : Rnat (IZR (Z.pos _)).
+Proof. ... Qed.
+
+Existing Instances Rnat0 Rnat_succ Rnat_add Rnat_mul Rnat_pos.
+\end{alltt}
+\end{small}
+\begin{itemize}
+\item {\tt Rnat x -> Rnat ((x + 2) * x)} can be solved automatically
+  (and silently).
+\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{Ad hoc proofs of membership}
+\begin{itemize}
+\item When \(n, m \in {\mathbb N}\) and \(m \leq n\), \((n - m) \in {\mathbb N}\) can
+also be proved
+\item This requires an explicit proof
+\item Probably good in a training context for students
+\item division is similar
+\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{Recursive functions}
+\begin{itemize}
+\item recursive sequences are a typical introductory subject
+\item As an illustration, let us consider the {\em Fibonacci} sequence\\
+{\em The Fibonacci sequence is the function \(F\) such that \(F_0= 0\), \(F_1=1\), and \(F_{n+2} = F_{n} + F_{n + 1}\) for every natural number \(n\)}
+\item Proof by induction and the defining equations are enough to
+{\em study} a sequence
+\item But {\em def{}ining} is still needed
+\item Solution: define a recursive definition command using Elpi
+\end{itemize}
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{A recursive definition command for \(\mathbb R\) functions}
+\begin{itemize}
+\item The definition in the previous slide can be generated
+\item Taking as input the equations
+\item The results of the definition are in two parts
+\begin{itemize}
+\item The function of type {\tt R -> R}
+\item The proof of the logical statement for that function
+\end{itemize}
+\end{itemize}
+\begin{small}
+\begin{verbatim}
+Recursive (def fib such that
+             fib 0 = 0 /\
+             fib 1 = 1 /\
+             forall n : R, Rnat (n - 2) ->
+                fib n = fib (n - 2) + fib (n - 1)).
+\end{verbatim}
+\end{small}
+\begin{itemize}
+\item Need to distinguish the type and the domain of definition
+\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{Compute with real numbers}
+\begin{itemize}
+\item {\tt Compute 42 - 67.} in plain Coq yields a puzzling answer
+\begin{itemize}
+\item Tons of {\tt R1}, {\tt +}, {\tt *}, and parentheses.
+\item And to boot, the subtraction is left unexecuted
+\end{itemize}
+\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{Compute with real numbers: our solution}
+\begin{itemize}
+\item New command {\tt R\_compute}.
+\item {\tt R\_compute (42 - 67).} succeeds and displays {\tt -25}
+\item {\tt R\_compute (fib (42 - 67)).} fails!
+\begin{itemize}
+\item Respecting the fact that {\tt fib} is only defined for natural number inputs
+\end{itemize}
+\item {\tt R\_compute (fib 42) th\_name.} succeeds and saves a proof of equality.
+\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{Big sums and products}
+\begin{itemize}
+\item Taking inspiration from Mathematical components
+\item {\tt \char'134{}sum\_(a <= i < b) f(i)}
+\begin{itemize}
+\item Also {\tt \char'134{}prod}
+\end{itemize}
+\item Well-typed when {\tt a} and {\tt b} are real numbers\\
+\item Relevant when \({\tt a} < {\tt b}\)
+\item This needs a hosts of theorems
+\begin{itemize}
+\item Chipping off terms at both ends
+\item Cutting in the middle
+\item Shuffling the indices
+\end{itemize}
+\item Mathematical Components {\tt bigop} library provides a guideline
+\item Future work: {\tt \char'134{}sum\_(a <= i <= b) f(i)} is more idiomatic
+\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{Manipulating bound variables}
+\[\sum_{i=0}^{10}\sqrt{i^2} = \sum_{i=0}^{10}i\]
+\begin{itemize}
+\item Is the sentence {\em replace \(\sqrt{i^2}\) with \(i\)} acceptable?
+\item Can this sentence server as the start of the argument?
+\item Does the proof language of the theorem prover allow mentioning \(i\)?
+\item In the outer context, \(\sqrt{i ^ 2}\) is flawed, as \(i\) does not exist
+\item In the mind of the teacher \(\sqrt{i ^ 2}\) exists, because it is written on the board!
+\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{Examples of topics made easier}
+\begin{itemize}
+\item A study of factorials and binomial numbers
+\begin{itemize}
+\item Efficient computation of factorial numbers
+\item Proofs relating the two points of view on binomial numbers,
+   ratios or {\em Pascal's triangle} recursive definition
+\item A proof of the expansion of \((x + y) ^ n\)
+\end{itemize}
+\item A study the fibonacci sequence
+\begin{itemize}
+\item \({\cal F}(i) = \frac{\phi ^ i - \psi ^ i}{\phi - \psi}\) (\(\phi\) golden ratio)
+\end{itemize}
+\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{The ``17'' exercise}
+\begin{itemize}
+\item Prove that there exists an \(n\) larger than 4 such that\\
+\[\left(\begin{array}{c}n\\5\end{array}\right) =
+  17 \left(\begin{array}{c}n\\4\end{array}\right)\]\\
+(suggested by S. Boldo, F. Clément, D. Hamelin, M. Mayero, P. Rousselin)
+\item Easy when using the ratio of factorials and eliminating common
+sub-expressions on both side of the equality\\
+\[\frac{\cancel{n!}}{\cancel{(n - 5)!}\cancel{5!}_5} = 17 \frac{\cancel{n!}}{\cancel{(n-4)!}_{(n-4)}\cancel{4!}}\]
+\item They use the type of natural numbers and equation\\
+\[\left(\begin{array}{c}n\\p + 1\end{array}\right) \times (p + 1) =
+  \left(\begin{array}{c}n\\p\end{array}\right) \times (n - p)\]\\
+\end{itemize}
+\end{frame}
+\end{document}
+
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: t
+%%% End: 
