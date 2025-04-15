@@ -270,7 +270,6 @@ Lemma nth_map {A B : Type} (da : A) (db : B) (f : A -> B) (la : list A)
   lb = map f la ->
   nth k lb db = f (nth k la da).
 Proof.
-  Check map_nth.
 intros dq lq; rewrite dq, lq; apply map_nth.
 Qed.
 
@@ -557,12 +556,8 @@ Elpi Accumulate File tools.
 Elpi Accumulate File recursive.
 
 Elpi Export Recursive.
-  
 
-
-Notation "'def' id 'such' 'that' bo" := (fun id => bo)
- (id binder, bo at level 100, at level 1, only parsing).
- Definition Req_bool (x y :R) := if (Req_dec_T x y) then true else false.
+Definition Req_bool (x y :R) := if (Req_dec_T x y) then true else false.
 Notation "x =? y" := (Req_bool x y) : R_scope.
 Recursive (def bin such that 
     bin 0 = (fun n : R => n) /\ 
@@ -576,27 +571,6 @@ Elpi Query lp:{{
 % coq.typecheck {{id_R 1}} {{(R -> R)}} Diag,
 coq.typecheck {{fun v : list (R -> R)=> @nth (ty_R 1) 0%nat v (id_R 1)}} A Diag
  }}.
-
-
-  
-
-Notation "'def' id 'such' 'that' bo" := (fun id => bo)
- (id binder, bo at level 100, at level 1, only parsing).
- Definition Req_bool (x y :R) := if (Req_dec_T x y) then true else false.
-Notation "x =? y" := (Req_bool x y) : R_scope.
-Recursive (def bin such that 
-    bin 0 = (fun n : R => n) /\ 
-    forall n, Rnat (n-1) -> bin n = 
-    (fun m => if (m =? 0) then 1 else (bin (n-1)) (m-1) + (bin (n-1)) m)).
-
-Elpi Query lp:{{
-% coq.reduction.vm.norm {{ty_R 1}} _ V,
-% coq.term->string V VS,
-% coq.typecheck {{eq_refl : ty_R 1 = (R -> R)}} _ Diag,
-% coq.typecheck {{id_R 1}} {{(R -> R)}} Diag,
-coq.typecheck {{fun v : list (R -> R)=> @nth (ty_R 1) 0%nat v (id_R 1)}} A Diag
- }}.
-
 
   
 

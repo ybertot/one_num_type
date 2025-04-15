@@ -98,22 +98,6 @@ Proof.
 Qed.
 
 Definition nat1 := nat.
-About f_equal2.
-
-Check (fun (r0 : R) (z1 : Z) (h0 : r0 = IZR z1) (r1 : R) 
-                     (z2 : Z) (h1 : r1 = IZR z2) (r2 : R) (z3 : Z)
-                     (h2 : r2 = IZR z3) lr lz h =>
-                   trf_transN 3 lr IZR lz h 0%nat
-                     (z1 :: (z1 + z2)%Z :: z3 :: nil)
-                     (r0 :: r0 + r1 :: r2 :: nil)
-                     (f_equal2 cons h0
-                        (f_equal2 cons
-                           (private.IZR_map2 Rplus Z.add add_compute r0 r1 z1
-                              z2 h0 h1)
-                           (f_equal2 cons h2 (eq_refl : nil = map IZR nil))))).
-
-
-
 
 
 Lemma eq_bool_compute : forall x y, Req_bool (IZR x) (IZR y) = (Zeq_bool x y).
@@ -175,6 +159,7 @@ Elpi Accumulate R_compute.db File gen.
 
 
 Elpi Command R_compute.
+Elpi Accumulate R_translate.db File gen.
 
 Elpi Accumulate Db R_compute.db.
 
@@ -206,6 +191,7 @@ Elpi Accumulate File tools.
 Elpi Accumulate File gen.
 Elpi Accumulate File translate_prf.
 Elpi Export R_compute.
+
 
 Elpi Command add_computation.
 Elpi Accumulate Db R_compute.db.
