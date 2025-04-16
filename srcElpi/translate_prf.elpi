@@ -86,17 +86,6 @@ translate_prf_list [R|Tl] [Z|TlZ] [Prf|PrfT] :-
   translate_prf R Z Prf,
   translate_prf_list Tl TlZ PrfT.
 
-pred say i:term.
-say T :- coq.say {coq.term->string T}.
-
-pred sayL i:list term.
-sayL nil :- coq.say "nil".
-sayL [A|Tl] :- std.do![coq.say A, coq.say "::", sayL Tl].
-
-% translate_prf T _ _ :-
-% coq.say "entering translate_prf",
-% say T, fail.
-
 translate_prf (fun N {{nat}} F) (fun N {{nat}} F1)
   T :-
   (pi CN \
@@ -288,13 +277,9 @@ translate_prf (app [F, A, B, C, D]) (app [F1, A1, B1, C1, D1])
   ].
 
 translate_prf (app [F, A | Args]) (app [F1, A1 | Args1])
-  {{private.Rnat_RabsN  lp:PFF1 lp:A lp:A1 lp:Nat_prf lp:PrfA lp:LArgs lp:LArgs1 lp:LPrf}}
+  {{private.Rnat_RabsN lp:PFF1 lp:A lp:A1 lp:Nat_prf lp:PrfA lp:LArgs lp:LArgs1 lp:LPrf}}
   :-
   std.do! [
-  coq.typecheck F Ty ok,
-  type_to_nargs Ty N,
-  N1 is N - 1,
-  int_to_nat N1 NNat,
   translate_prf A A1 PrfA,
   rnat_prf A A1 PrfA F Nat_prf,
   meta_list_to_list Args LArgs,
@@ -422,7 +407,7 @@ main_translate_prf
 
 main_translate_prf
   ({{fun (r : R) =>
-      nth 0 (Rnat_rec lp:L lp:Frstep0 r) (id_R lp:N) }}as FR)
+      nth 0 (Rnat_rec lp:L lp:Frstep0 r) (id_R lp:N) }})
   F Prf1 :-
   Frstep0 = (fun _ {{R}} Frstep),
   Fnstep = (fun _ {{nat}} c \ (Frstep {{INR lp:c}})),
@@ -465,13 +450,10 @@ std.do! [
   F_mirror is F ^ "_Z_mirror",
   coq.env.add-const F_mirror BoZ Ty @transparent! C,
   Fterm = global (const C),
-  coq.say "coucou",
   prf_stmt Ty Fterm (global (const FGR)) Stmt,
-  coq.say "coucou",
   std.assert-ok! (coq.typecheck Prf Stmt)
           "Anomaly: generating an incorrect proof",
   F_prf is F ^ "_Z_prf",
-  coq.say Stmt,
   coq.env.add-const F_prf Prf Stmt @opaque! Cprf,
   coq.elpi.accumulate _ "R_compute.db"
     (clause _ _ (nat_thm_table (global (const FGR))

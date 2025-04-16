@@ -165,7 +165,6 @@ find_uses_of Ty F Spec Final Order_Z :-
   int_to_nat N1 NatNargs,
   std.assert-ok! (coq.typecheck F {{ty_R lp:NatNargs}})
   "one of the argument's type couldn't be determined",
-  coq.say "F : " {coq.term->string F},
 % TODO : error reporting is not satisfactory here
     std.assert! (Ts = [prod Scalar_name Sc_type F1])
        "Expecting exactly one recursive equation",

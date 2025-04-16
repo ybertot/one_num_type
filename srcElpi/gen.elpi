@@ -1,8 +1,4 @@
 pred add_last_list i:term, i:term, o:term.
-% add_last_list L T _ :-
-% coq.say "entering add_last_list", 
-% coq.say L, coq.say T,
-% say L, say T, fail.
 
 add_last_list {{nil}} X {{lp:X::nil}}.
 
@@ -32,11 +28,10 @@ gen 0 _ _ H
 {{lp:l1 = @map Z R IZR lp:l2:>list R}} eql\ H).
 
 gen N F G H 
-
   (app [{{proj1 (mapp_step' lp:N1Nat lp:F lp:G)}},
   (fun `x` {{R}} x\ fun `y` {{Z}} y\ fun `eqxy` {{lp:x = IZR lp:y}} eqxy\ (R2 x y eqxy))])
  :-
  N1 is N - 1,
  int_to_nat N1 N1Nat,
-pi x\ pi y\ pi eqxy\ 
-(decl  x `x` {{R}}, decl  y `y` {{Z}}, decl  eqxy `eqxy` {{ lp:x = IZR lp:y}}) => gen N1 {{lp:F lp:x}} {{lp:G lp:y}} {{lp:H lp:x lp:y lp:eqxy}} (R2 x y eqxy).
+ pi x\ pi y\ pi eqxy\ 
+ (decl  x `x` {{R}}, decl  y `y` {{Z}}, decl  eqxy `eqxy` {{ lp:x = IZR lp:y}}) => gen N1 {{lp:F lp:x}} {{lp:G lp:y}} {{lp:H lp:x lp:y lp:eqxy}} (R2 x y eqxy).

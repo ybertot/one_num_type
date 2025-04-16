@@ -161,3 +161,11 @@ list_app [] L2 L2.
 
 list_app [A | L1] L2 [A | L3] :-
   list_app L1 L2 L3.
+
+
+pred say i:term.
+say T :- coq.say {coq.term->string T}.
+
+pred sayL i:list term.
+sayL nil :- coq.say "nil".
+sayL [A|Tl] :- std.do![coq.say A, coq.say "::", sayL Tl].
