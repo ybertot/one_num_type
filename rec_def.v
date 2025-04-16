@@ -6,7 +6,7 @@ From OneNum.srcElpi Extra Dependency "recursive.elpi" as recursive.
 
 
 Set Warnings "-notation-overridden".
-Require Import OneNum.R_subsets.
+Require Import R_subsets.
 Set Warnings "+notation-overridden".
 Require Import Derive.
 
@@ -53,7 +53,6 @@ Fixpoint MappR {n : nat} (f : ty_R n) (l : list R):=
   end f l.
 Module private.
 
-
 (* This lemma could be used to automatically prove that functions
   defined by our new command satisfy the specification that was given
   as a definition.  This lemma is not intended for final users' eyes
@@ -61,8 +60,7 @@ Module private.
   to restrict usage to the Rnat subset.  It is not certain this
   lemma will be used much, since unfold does the same trick.
   *)
-
-  Lemma Rnat_rec_to_nat_rec_p {A : Type} (v0 : A) (stf : R -> A -> A)
+Lemma Rnat_rec_to_nat_rec_p {A : Type} (v0 : A) (stf : R -> A -> A)
   (p : positive) :
    Rnat_rec v0 stf (IZR (Z.pos p)) =
    nat_rect (fun _ => A) v0 (fun x => stf (INR x))
@@ -237,6 +235,7 @@ Proof.
 intros opr opz morph a b c d ac bd.
 now rewrite ac, bd, morph.
 Qed.
+
 Lemma IZR_map3 : forall opr opz,
   (forall a b c, opr (IZR a) (IZR b) (IZR c) = IZR (opz a b c)) ->
   forall a b c d e f, a = IZR d -> b = IZR e -> c = IZR f ->
@@ -254,6 +253,7 @@ Proof.
 intros opr opz morph a b c d e f g h ae bf cg dh.
 now rewrite ae, bf, cg, dh, morph.
 Qed.
+
 Lemma IZR_mapN {n opr opz}:
   (forall (lz : list Z), @MappR n opr (List.map IZR lz) = IZR (@MappZ n opz lz))->
   forall (lr : list R)  (lz : list Z), lr = List.map IZR lz ->
@@ -264,6 +264,7 @@ Proof.
   apply morph.
 Qed.
 
+                      
 Lemma nth_map {A B : Type} (da : A) (db : B) (f : A -> B) (la : list A)
   (lb : list B) (k : nat):
   db = f da ->
@@ -401,9 +402,8 @@ Proof.
   now apply H.
 Qed.
 
-Lemma funN_trf {n : nat} (g : ty_R n) (g' : ty_Z n) (f : Z -> R) : 
-(forall x, MappR g (map f x) = f (MappZ g' x)) <->
-(forall x y, x = map f y -> MappR g x = f (MappZ g' y)).
+Lemma fun1_trf (g : R -> R) (g' : Z -> Z) (f : Z -> R) : 
+(forall x, g (f x) = f (g' x)) <-> (forall x y, x = (f y) -> (g x) = f (g' y)).
 Proof.
   split.
     intros H x y xy.
@@ -439,7 +439,7 @@ intros hyp y l.
 apply (hyp (y::l)).
 Qed.
 
-Lemma mapp_step' n (f : ty_R (S n))(g : ty_Z (S n)) :
+Lemma mapp_step' n (f : ty_R (S n)) (g : ty_Z (S n)) :
 (forall x y, x = IZR y -> forall l1 l2, l1 = map IZR l2 -> MappR (f x) l1 = IZR (MappZ (g y) l2)) <->
 (forall l1 l2, l1 = map IZR l2 -> MappR f l1 = IZR (MappZ g l2)).
 Proof.
@@ -550,33 +550,14 @@ Proof.
   intros n' l0 l' f f' n H H'.
   apply (private.nat_rect_transfer (fun x y => P_transN n' x IZR y)); auto.
 Qed.
-
 Elpi Command Recursive.
 Elpi Accumulate File tools.
 Elpi Accumulate File recursive.
 
 Elpi Export Recursive.
 
-Definition Req_bool (x y :R) := if (Req_dec_T x y) then true else false.
-Notation "x =? y" := (Req_bool x y) : R_scope.
-Recursive (def bin such that 
-    bin 0 = (fun n : R => n) /\ 
-    forall n, Rnat (n-1) -> bin n = 
-    (fun m => if (m =? 0) then 1 else (bin (n-1)) (m-1) + (bin (n-1)) m)).
-
-Elpi Query lp:{{
-% coq.reduction.vm.norm {{ty_R 1}} _ V,
-% coq.term->string V VS,
-% coq.typecheck {{eq_refl : ty_R 1 = (R -> R)}} _ Diag,
-% coq.typecheck {{id_R 1}} {{(R -> R)}} Diag,
-coq.typecheck {{fun v : list (R -> R)=> @nth (ty_R 1) 0%nat v (id_R 1)}} A Diag
- }}.
-
-  
-
 Notation "'def' id 'such' 'that' bo" := (fun id => bo) 
  (id binder, bo at level 100, at level 1, only parsing).
-
 
 Ltac rec_Rnat fun_name :=
 (* This tactic is only meant to be used on statements of the form:
@@ -599,6 +580,3 @@ Ltac rec_Rnat fun_name :=
      repeat ((intro; apply Rnat0)||(
              intros [ | k];[typeclasses eauto | revert k; cbn [nth]]
     )) | assumption].
-
-
-
