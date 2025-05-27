@@ -347,6 +347,19 @@ rewrite sqrt_pow_2.
 solve_Rnat.
 Qed.
 
+Lemma test2 : \sum_(0 <= i < 10) (sqrt (i ^ 2) + 1) = \sum_(0 <= i < 10) (1 + i).
+Proof.
+repl (sqrt (i ^ 2)) (i).
+    repl (1 + i) (i + 1).
+        easy.
+      ring.
+    solve_Rnat.
+  rewrite sqrt_pow_2.
+    easy.
+  lra.
+solve_Rnat.
+Qed.
+
 Lemma test_as_before :
   \sum_(0 <= i < 10) i = \sum_(0 <= i < 10) (sqrt (i ^ 2)).
 Proof.
