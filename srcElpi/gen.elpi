@@ -1,0 +1,37 @@
+pred add_last_list i:term, i:term, o:term.
+
+add_last_list {{nil}} X {{lp:X::nil}}.
+
+add_last_list {{@cons lp:_Ty lp:H lp:Tl}} X {{cons lp:H lp:L'}} :-
+add_last_list Tl X L'.
+
+pred p1 i:int, i:term, i:term, i:term, i:term, o:term.
+
+p1 0 F G L1 L2 {{@MappR lp:M lp:F lp:L1 = IZR (@MappZ lp:M lp:G lp:L2)}} :-
+std.assert-ok! (coq.typecheck  F {{ty_R lp:M}}) "wrong type for first function".
+
+p1 N F G L1 L2 
+(prod `x` {{R}} x\ (prod `y` {{Z}} y\ (prod `eqxy` {{lp:x = IZR lp:y}} eqxy\
+(Ty' x y) ))):- !,
+
+@pi-decl `x` {{R}} x\ @pi-decl `y` {{Z}} y\ (
+
+add_last_list L1 x (L1' x),
+
+add_last_list L2 y (L2' x y),
+N1 is N - 1,
+p1 N1 F G (L1' x) (L2' x y) (Ty' x y)).
+
+pred gen i:int, i:term, i:term, i:term, o:term.
+gen 0 _ _ H
+(fun `l1` {{list R}} l1\ fun `l2` {{list Z}} l2\ fun `eql` 
+{{lp:l1 = @map Z R IZR lp:l2:>list R}} eql\ H).
+
+gen N F G H 
+  (app [{{proj1 (mapp_step' lp:N1Nat lp:F lp:G)}},
+  (fun `x` {{R}} x\ fun `y` {{Z}} y\ fun `eqxy` {{lp:x = IZR lp:y}} eqxy\ (R2 x y eqxy))])
+ :-
+ N1 is N - 1,
+ int_to_nat N1 N1Nat,
+ pi x\ pi y\ pi eqxy\ 
+ (decl  x `x` {{R}}, decl  y `y` {{Z}}, decl  eqxy `eqxy` {{ lp:x = IZR lp:y}}) => gen N1 {{lp:F lp:x}} {{lp:G lp:y}} {{lp:H lp:x lp:y lp:eqxy}} (R2 x y eqxy).

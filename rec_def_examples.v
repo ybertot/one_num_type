@@ -35,9 +35,11 @@ Recursive (def fib such that
     fib 1 = 1 /\
     forall n : R, Rnat (n - 2) ->
     fib n = fib (n - 2) + fib (n - 1)).
+Print fib.
 
 Elpi mirror_recursive_definition fib.
 Check fib_Z_prf.
+Print fib_Z_mirror.
 R_compute (fib 7 - fib 2).
 Fail R_compute (fib (fib 2 - fib 7)).
 R_compute (fib (fib 7 - fib 2)) fib_f7_f2_eqn.
@@ -240,6 +242,8 @@ rec_Rnat factorial.
 Qed.
 
 Existing Instance factorial_nat.
+
+
 
 Elpi mirror_recursive_definition factorial.
 
@@ -786,3 +790,12 @@ Recursive (def one_then_0 such that
    one_then_0 0 = 1 /\
    one_then_0 1 = 0 /\
    forall n, Rnat (n - 2) -> one_then_0 n = one_then_0 (n - 1)).
+Recursive (def tail_addmul such that 
+   tail_addmul 0 = (fun m r x => r) /\
+   forall n, Rnat (n-1) -> 
+   tail_addmul n = (fun m r x  => tail_addmul (n - 1) m (m + r) x)).
+Print tail_addmul.
+Elpi mirror_recursive_definition tail_addmul.
+Fail R_compute (fib (tail_addmul 3 (-5) 4 2)).
+R_compute (fib (tail_addmul 3 5 (-4) 2)) thm .
+Check thm.
