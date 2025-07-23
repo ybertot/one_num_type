@@ -71,11 +71,6 @@ Axiom Pi_gt0 : 0 < Pi.
 
 Axiom first_cos_root : forall x, 0 <= x < Pi / 2 -> 0 < cos x.
 
-Axiom trinom : forall a b c x, 0 <= b ^ 2 - 4 * a * c ->
-  a * x ^ 2 + b * x + c = 0 -> 
-    x = (-b + sqrt (b ^ 2 - 4 * a * c) / (2 * a)) \/
-    x = (-b - sqrt (b ^ 2 - 4 * a * c) / (2 * a)).
-
 End simple_trigo.
 
 Lemma trinom : forall a b c x, a <> 0 ->
@@ -290,10 +285,11 @@ assert (1 * sin (Pi / 2) ^ 2 + 0 * sin (Pi / 2) + - 1 = 0).
 assert (0 < 0 ^ 2 - 4 * 1 * (- 1)).
   lra.
 assert (1 <> 0) by lra.
-assert (sin (Pi / 2) = - 0 + sqrt ((0 ^ 2) - 4 * 1 * (- 1)) / (2 * 1) \/
-        sin (Pi / 2) = - 0 - sqrt ((0 ^ 2) - 4 * 1 * (- 1)) / (2 * 1)) as
+assert (sin (Pi / 2) = (- 0 + sqrt ((0 ^ 2) - 4 * 1 * (- 1))) / (2 * 1) \/
+        sin (Pi / 2) = (- 0 - sqrt ((0 ^ 2) - 4 * 1 * (- 1))) / (2 * 1)) as
         [posval | negval].
   apply trinom.
+        lra.
       lra.
     easy.
   rewrite posval.
@@ -515,7 +511,7 @@ assert (step2 : cos (Pi - Pi / 3) = 2 * cos (Pi / 3) ^ 2 - 1).
     now replace (Pi - Pi / 3) with (2 * (Pi / 3)) by field.
   now rewrite cos_double_1.
 assert (2 * cos (Pi / 3) ^ 2 + 1 * cos (Pi / 3) - 1 = 0).
-  start_with (2 * cos (Pi / 3) ^2 + 1 * cos (Pi / 3) - 1).
+  start_with (2 * cos (Pi / 3) ^ 2 + 1 * cos (Pi / 3) - 1).
   calc_LHS (2 * cos (Pi / 3) ^ 2 - 1 + cos (Pi / 3)).
     ring.
   calc_LHS (cos (Pi - Pi / 3) + cos (Pi / 3)).
@@ -530,21 +526,18 @@ assert (0 <= 1 ^ 2 - 4 * 2 * (-1)).
 assert (vsqrt : sqrt (1 ^ 2 - 4 * 2 * (-1)) = 3).
   replace (1 ^ 2 - 4 * 2 * (-1)) with 9 by ring.
   now compute_sqrt.
-assert (cos (Pi / 3) = (- 1 + sqrt (1 ^ 2 - 4 * 2 * (-1)) / (2 * 2)) \/
-        cos (Pi / 3) = (- 1 - sqrt (1 ^ 2 - 4 * 2 * (-1)) / (2 * 2))).
-
-  
+assert (cos (Pi / 3) = ((- 1 + sqrt (1 ^ 2 - 4 * 2 * (-1))) / (2 * 2)) \/
+        cos (Pi / 3) = ((- 1 - sqrt (1 ^ 2 - 4 * 2 * (-1)))/ (2 * 2)))
+        as [higher | lower].
+    apply trinom.
+        lra.
+      lra.
+    easy.
+  end_calculate.
+assert (cos (Pi / 3) = -1).
+  end_calculate.
 assert (0 < cos (Pi / 3)).
   apply first_cos_root.
   assert (tmp := Pi_gt0); lra.
-
-  
-  
-  
-  
-assert (cos (Pi / 3 + (Pi / 3 + Pi / 3)) = -1).
-  start_with (cos (Pi / 3 + (Pi / 3 + Pi / 3))).
-
-
-
-
+lra.
+Qed.
