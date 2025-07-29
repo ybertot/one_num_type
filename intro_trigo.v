@@ -172,6 +172,27 @@ Axiom first_cos_root : forall x, 0 <= x < Pi / 2 -> 0 < cos x.
 
 End simple_trigo.
 
+Lemma square_eq x y : x ^ 2 = y ^ 2 -> x = y \/ x = - y.
+Proof.
+intros sqeq.
+assert (main : (x - y) * (x + y) = 0).
+  start_with ((x - y) * (x + y)).
+  calc_LHS (x ^ 2 - y ^ 2).
+    ring.
+  calc_LHS (x ^ 2 - x ^ 2).
+    now rewrite sqeq.
+  ring.
+apply Rmult_integral in main.
+destruct main as [it | it]; lra.
+Qed.
+
+Lemma sqrt_intro x y : 0 <= y -> x ^ 2 = y -> x = -sqrt y \/ x = sqrt y.
+Proof.
+intros yge0 x2q.
+apply or_comm, square_eq.
+rewrite Rpow2_sqrt; easy.
+Qed.
+
 Lemma trinom : forall a b c x, a <> 0 ->
   0 <= b * b - 4 * a * c ->
   a * x ^ 2 + b * x + c = 0 ->
@@ -200,24 +221,6 @@ enough (wlog : forall a b c x, 0 < a ->
       easy.
     lra.
   apply wlog; easy.
-assert (solve_square :
-  forall A B, 0 <= B -> A ^ 2 = B -> A = - sqrt B \/ A = sqrt B).
-  intros A B Bpos Asq.
-  assert (A < 0 \/ 0 <= A) as [Aneg | Apos] by lra.
-    left.
-    enough (- A = sqrt B) by lra.
-    symmetry.
-    assert (0 <= - A) by lra.
-    assert (- A * - A = B).
-      replace (- A * - A) with (A ^ 2) by ring.
-      easy.
-    apply sqrt_lem_1; easy.
-  right.
-  symmetry.
-  assert (A * A = B).
-    replace (A * A) with (A ^ 2) by ring.
-    easy.
-  apply sqrt_lem_1; try easy.
 intros a b c x agt0 discr_pos equality.
 assert (0 < 4 * a ^ 2).
   replace (4 * a ^ 2) with ((2 * a) ^ 2) by ring.
@@ -275,10 +278,11 @@ replace (sqrt (b * b - 4 * a * c) / (2 * a)) with
       easy.
     easy.
   easy.
-apply solve_square.
+apply sqrt_intro.
   easy.
 easy.
 Qed.
+
 
 Ltac body A B C Thm First_Root Second_Root :=
 try (match goal with
@@ -842,6 +846,22 @@ calc_LHS (cos x * 1 - 0 * sin x).
 ring.
 Qed.
 
+Lemma sin_pos x : 0 <= x <= Pi -> 0 <= sin x.
+Proof.
+intros xint.
+assert (x = 0 \/ x <> 0) as [x0 | xn0] by lra.
+  now rewrite x0, sin0.
+assert (x = Pi \/ x <> Pi) as [xPi | xnPi] by lra.
+  now rewrite xPi, sin_Pi.
+assert (x < Pi / 2 \/ Pi / 2 <= x) as [xlow | xhigh] by lra.
+  replace (sin x) with (cos (Pi / 2 - x)) by now rewrite cos_Pi_half_sub.
+  enough (0 < cos (Pi / 2 - x)) by lra.
+  apply first_cos_root; lra.
+replace (sin x) with (cos (x - Pi / 2)) by now rewrite cos_sub_Pi_half.
+enough (0 < cos (x - Pi / 2)) by lra.
+apply first_cos_root; lra.
+Qed.
+
 Lemma cos_double_1 x : cos (2 * x) = 2 * cos x ^ 2 - 1.
 Proof.
 assert (step : sin x ^ 2 = 1 - cos x ^ 2).
@@ -866,7 +886,46 @@ assert (step2 : cos (Pi - Pi / 3) = 2 * cos (Pi / 3) ^ 2 - 1).
   calc_LHS (cos (2 * (Pi / 3))).
     now replace (Pi - Pi / 3) with (2 * (Pi / 3)) by field.
   now rewrite cos_double_1.
-assert (2 * cos (Pi / 3) ^ 2 + cos (Pi / 3) - 1 = 0).
+assert (step3 : 2 * cos (Pi / 3) ^ 2 + cos (Pi / 3) - 1 = 0).
+  start_with (2 * cos (Pi / 3) ^ 2 + cos (Pi / 3) - 1).
+  calc_LHS (2 * cos (Pi / 3) ^ 2 - 1 + cos (Pi / 3)).
+    ring.
+  calc_LHS (cos (Pi - Pi / 3) + cos (Pi / 3)).
+    now rewrite step2.
+  calc_LHS (- - (cos (Pi - Pi / 3)) + cos (Pi / 3)).
+    ring.
+  calc_LHS (- cos (Pi / 3) + cos (Pi / 3)).
+    now rewrite step1.
+  ring.
+(* Solution using an obvious solution. *)
+assert (main : (cos (Pi / 3) + 1) * (cos (Pi /3) - 1 / 2) = 0).
+  start_with ((cos (Pi / 3) + 1) * (cos (Pi /3) - 1 / 2)).
+  calc_LHS ((2 * cos (Pi / 3) ^ 2 + cos (Pi / 3) - 1) / 2).
+    field.
+  rewrite step3.
+  field.
+assert (cos (Pi / 3) = - 1 \/ cos (Pi / 3) = 1 / 2).
+  assert (tmp := Rmult_integral _ _ main); lra.
+assert (cos (Pi / 3) = -1 \/ cos (Pi / 3) = 1 / 2)
+        as [lower | higher].
+  trinom_fast.
+  assert (0 < cos (Pi / 3)).
+    apply first_cos_root.
+    assert (tmp := Pi_gt0); lra.
+  lra.
+easy.
+Qed.
+
+Lemma cos_Pi_third_with_trinom : cos (Pi / 3) = 1 / 2.
+Proof.
+assert (step1 : cos (Pi / 3) = - cos (Pi - Pi / 3)).
+  rewrite cos_Pi_sub; ring.
+assert (step2 : cos (Pi - Pi / 3) = 2 * cos (Pi / 3) ^ 2 - 1).
+  start_with (cos (Pi - Pi / 3)).
+  calc_LHS (cos (2 * (Pi / 3))).
+    now replace (Pi - Pi / 3) with (2 * (Pi / 3)) by field.
+  now rewrite cos_double_1.
+assert (step3 : 2 * cos (Pi / 3) ^ 2 + cos (Pi / 3) - 1 = 0).
   start_with (2 * cos (Pi / 3) ^ 2 + cos (Pi / 3) - 1).
   calc_LHS (2 * cos (Pi / 3) ^ 2 - 1 + cos (Pi / 3)).
     ring.
@@ -992,14 +1051,14 @@ assert (0 <= n \/ n < 0) as [npos | nneg] by lra.
   now apply Rint_Rnat.
 intros nint.
 symmetry.
-start_with (sin x).
-calc_LHS (sin (x + 2 * n  * Pi + 2 * (- n) * Pi)).
-  now replace (x + 2 * n * Pi + 2 * (-n) * Pi) with x by ring.
 assert (0 <= -n) by lra.
 assert (Rint (- n)).
   now apply Rint_opp.
 assert (Rnat (- n)).
   now apply Rint_Rnat.
+start_with (sin x).
+calc_LHS (sin (x + 2 * n  * Pi + 2 * (- n) * Pi)).
+  now replace (x + 2 * n * Pi + 2 * (-n) * Pi) with x by ring.
 calc_LHS (sin (x + 2 * n * Pi)).
   now rewrite sin_periodic_1.
 easy.
@@ -1129,58 +1188,14 @@ assert ((rho * sin psi) ^ 2 = b ^ 2).
   calc_LHS ((a ^ 2 + b ^ 2) - a ^ 2).
     now unfold rho; rewrite Rpow2_sqrt; lra.
   ring.
-assert (b ^ 2 - (rho * sin psi) ^ 2 = 0) by lra.
-assert (dum2 : 0 <= 0 * 0 - 4 * 1 * - (rho * sin psi) ^ 2).
-  replace (0 * 0 - 4 * 1 * - (rho * sin psi) ^ 2)
-    with (4 * (rho * sin psi) ^ 2) by ring.
-  apply Rmult_le_pos.
-    lra.
-  now apply square_ge0.
-assert (sols : b = (-0 - sqrt (0 * 0 - 4 * 1 * - ((rho * sin psi) ^ 2))) / (2 * 1) \/
-          b = (- 0 + sqrt (0 * 0 - 4 * 1 * - ((rho * sin psi) ^ 2))) / (2 * 1)).
-    (* TODO: make application of trinom easier!!! *)
-  assert (dum1 : 1 <> 0) by lra.
-  
-  assert (tmp := trinom 1 0 (- (rho * sin psi) ^ 2) b dum1 dum2).
-  apply tmp.
-replace ((rho * sin psi) ^ 2) with (b ^ 2); ring.
-assert (discr_pos : 0 <= sqrt (0 * 0 - 4 * 1 * - (rho * sin psi) ^ 2)).
-  now apply sqrt_pos'.
+assert (sols : rho * sin psi = b \/ rho * sin psi = -b).
+  now apply square_eq.
 assert (0 <= sin psi).
-  assert (psi = 0 \/ psi <> 0) as [psi0 | psin0] by lra.
-    now rewrite psi0, sin0.
-  assert (psi <= Pi / 2 \/ Pi / 2 < psi) as [psi_le_Pi2 | psi_gt_Pi2] by lra.
-    replace (sin psi) with (cos (Pi / 2 - psi)); cycle 1.
-      now rewrite cos_Pi_half_sub.
-    enough (0 < cos (Pi / 2 - psi)) by lra.
-    now apply first_cos_root; lra.
-  assert (psi = Pi \/ psi <> Pi) as [psi_Pi | psinPi] by lra.
-    now rewrite psi_Pi, sin_Pi.
-  replace (sin psi) with (cos (psi - Pi / 2)); cycle 1.
-    start_with (cos (psi - Pi / 2)).
-    calc_LHS (cos (- (psi - Pi / 2))).
-      now rewrite par_cos.
-    calc_LHS (cos (Pi / 2 - psi)).
-      now replace (- (psi - Pi / 2)) with (Pi / 2 - psi) by ring.
-    calc_LHS (sin psi).
-      now rewrite cos_Pi_half_sub.
-    easy.
-  enough (0 < cos (psi - Pi / 2)) by lra.
-  apply first_cos_root; lra.
+  now apply sin_pos.
 assert (0 <= rho * sin psi).
   apply Rmult_le_pos; lra.
-assert (discr_simp :
-  0 * 0 - 4 * 1 * -(rho * sin psi) ^ 2 = (2 * (rho * sin psi)) ^ 2) by ring.
-rewrite discr_simp in sols, discr_pos.
 assert (b < 0 \/ 0 <= b) as [blt0 | bge0] by lra.
-  assert (rho * sin psi = - b).
-    start_with (rho * sin psi).
-    calc_LHS (sqrt ((2 * (rho * sin psi)) ^ 2) / 2).
-      rewrite sqrt_Rpow2;lra.
-    destruct sols as [bf | bs].
-      now rewrite bf; field.
-    (* It is crucial that discr_simp is used in discr_pos for this to succeed. *)
-    lra.
+  assert (rho * sin psi = - b) by lra.
   exists psi.
   intros theta.
   split.
@@ -1195,13 +1210,7 @@ assert (b < 0 \/ 0 <= b) as [blt0 | bge0] by lra.
   replace (rho * cos psi) with a by easy.
   ring.
 exists (- psi).
-assert (rho * sin psi = b).
-  start_with (rho * sin psi).
-  calc_LHS (sqrt ((2 * (rho * sin psi)) ^ 2) / 2).
-  rewrite sqrt_Rpow2; lra.
-  destruct sols as [bf | bs].
-    lra.
-  now rewrite bs; field.
+assert (rho * sin psi = b) by lra.
 intros theta.
 split.
   easy.
