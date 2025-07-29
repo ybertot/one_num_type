@@ -46,6 +46,7 @@ lp:RP (lp:F x) (lp:G y) (lp:T x y eqxy)) }}
 
 pred rnat_prf i:term, i:term, i:term, i:term, o:term. 
 rnat_prf A A1 PRFA F Nat_prf :-
+std.do! [
 coq.typecheck Hole {{Rnat lp:A}} ok,
     coq.ltac.collect-goals Hole [G] [],
     if (coq.ltac.open (coq.ltac.call-ltac1 "solve_Rnat") G [])
@@ -62,6 +63,7 @@ coq.typecheck Hole {{Rnat lp:A}} ok,
           (GPRF = {{private.compute_Rnat lp:A lp:A1 lp:PRFA eq_refl}},
            Nat_prf = GPRF)
         )
+]
 .
 
 
@@ -280,10 +282,10 @@ translate_prf (app [F, A | Args]) (app [F1, A1 | Args1])
   {{private.Rnat_RabsN lp:PFF1 lp:A lp:A1 lp:Nat_prf lp:PrfA lp:LArgs lp:LArgs1 lp:LPrf}}
   :-
   std.do! [
+  nat_thm_table F F1 PFF1,
   translate_prf A A1 PrfA,
   rnat_prf A A1 PrfA F Nat_prf,
   meta_list_to_list Args LArgs,
-  nat_thm_table F F1 PFF1,
   translate_prf_list Args Args1 PRFArgs,
   meta_list_to_list Args1 LArgs1,
   meta_list_to_proof PRFArgs LPrf,

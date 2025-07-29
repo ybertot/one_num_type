@@ -170,13 +170,13 @@ destruct (Rint_exists_Z x) as [x' px].
 assert (x'ge0 : (0 <= x')%Z).
   now apply le_IZR; rewrite <- px.
 assert (x'n : x' = Z.of_nat (Z.abs_nat x')).
-  now rewrite Nat2Z.inj_abs_nat, Z.abs_eq.
+  now rewrite Znat.Nat2Z.inj_abs_nat, Z.abs_eq.
 rewrite px, x'n.
 generalize (Z.abs_nat x'); intros n.
 induction n.
   exact Rnat0.
 replace (S n) with (n + 1)%nat by ring.
-rewrite Nat2Z.inj_add.
+rewrite Znat.Nat2Z.inj_add.
 rewrite plus_IZR.
 now apply Rnat_succ.
 Qed.
@@ -263,7 +263,7 @@ Proof.
 induction xnat as [ | x xnat [n xn]].
   exists 0%nat; easy.
 exists (S n).
-now rewrite Nat2Z.inj_succ, <- Z.add_1_r, plus_IZR, xn.
+now rewrite Znat.Nat2Z.inj_succ, <- Z.add_1_r, plus_IZR, xn.
 Qed.
 
 (* The function IRN is only a tool for expert.  It should not be seen
@@ -277,7 +277,7 @@ rewrite xx'.
 unfold IRN.
 rewrite IRZ_IZR.
 rewrite INR_IZR_INZ.
-now rewrite Zabs2Nat.id.
+now rewrite Znat.Zabs2Nat.id.
 Qed.
 
 Lemma IRN0 : IRN 0 = 0%nat.
@@ -299,7 +299,7 @@ Lemma IRN_IZR z : IRN (IZR z) = Z.abs_nat z.
 Proof. now unfold IRN; rewrite IRZ_IZR. Qed.
 
 Lemma IRN_pos p : IRN (IZR (Z.pos p)) = Pos.to_nat p.
-Proof. now rewrite IRN_IZR, Zabs2Nat.inj_pos. Qed.
+Proof. now rewrite IRN_IZR, Znat.Zabs2Nat.inj_pos. Qed.
 
 Example IRN_42 : IRN 42 = 42%nat.
 Proof. now rewrite IRN_pos. Qed.
@@ -311,7 +311,7 @@ intros nnat mnat.
 destruct (Rnat_Rint n) as [nint nge0].
 destruct (Rnat_Rint m) as [mint mge0].
 unfold IRN; rewrite IRZ_add; auto.
-rewrite Zabs2Nat.inj_add; auto; apply le_IZR.
+rewrite Znat.Zabs2Nat.inj_add; auto; apply le_IZR.
   destruct (Rint_exists_Z n) as [n' nn'].
   now rewrite nn' in nge0 |- *; rewrite IRZ_IZR.
 destruct (Rint_exists_Z m) as [m' mm'].
@@ -458,7 +458,7 @@ Qed.
 Lemma IRN_INR (n : nat) : IRN (INR n) = n.
 Proof.
 unfold IRN.
-now rewrite INR_IZR_INZ, IRZ_IZR, Zabs2Nat.id.
+now rewrite INR_IZR_INZ, IRZ_IZR, Znat.Zabs2Nat.id.
 Qed.
 
 Definition Rnat_rec {A : Type} (v0 : A) (stf : R -> A -> A) (x : R) : A :=
@@ -483,8 +483,8 @@ unfold IRN.
 rewrite <- plus_IZR.
 rewrite !IRZ_IZR.
 replace 1%Z with (Z.of_nat 1) by (simpl; ring).
-rewrite <- Nat2Z.inj_add.
-rewrite !Zabs2Nat.id.
+rewrite <- Znat.Nat2Z.inj_add.
+rewrite !Znat.Zabs2Nat.id.
 ring.
 Qed.
 
@@ -493,7 +493,7 @@ Proof.
 intros nnat.
 destruct (Rnat_exists_nat n) as [n' nq].
 rewrite nq, IRZ_IZR.
-now apply Nat2Z.is_nonneg.
+now apply Znat.Nat2Z.is_nonneg.
 Qed.
 
 Lemma course_of_value_induction (P : R -> Prop) :

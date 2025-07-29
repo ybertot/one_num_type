@@ -84,7 +84,7 @@ assert (rq : r = IZR (Z.of_nat v + p)).
   rewrite <- plus_IZR.
   replace (Z.of_nat v + p + - p)%Z with (Z.of_nat v) by ring.
   exact vq.
-rewrite <- Zabs2Nat.inj_add.
+rewrite <- Znat.Zabs2Nat.inj_add.
     rewrite rq.
     rewrite <- minus_IZR, IRZ_IZR.
     rewrite <- minus_IZR.
@@ -94,7 +94,7 @@ rewrite <- Zabs2Nat.inj_add.
     ring.
   lia.
 rewrite vq, IRZ_IZR.
-apply Nat2Z.is_nonneg.
+apply Znat.Nat2Z.is_nonneg.
 Qed.
 
 Lemma IRN_to_S_top (r : R) (p : Z) :
@@ -110,7 +110,7 @@ destruct (Rnat_exists_nat (r - IZR p)) as [v vq].
   rewrite <- plus_IZR.
   replace (Z.of_nat v + p + - p)%Z with (Z.of_nat v) by ring.
   exact vq.
-rewrite <- Zabs2Nat.inj_add.
+rewrite <- Znat.Zabs2Nat.inj_add.
     rewrite rq.
     rewrite <- minus_IZR, IRZ_IZR.
     replace (Z.of_nat v + p - p)%Z with (Z.of_nat v) by ring.
@@ -119,7 +119,7 @@ rewrite <- Zabs2Nat.inj_add.
     ring.
   lia.
 rewrite vq, IRZ_IZR.
-apply Nat2Z.is_nonneg.
+apply Znat.Nat2Z.is_nonneg.
 Qed.
 
 Lemma Rnat_Rabs {f : R -> R} {fz : Z -> Z}
@@ -291,7 +291,7 @@ intros nzq.
 rewrite nzq.
 rewrite <- abs_IZR.
 rewrite INR_IZR_INZ.
-now rewrite Nat2Z.inj_abs_nat.
+now rewrite Znat.Nat2Z.inj_abs_nat.
 Qed.
 
 Lemma cancel_Rabs_pos (f : R -> R) (fz : Z -> Z):
@@ -334,7 +334,7 @@ apply Rint_Rnat.
   now rewrite nzq; apply Rint_Z.
 rewrite nzq.
 apply IZR_le.
-now rewrite (Zle_is_le_bool 0).
+now rewrite (Zbool.Zle_is_le_bool 0).
 Qed.
 
 

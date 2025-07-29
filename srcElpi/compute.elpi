@@ -11,7 +11,7 @@ thm_table {{Ropp}} {{Z.opp}} {{opp_compute}}.
 
 thm_table {{Rabs}} {{Z.abs}} {{abs_compute}}.
 
-thm_table {{Req_bool}} {{Zeq_bool}} {{eq_bool_compute}}.
+thm_table {{Req_bool}} {{Zbool.Zeq_bool}} {{eq_bool_compute}}.
 
 thm_table {{at_x}} {{at_x_Z}} {{at_x_compute}}.
 
