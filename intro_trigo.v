@@ -66,10 +66,18 @@ Qed.
 
 Lemma div_eq_transfer x y z : y <> 0 -> x / y = z -> z * y = x.
 Proof.
-Search (_ / _ = _ / _).
 intros yn0 divxy; apply (Rdiv_eq_reg_r y);[ | easy].
 unfold Rdiv; rewrite Rmult_assoc, Rinv_r;[ | easy].
 now fold (x / y); rewrite divxy; field.
+Qed.
+
+Lemma div_le_transfer x y z : 0 < y -> x / y <= z <-> x <= z * y.
+Proof.
+intros yn0; split; intros it.
+apply (Rmult_le_reg_r (/ y));[now apply Rinv_0_lt_compat |].
+  rewrite Rmult_assoc, Rinv_r; lra.
+apply (Rmult_le_reg_r y);[easy |].
+rewrite div_cancel_r; lra.
 Qed.
 
 Lemma div_le_1 x y : 0 < y -> x <= y -> x / y <= 1.
@@ -169,6 +177,17 @@ Axiom cos_Pi_half : cos (Pi / 2) = 0.
 Axiom Pi_gt0 : 0 < Pi.
 
 Axiom first_cos_root : forall x, 0 <= x < Pi / 2 -> 0 < cos x.
+
+Axiom tan : R -> R.
+
+Axiom tan_val : forall x, (forall n, Rnat n -> x <> Pi / 2 + n * Pi) -> 
+  tan x = sin x / cos x.
+
+Axiom tan_derivable : forall x, (forall n, Rnat n -> x <> Pi / 2 + n * Pi) ->
+  derivable tan x.
+
+Axiom tan_derive : forall x, (forall n, Rnat n -> x <> Pi / 2 + n * Pi) ->
+  derive tan x = 1 + tan x ^ 2.
 
 End simple_trigo.
 
@@ -862,6 +881,40 @@ enough (0 < cos (x - Pi / 2)) by lra.
 apply first_cos_root; lra.
 Qed.
 
+Lemma linearisation_cos_cos x y : cos x * cos y = (cos (x + y) + cos (x - y)) / 2.
+Proof.
+symmetry.
+start_with ((cos (x + y) + cos (x - y)) / 2).
+calc_LHS ((cos x * cos y - sin x * sin y + cos (x - y)) / 2).
+  now rewrite cos_add.
+calc_LHS ((cos x * cos y - sin x * sin y + (cos x * cos y + sin x * sin y)) / 2).
+  now rewrite cos_sub.
+field.
+Qed.
+
+Lemma linearisation_cos_sin x y : cos x * sin y = (sin (x + y) - sin (x - y)) / 2.
+Proof.
+start_with (cos x * sin y).
+calc_LHS ((cos x * sin y + cos y * sin x - (cos y * sin x - cos x * sin y)) / 2).
+  field.
+calc_LHS ((sin (x + y) - (cos y * sin x - cos x * sin y)) / 2).
+  now rewrite <- sin_add.
+calc_LHS ((sin (x + y) - (sin (x - y)))/ 2).
+  now rewrite <- sin_sub.
+field.
+Qed.
+
+Lemma linearisation_sin_sin x y : sin x * sin y = (cos (x - y) - cos (x + y)) / 2.
+Proof.
+symmetry.
+start_with ((cos (x - y) - cos (x + y)) / 2).
+calc_LHS ((cos x * cos y + sin x * sin y - cos (x + y)) / 2).
+  now rewrite cos_sub.
+calc_LHS ((cos x * cos y + sin x * sin y - (cos x * cos y - sin x * sin y)) / 2).
+  now rewrite cos_add.
+field.
+Qed.
+
 Lemma cos_double_1 x : cos (2 * x) = 2 * cos x ^ 2 - 1.
 Proof.
 assert (step : sin x ^ 2 = 1 - cos x ^ 2).
@@ -1226,3 +1279,30 @@ calc_LHS (a * cos theta + b * sin theta).
   now replace (rho * sin psi) with b by easy.
 easy.
 Qed.
+
+(* This should be hidden in R_subsets *)
+Definition floor (x : R) : R := IZR (Zfloor x).
+
+Lemma floor_int x : Rint (floor x).
+Proof.  apply Rint_Z. Qed.
+
+Lemma floor_interval x : floor x <= x < floor x + 1.
+Proof. apply Zfloor_bound. Qed.
+
+Lemma cos_non_0 x : (forall n, Rnat n -> x <> Pi / 2 * n * Pi) ->
+  cos x <> 0.
+Proof.
+intros defd.
+set (m := floor x / (2 * Pi)).
+set (y := x - m * (2 * Pi)).
+assert (0 <= y < 2 * Pi).
+  unfold y.
+  enough (m * (2 * Pi) <= x < (m + 1) * (2 * Pi)) by lra.
+  assert (tmp := Pi_gt0).
+  enough (m <= x / (2 * Pi) < (m + 1)).
+    Search ( _ * _ <= _) (_ <= _ / _).
+Search "rchim".
+set (m := integer_part )
+Lemma tan_derive_2 x : (forall n, Rnat n -> x <> Pi / 2 + n * Pi) -> 
+  derive tan x = 1 / cos x ^ 2.
+Proof.
