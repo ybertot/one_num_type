@@ -165,10 +165,11 @@ Definition bin (n : Z) :=
 Lemma bin0 m : bin 0 m = if m =? 0 then 1 else 0.
 Proof. easy. Qed.
 
-Lemma bin_rec n m: 0 <= n -> bin (n + 1) m = bin n m + bin n (m - 1).
+Lemma bin_rec n m: 0 < n -> bin n m = bin (n - 1) m + bin (n - 1) (m - 1).
 Proof.
-intros nge0.
-unfold bin; rewrite Z_iter_succ_l; easy.
+intros ngt0.
+replace n with (n - 1 + 1) at 1 by ring.
+unfold bin; rewrite Z_iter_succ_l; lia.
 Qed.
 
 Lemma bin_outside n m : 0 <= n -> (m < 0 \/ n < m) ->
@@ -183,7 +184,6 @@ destruct (n =? 0) eqn:cmp0.
   simpl.
   replace (m =? 0) with false by lia.
   easy.
-replace n with (n - 1 + 1) by ring.
 rewrite bin_rec;[ | lia].
 intros mconds.
 assert (mcond1 : m < 0 \/ n - 1 < m) by lia.
@@ -199,9 +199,9 @@ Definition fact (n : Z) :=
 Lemma fact0 : fact 0 = 1.
 Proof. easy. Qed.
 
-Lemma fact_rec n :  0 <= n -> fact (n + 1) = fact n * (n + 1).
+Lemma fact_rec n :  0 < n -> fact n = fact (n - 1) * n.
 Proof.
-intros nge0.
+intros ngt0.
 assert (main : forall m, 0 <= m -> 
   snd (Z.iter m (fun '(p, i) => (p * i, i + 1)) (1, 1)) = m + 1).
   set (P := fun i (t : Z * Z) => snd t = i + 1).
@@ -211,9 +211,11 @@ assert (main : forall m, 0 <= m ->
     intros k [p i]; unfold P; simpl; intros kge0 Ih.
     lia.
   apply (Z_iter_ind P (1, 1) _ pstart pstep).
+assert (ge0 : 0 <= n - 1) by lia.
+replace n with (n - 1 + 1) at 1 by ring.
 unfold fact; rewrite Z_iter_succ_l;[ | lia].
-assert (main':= main n nge0).
-destruct (Z.iter n) as [p i]; simpl in main' |- *.
+assert (main':= main (n - 1) ge0).
+destruct (Z.iter (n - 1)) as [p i]; simpl in main' |- *.
 lia.
 Qed.
 
@@ -225,7 +227,6 @@ destruct (n =? 0) eqn:cmp0.
   replace n with 0 by lia.
   rewrite fact0.
   lia.
-replace n with (n - 1 + 1) by ring.
 rewrite fact_rec;[ | lia].
 assert (0 < fact (n - 1)).
   apply Ih; lia.
@@ -239,7 +240,6 @@ intros nge0.
 destruct (n =? 0) eqn:cmpn0.
   replace n with 0 by lia.
   easy.
-replace n with (n - 1 + 1) at 1 by ring.
 rewrite bin_rec;[ | lia].
 rewrite bin_outside;[ | lia | lia].
 rewrite Ih;[ | lia | lia].
@@ -253,7 +253,6 @@ intros nge0.
 destruct (n =? 0) eqn:cmpn0.
   replace n with 0 by lia.
   easy.
-replace n with (n - 1 + 1) by ring.
 rewrite bin_rec;[ | lia].
   rewrite Ih;[ | lia | lia].
 rewrite bin_outside; lia.
@@ -292,18 +291,15 @@ destruct (m =? 0) eqn:cmpm0.
   rewrite bin_n_0;[ | lia].
   rewrite fact0.
   ring.
-replace n with (n - 1 + 1) at 2 3 by ring.
 rewrite bin_rec;[ | lia].
-rewrite fact_rec;[ | lia].
-replace (n - 1 + 1) with n by ring.
 set (facts := fact m * fact (n - m)).
 replace (facts * (bin (n - 1) m + bin (n - 1) (m - 1)))
   with (facts * bin (n - 1) m + facts * bin (n - 1) (m - 1)) by ring.
 replace (facts * bin (n - 1) m) with
   ((n - m) * (fact m * fact (n - 1 - m) * bin (n - 1) m)); cycle 1.
   unfold facts.
-  replace (n - m) with (n - 1 - m + 1) by ring.
-  rewrite fact_rec;[ | lia].
+  rewrite (fact_rec (n - m));[ | lia].
+  replace (n - m - 1) with (n - 1 - m) by ring.
   ring.
 rewrite Ih;[ | lia | lia].
 replace (facts * bin (n - 1) (m - 1)) with
@@ -313,10 +309,10 @@ replace (facts * bin (n - 1) (m - 1)) with
   replace (n - m) with (n - 1 - (m - 1)) by ring.
   replace (fact m) with (m * fact (m - 1)).
     ring.
-  replace m with (m - 1 + 1) at 3 by ring.
-  rewrite fact_rec;[ | lia].
+  rewrite (fact_rec m);[ | lia].
   ring.
 rewrite Ih;[ | lia | lia].
+rewrite (fact_rec n);[ | lia].
 ring.
 Qed.
 
