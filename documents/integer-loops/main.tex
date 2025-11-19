@@ -1,0 +1,179 @@
+\documentclass[draft]{article}
+% replace jflart with modjflart to have the preprint version, as stored on HAL
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{alltt}
+
+% Numéro et année des JFLAs visées par l'article, obligatoire.
+\jfla{36}{2025}
+
+\title{Entiers relatifs et boucles dans l'enseignement de la théorie des types}
+% Un titre plus court, optionnel.
+\titlerunning{Promouvoir l'usage des entiers relatifs}
+
+% Auteurs, liste non abrégée.
+\author[1]{Yves Bertot}
+% Une liste d'auteurs abrégée à utiliser à l'intérieur de l'article.
+\authorrunning{Bertot}
+
+% Affiliations des auteurs
+\affil[1]{Centre Inria de l'Université Côte d'Azur, France}
+
+% Une commande définie par l'utilisateur
+\newcommand{\cmd}[1]{\texttt{\textbackslash {#1}}}
+\newcommand{\mathcomp}{\textsc{Mathematical Components}}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+  L' objectif de ce travail est de construire des exemples pédagogiques pour
+  l'enseignement de la théorie des types où les entiers relatifs jouent
+  un rôle majeur et les entiers naturels n'interviennent pas.  Les boucles
+  jouent un rôle central et la récursion structurelle est enseignée en priorité
+  sur la structure de donnée des listes, où la notion de constructeur est
+  plus facile à appréhender que sur les entiers naturels.
+\end{abstract}
+
+\section{Introduction}
+
+Depuis plusieurs dizaines d'années, il existe plusieurs cours de théories des
+types où les entiers naturels jouent un rôle central.  C'est pratiquement
+le premier type inductif introduit, et les premières fonctions récursives
+introduites sont des fonctions récursives sur les entiers naturels.  Dans
+la syntaxe du système Rocq, cette programmation se fait avec une construction
+de filtrage très proche de celle que l'on trouve dans les langages de
+programmation fonctionnels conventionnels comme OCaml, à ceci près que le type
+des entiers naturels n'existe pas dans ces langages de programmation et ceci
+pour une bonne raison: si ce type de nombre plait aux théoriciens pour son
+côté élémentaire, il est inadapté pour la majeure partie des applications
+algorithmique, parce qu'il est extrêmement gourmand en ressource mémoire.
+
+Le confort apporté la programmation récursive sur les nombres naturels est
+illusoire, parce que les calculs sont limités par la gourmandise en mémoire
+que nous venons de mentionner.  Il est facile de définir la fonction
+factorielle, mais le calcul de de cette fonction pour l'entrée 20 est
+prohibitoire (l'étudiant peut demander pourquoi, c'est seulement un nombre à 20 chiffres).
+
+Si l'on utilise une fonction d'itération (comme il en existe déjà dans les
+bibliothèques de rocq).  La fonction factorielle peut être définie avec
+des entiers relatifs avec un code effectivement plus court que le code récursif
+structurel sur les entiers naturels, et la fonction ainsi définie est capable
+de calculer dans le système de preuve pour des entrées aussi élevées que 1000
+(il faut quand même quelque secondes de calcul et il semble que le temps soit
+essentiellement occupé à l'affichage du résultat sous forme décimale).
+
+Un usage fréquent pour l'apprentissage de la programmation en théorie des types
+est également de fournir un argument de carburant (fuel en anglais) pour des
+fonctions dont la structure de récursion n'est pas évidente, surtout dans des
+phases où l'enseignant trouve prématuré d'introduire la récursion bien fondée
+et les outils qui vont avec.  Dans cet usage, le carburant est présenté comme
+un nombre naturel, et son utilisation repose à nouveau sur une récursion
+structurelle sur les nombres naturelles.
+
+Alternativement, si on utilise une itération de boucle où le nombre d'itération
+est représenté par un nombre entier, le carburant est représenté de façon bien
+plus économe et des expériences beaucoup plus signifcatives deviennent
+abordables dans la classe d'école.
+
+Bien sûr, des années de tradition ne disparaissent pas sans faire de la
+résistance.  Il est possible de définir un principe de récurrence sur les
+entiers positifs dont l'énoncé est facile à lire par l'étudiant et à expliquer
+par l'enseignant, mais les outils traditionnels de preuves par récurrence
+n'acceptent pas ce principe comme un principe de récurrence, et l'on est obligé
+de définir une tactique de récurrence spécifique pour ce cas de figure.
+
+En revanche, les tactiques de raisonnement sur les formules numériques
+sont beaucoup plus pratiques à utiliser sur les entiers relatifs que
+sur les nombres naturels.  On y gagne une pratique de la preuve
+formalisée où l'utilisateur est moins confronté à la nécessité
+d'apprendre à se servir de théorèmes prédéfinis dans lac bibliothèque,
+reposant plutôt sur {\tt ring}, {\tt lia}, et potentiellement {\tt
+  nia} pour établir les résultats intermédiaires qui peuvent semble
+évident, et dont la preuve en utilisant les théorèmes élémentaires
+peut être rébarbative pour les étudiants.
+
+La fonction d'itération pour un certain nombre d'étape, sans test, a un
+défaut majeur: elle oblige à calculer aussi longtemps que le nombre donné en argument
+de répétition, alors qu'il serait préférable que ce nombre de répétition soit
+utilisé comme une borne supérieure au nombre de répétition, en autorisant
+un arrêt du calcul dès qu'un test est satisfait (comme c'est le cas dans
+les boucles avec tests que l'on trouve dans tous les langages impératifs).
+L'une des contributions de cet article est de fournir de telles constructions
+et des théorèmes associés pour raisonner facilement sur ces calculs.  Ces
+théorèmes sont inspirés des règles de raisonnement en usage dans la logique
+de Hoare pour raisonner sur des programmes impératifs avec boucles.
+
+\secgtion{Matériel existant: les fonctions d'itération de boucles}
+Pour modéliser un calcul répétitif, où la même opération est répétée
+\(n\) fois, pour un entier naturel \(n\), la bibliothèque standard de
+Coq fournit de puis de nombreuses versions des fonctions {\tt
+  Nat.iter} et {\tt N.iter}.  Ceci permet de représenter dans le
+langage de programmation du système de preuve le calcul de \(f ^n
+(a)\), où \(f\) est une fonction d'un type dans lui-même.  Pour des
+étudiants qui ont déjà été habitués à considérer le calcul
+informatique comme une suite d'opérations impératives modifiant un
+état, il est pratique d'expliquer que l'on va modéliser l'état de
+départ par l'état \(a\) et les opérations effectuées à chaque tour de
+boucle par la fonction \(f\), qui doit donc retourner un nouvel état
+de même type.  La différence entre {\tt Nat.iter} et {\tt N.iter} est que
+la deuxième fonction repose sur une représentation binaire des nombres, ce qui
+permet d'éviter l'inconvénient de la taille de représentation du nombre \(n\).
+Hormis les théorèmes qui permettent d'exprimer la correspondance entre
+{\tt Nat.iter} et {\tt N.iter}, les théorèmes fournis sont au nombre de 7,
+en particulier avec deux théorèmes pour faciliter des raisonnements par
+récurrence: un théorème exprimant que toute propriété invariante par \(f\) et
+satisfaite par \(a\) est satisfaite par \(f ^n (a)\)
+\[(\forall s, P(s) \Rightarrow P(f(s))) \wedge P(a) \Rightarrow \forall n, P(f^n(a))\]
+et un théorème légèrement
+plus puissant, qui inclut également le nombre d'itération dans le raisonnement.
+\[(\forall i s, P(i,s) \Rightarrow P(i + 1, f(s))) \wedge P(0,a) \Rightarrow
+\forall n, P(n, f ^ n(a))\]
+
+Les autres théorèmes fournis expriment les propriétés suivantes (quantifiées
+universellement sur \(n, m, f, (a\)
+\[f^{n + 1}(a) = f(f^n(a)) = f ^ n (f(a)) \qquad f^{n + m}(a)= f^n(f^m(a))\]
+
+Il peut sembler paradoxal que les deux théorèmes suivants ne soit pas fournis:
+\[ f^ 0 a = a \qquad f ^ 1 (a) = f (a)\]
+Ces théorèmes sont des égalités ``silencieuses'': ce sont des conséquences
+directes de la définition, et le système de preuve est souvent capable de
+les appliquer sans que l'utilisateur ait besoin de le mentionner.
+
+Pour diminuer la charge cognitive des étudiants, nous préférons réduire
+nos contexte de travail à un contexte où seuls existent les entiers relatifs,
+avec la motivation que ce type est particulièrement bien traité par des
+tactiques automatiques comme {\tt ring} (qui prend en charge des égalités
+entre formules construites avec des additions, soustractions, et
+multiplications qui sont naturelles au niveau attendu pour les étudiants)
+{\tt lia} ({\em linear integer arithmetic}, qui prend en charge les systèmes
+de comparaisons entre formules linéaires.  Un point clef de notre démarche est
+que les formules avec soustraction sont particulièrement mal supportées
+par {\tt ring} pour les types de nombres {\tt nat} et {\tt N}.
+
+Toutefois, la fonction d'itération où l'argument numérique est donné
+par un entier relatif est mal traitée dans la bibliothèque standard.
+Elle ne dispose que d'un théorème de mise en correspondance avec un
+calcul sur les entiers naturels (même pas une mise en correspondance
+avec {\tt nat.iter} ou {\tt N.iter}).  Une première partie de notre
+proposition est donc d'ajouter à la bibliothèque fournie aux étudiants
+les mêmes théorèmes que pour {\tt nat.iter} et {N.iter}, mais avec la
+condition ajoutée sur le nombre d'itérations numériques qu'il
+doit être positif ou nul.
+
+Avec cette fonction, on peut décrire de nombreuses fonctions, par exemple
+les fonctions (similaires) qui calculent la somme des n premiers entiers,
+les n premiers carrés, ou la fonction factorielle.  Il suffit pour cela
+d'indiquer que la fonction répétée travaille sur des couples, dont la deuxième
+composante est un entier que l'on incrémente et la première composante est
+la somme ou le produit que l'on est en train de construire.
+\bibliographystyle{alpha-fr} \bibliography{bib}
+
+\end{document}
+
+% LocalWords:  Agda Rocq Lean texttt sqrt
+% LocalWords:  qquad mathbb rightarrow Prop Rnat em Rint nat INR eqn
+% LocalWords:  factorial fib subsection récurseur list rect Init nth
+% LocalWords:  itemize Elpi -prolog lp IRZ IRN IZR enumerate forall
