@@ -1,16 +1,7 @@
 \documentclass{article}
 \usepackage[latin1]{inputenc}
-\usepackage{cancel}
-\usepackage{alltt}
 
-%\definecolor{ttblue}{RGB}{48,48,170}
-\newdimen\topcrop
-\topcrop=10cm  %alternatively 8cm if the pdf inclusions are in letter format
-\newdimen\topcropBezier
-\topcropBezier=19cm %alternatively 16cm if the inclusions are in letter format
-
-%\setbeamertemplate{footline}[frame number]
-\title{A summary of a proof for Viète's formula for \(\pi\)}
+\title{A summary of a proof for Viï¿½te's formula for \(\pi\)}
 \author{Yves Bertot}
 \date{January 2026}
 \begin{document}
@@ -22,32 +13,46 @@ Where the right-hand side is an infinite product.
 \begin{itemize}
 \item \(\cos (2 x) = \cos^2 x - \sin^2 x = 2\cos^2 x - 1\)
 \item therefore \(\cos^2 x = 1 +\cos (2 x)\)
-\item for \(x\) such that \(0 \leq x < \pi\),  \(\cos \frac{x}{2} > 0\)
+\item for \(x\) such that \(0 \leq x < \pi\),  \(\cos \frac{x}{2} > 0\) and
 \(\cos \frac{x}{2} = \sqrt{\frac{1 +\cos x}{2}} = \frac{\sqrt {2 + 2\cos x}}2\)
 \item More specifically \(\cos \frac{\pi}4 = \sqrt{\frac 1 2}=
 \frac{\sqrt{2}} 2 \)
-\item Repeating the process we have \(\cos \frac{\pi}{2 ^ {n + 2}} = \frac{\sqrt{2 + \sqrt {2 + \cdots \sqrt{2}}}}{2}\) (\(n + 1\) occurrences of the square-root symbol)
+\item Repeating the process we have
+\(\cos \frac{\pi}{2 ^ {n + 2}} = \frac{\sqrt{2 + \sqrt {2 + \cdots \sqrt{2}}}}{2}\)
+(\(n + 1\) occurrences of the square-root symbol)
 \item \(\sin 2 x = 2 \sin x \cos x\)
 \item Therefore, \(\sin \frac x 2 = \frac {\sin x}{2 \cos \frac x 2}\)
 \item And \(\sin \frac x 4 = \frac {\sin \frac x 2}{2 \cos \frac x 4} =
 \frac{\sin x}{2 \cos \frac x 2 \times 2 \cos \frac x 4}\)
 \item Repeating the process \(\sin \frac x{2 ^ n} =
   \frac{\sin x} {\prod_{i=1}^{n} 2 {\cos \frac{x}{2 ^ i}}}\)
-\item Specializing for \(x=\frac \pi 2\), we can use the fact that \(\sin \frac \pi 2 = 1\) to obtain \(\sin \frac \pi {2 ^ {n + 1}} = \frac 1 {\prod_{i = 1}^n {\cos \frac{\pi}{2 ^ {i + 1}}} \times 2 ^ n}\)
-\item Multiplying both side by \(2 ^ {n + 1}\) we obtain \[2 ^ {n + 1} sin \frac{\pi}{2 ^ {n+1}} = \frac 2 {\prod_{i = 1}^n {cos \frac \pi {2 ^ {i + 1}}}} =
+\item Specializing for \(x=\frac \pi 2\), we can use the fact that
+\(\sin \frac \pi 2 = 1\) to obtain
+\(\sin \frac \pi {2 ^ {n + 1}} =
+  \frac 1 {\prod_{i = 1}^n {\cos \frac{\pi}{2 ^ {i + 1}}} \times 2 ^ n}\)
+\item Multiplying both side by \(2 ^ {n + 1}\) we obtain
+\[2 ^ {n + 1} sin \frac{\pi}{2 ^ {n+1}} =
+ \frac 2 {\prod_{i = 1}^n {cos \frac \pi {2 ^ {i + 1}}}} =
 2 \cdot \frac 2 {\sqrt{2}} \cdots \frac 2 {\sqrt{2 + \cdots \sqrt{2}}}\]
-The iterated product on the right-hand side is not infinite, it contains exactly \(n\) fractions with square roots at the denominator.  The last one contains \(n\) square root signs.  To compute it, one only needs to compute \(n\) square roots, because each denominator appears as a subformula of the denominator
-that follows.
-\item We can now turn our attention to the sequence \(n \mapsto 2 ^ {n + 1} \sin \frac \i {2 ^ {n + 1}}\).  Since \(\lim_{x \rightarrow 0} \frac{\sin x}{x} = 1\),
+The iterated product on the right-hand side is not infinite, it contains 
+exactly \(n\) fractions with square roots at the denominator.  The last
+one contains \(n\) square root signs.  To compute it, one only needs to
+compute \(n\) square roots, because each denominator appears as a
+subformula of the denominator that follows.  Later, we refer to this
+right-hand side as {\em the long product}.
+\item We can now turn our attention to the sequence
+\(n \mapsto 2 ^ {n + 1} \sin \frac \pi {2 ^ {n + 1}}\).
+  Since \(\lim_{x \rightarrow 0} \frac{\sin x}{x} = 1\) and
 we have \(lim_{n \rightarrow \infty} \frac{\pi}{2 ^ {n}} = 0\), we can deduce
 that \[\lim_{n \rightarrow \infty} 2 ^ {n + 1} \sin \frac{\pi}{2 ^ {n + 1}} = \pi\]
 \item If we define the functions \(viete_1\) and \(viete\) for natural number
 inputs, such that
-\(viete_1 (0) = \sqrt 2\) and \(viete_1 (n) = \sqrt{2 + viete (n - 1)}\) when
+\(viete_1 (0) = \sqrt 2\) and \(viete_1 (n) = \sqrt{2 + viete_1 (n - 1)}\) when
 \(n - 1\) is a natural number and
 \(viete (n) = \frac{2}{viete_1(n)}\), then the cosine equality can be rewritten
-as \(\cos \frac{\pi}{2 ^ {n + 2}} = \frac{viete_1(n)}{2}\) and the long product as \(2 \times \prod_{i = 0}^n viete(i)\)
-\item Puttin all notations together, the infinite product can be rewritten as
+as \(\cos \frac{\pi}{2 ^ {n + 2}} = \frac{viete_1(n)}{2}\) and the long product as
+\(2 \times \prod_{i = 0}^n viete(i)\)
+\item Putting all notations together, the infinite product can be rewritten as
 \[\lim_{n \rightarrow \infty} 2 \times \prod_{i = 0}^n viete(i) = \pi\]
 \end{itemize}
 
