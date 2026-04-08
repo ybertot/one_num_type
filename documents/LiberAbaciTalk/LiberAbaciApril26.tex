@@ -1,0 +1,304 @@
+\documentclass[compress]{beamer}
+\usepackage[latin1]{inputenc}
+\usepackage{cancel}
+\usepackage{alltt}
+\newdimen\topcrop
+\topcrop=10cm  %alternatively 8cm if the pdf inclusions are in letter format
+\newdimen\topcropBezier
+\topcropBezier=19cm %alternatively 16cm if the inclusions are in letter format
+
+\setbeamertemplate{footline}[frame number]
+\title{A single number type for Math education\\in Type Theory}
+\author{Yves Bertot\\Thomas Portet}
+\date{April 2026}
+\mode<presentation>
+\begin{document}
+
+\maketitle
+\begin{frame}
+\frametitle{The context}
+\begin{itemize}
+\item Point of view: young students in mathematics have a single type of numbers in mind
+\item Type theory proposes a variety of type numbers
+\begin{itemize}
+\item Inductive types come with a builtin capability for computation
+\item Inductive types come with a direct notion of reasoning by induction
+\item Real numbers live a different part of the world
+\end{itemize}
+\item Experimenting with using only one type of numbers: real numbers
+\begin{itemize}
+\item Use subsets for natural numbers
+\item Recover recursive computation
+\item Make {\tt ring} and {\tt field} more comfortable
+\end{itemize}
+\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{Plan}
+\begin{itemize}
+\item Recursive computation with real numbers
+\item A poor man's calc tactic
+\item Deep ring and field tactics
+\item Showcase examples
+\begin{itemize}
+\item Trigonometry up to Viète's formula
+\item Fibonacci upto a closed formula
+\item Binomials as fractions of recursively defined factorials
+\end{itemize}
+\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{Subsets instead of types}
+\begin{itemize}
+\item Avoid using the type {\tt nat}, but use the concept
+\item Natural numbers are definable as a subset, inductively
+\item Integers can also be defined inductively, but it is minor
+\begin{itemize}
+\item Not necessarily following the path of Rocq (with binary representation)
+\item Binary representation is convenient for computation, not for math
+\end{itemize}
+\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{Defining subsets of \(\mathbb R\) for inductive types}
+\begin{itemize}
+\item Inductive predicate approach
+\begin{itemize}
+\item Inherit the induction principle
+\end{itemize}
+\end{itemize}
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{Inductive predicate in Rocq}
+\begin{alltt}
+Require Import Reals.
+Open Scope R_scope.
+
+Inductive Rnat : R -> Prop :=
+  Rnat0 : Rnat 0
+| Rnat_succ : forall n, Rnat n -> Rnat (n + 1).
+\end{alltt}
+Generated induction principle:
+\begin{alltt}
+nat_ind
+     : forall P : R -> Prop,
+       P 0 ->
+       (forall n : R, Rnat n -> P n -> P (n + 1)) ->
+       forall r : R, Rnat r -> P r
+\end{alltt}
+\end{frame}
+\begin{frame}
+\frametitle{Ad hoc proofs of membership}
+\begin{itemize}
+\item When \(n, m \in {\mathbb N}\) and \(m \leq n\), \((n - m) \in {\mathbb N}\) can
+also be proved
+\item This requires an explicit proof
+\item Probably good in a training context for students
+\item Similar for division
+\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{Recursive functions}
+\begin{itemize}
+\item recursive sequences are a typical introductory subject
+\item As an illustration, let us consider the {\em Fibonacci} sequence\\
+{\em The Fibonacci sequence is the function \(F\) such that \(F_0= 0\), \(F_1=1\), and \(F_{n+2} = F_{n} + F_{n + 1}\) for every natural number \(n\)}
+\item Proof by induction and the defining equations are enough to
+{\em study} a sequence
+\item But {\em def{}ining} is still needed
+\item Solution: define a recursive definition command using Elpi
+\end{itemize}
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{Definition of recursive functions}
+\begin{itemize}
+\item We can use a {\em recursor}, mirror of the recursor on natural numbers
+\item {\tt Rnat\_rec : ?A -> (R -> ?A -> ?A) -> R -> ?A}
+\item Multi-step recursion can be implemented by using tuples of the
+  right size
+\end{itemize}
+\begin{small}
+\begin{alltt}
+(* fib 0 = 0  fib 1 = 1              *)
+(* fib n = fib (n - 1) + fib (n - 2) *)
+
+Definition fibr := Rnat_rec [0; 1]
+   (fun n l => [nth 1 l 0; nth 0 l 0 + nth 1 l 0]).
+\end{alltt}
+\end{small}
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{Meta-programming a recursive definition command}
+\begin{itemize}
+\item The definition in the previous slide can be generated
+\item Taking as input the equations (in comments)
+\item The results of the definition are in two parts
+\begin{itemize}
+\item The function of type {\tt R -> R}
+\item The proof of the logical statement for that function
+\end{itemize}
+\end{itemize}
+\begin{small}
+\begin{verbatim}
+Recursive (def fib such that
+             fib 0 = 0 /\
+             fib 1 = 1 /\
+             forall n : R, Rnat (n - 2) ->
+                fib n = fib (n - 2) + fib (n - 1)).
+\end{verbatim}
+\end{small}
+\end{frame}
+\begin{frame}
+\frametitle{Compute with real numbers}
+\begin{itemize}
+\item {\tt Compute 42 - 67.} in plain Coq yields a puzzling answer
+\begin{itemize}
+\item Tons of {\tt R1}, {\tt +}, {\tt *}, and parentheses.
+\end{itemize}
+\item {\tt Compute (42 - 67)\%Z.} yields the right answer
+\begin{itemize}
+\item Except it is in the wrong type
+\end{itemize}
+\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{Compute with real numbers: our solution}
+\begin{itemize}
+\item New command {\tt R\_compute}.
+\item {\tt R\_compute (42 - 67).} succeeds and displays {\tt -25}
+\item {\tt R\_compute (fib (42 - 67)).} fails!
+\begin{itemize}
+\item Respecting the fact that {\tt fib} is only defined for natural number inputs
+\end{itemize}
+\item {\tt R\_compute (fib 42) th\_name.} succeeds and saves a proof of equality.
+\item Implemented by exploiting a correspondance between elementary operations
+on {\tt R}, {\tt Z} (with proofs)
+\item ELPI programming
+\item Mirror a recursive definition in {\tt R} to a definition in {\tt Z}
+\item Correcness theorem of the mirror process has a {\tt Rnat} on the input.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Finite sets of indices}
+\begin{itemize}
+\item Usual mathematical idiom : \(1 \ldots n\), \(0 \ldots n\), \((v_i)_{i = 1 \ldots n}\)
+\item Provide a function {\tt Rseq : R -> R -> R}
+\begin{itemize}
+\item {\tt Rseq 0 3 = [0; 1; 2]}
+\end{itemize}
+\item Using the inductive type of lists here
+\item This may require explaining structural recursive programming to students
+\item At least {\tt map} and {\tt cat} (noted {\tt ++})
+\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{Big sums and products}
+\begin{itemize}
+\item Taking inspiration from Mathematical components
+\item {\tt \char'134{}sum\_(a <= i < b) f(i)}
+\begin{itemize}
+\item Also {\tt \char'134{}prod}
+\end{itemize}
+\item Well-typed when {\tt a} and {\tt b} are real numbers\\
+\item Relevant when \({\tt a} < {\tt b}\)
+\item This needs a hosts of theorems
+\begin{itemize}
+\item Chipping off terms at both ends
+\item Cutting in the middle
+\item Shuffling the indices
+\end{itemize}
+\item Mathematical Components {\tt bigop} library provides a guideline
+\item Future work: {\tt \char'134{}sum\_(a <= i <= b) f(i)} is more idiomatic
+\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{Manipulating bound variables}
+\[\sum_{i=0}^{10}\sqrt{i^2} = \sum_{i=0}^{10}i\]
+\begin{itemize}
+\item Is the sentence {\em replace \(\sqrt{i^2}\) with \(i\)} acceptable?
+\item Can this sentence server as the start of the argument?
+\item Does the proof language of the theorem prover allow mentioning \(i\)?
+\item In the outer context, \(\sqrt{i ^ 2}\) is flawed, as \(i\) does not exist
+\item In the mind of the teacher \(\sqrt{i ^ 2}\) exists, because it is written on the board!
+\end{itemize}
+
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{Iterated functions}
+\begin{itemize}
+\item Mathematical idiom : \(f ^ n\), when \(f : A -> A\)
+\item We provide {\tt Rnat\_iter} whose numeric argument is a real number
+\item Only meaning full when the real number satisfies {\tt Rnat}
+\item Useful to define many of the functions we are accustomed to see
+\item Very few theorems are needed to explain its behavior
+\begin{itemize}
+\item \(f^{n+m}(a) = f^{n}(f^{m}(a))\quad f^1(a) = f(a)\quad f^0(a) = a\)
+\end{itemize}
+\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{Minimal set of tactics}
+\begin{itemize}
+\item {\tt replace}
+\begin{itemize}
+\item {\tt ring} and {\tt field} for justifications
+\item No need to massage formulas step by step through rewriting
+\end{itemize}
+\item {\tt intros}, {\tt exists}, {\tt split}, {\tt destruct} to handle
+  logical connectives (as usual)
+\item {\tt rewrite} to handle the behavior of all defined functions
+ (and recursors)
+\item {\tt unfold} for functions defined by students
+\begin{itemize}
+\item But we should block unfolding of recursive functions
+\end{itemize}
+\item {\tt apply} and {\tt lra} to handle all side conditions related to bounds
+\item {\tt typeclasses eauto} to prove membership in {\tt Rnat}
+\begin{itemize}
+\item Explicit handling for subtraction and division
+\end{itemize}
+\item Possibility to add ad-hoc computing facilities for user-defined
+\begin{itemize}
+\item Relying on mirror functions computing on inductive {\tt nat} or {\tt Z}
+\end{itemize}
+\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{Demonstration time}
+\begin{itemize}
+\item A study of factorials and binomial numbers
+\begin{itemize}
+\item Efficient computation of factorial numbers
+\item Proofs relating the two points of view on binomial numbers,
+   ratios or recursive definition
+\item A proof of the expansion of \((x + y) ^ n\)
+\end{itemize}
+\item A study the fibonacci sequence
+\begin{itemize}
+\item \({\cal F}(i) = \frac{\phi ^ i - \psi ^ i}{\phi - \psi}\) (\(\phi\) golden ratio)
+\end{itemize}
+\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{The ``17'' exercise}
+\begin{itemize}
+\item Prove that there exists an \(n\) larger than 4 such that\\
+\[\left(\begin{array}{c}n\\5\end{array}\right) =
+  17 \left(\begin{array}{c}n\\4\end{array}\right)\]\\
+(suggested by S. Boldo, F. Clément, D. Hamelin, M. Mayero, P. Rousselin)
+\item Easy when using the ratio of factorials and eliminating common
+sub-expressions on both side of the equality\\
+\[\frac{\cancel{n!}}{\cancel{(n - 5)!}\cancel{5!}_5} = 17 \frac{\cancel{n!}}{\cancel{(n-4)!}_{(n-4)}\cancel{4!}}\]
+\item They use the type of natural numbers and equation\\
+\[\left(\begin{array}{c}n\\p + 1\end{array}\right) \times (p + 1) =
+  \left(\begin{array}{c}n\\p\end{array}\right) \times (n - p)\]\\
+\end{itemize}
+\end{frame}
+\end{document}
+
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: t
+%%% End: 
