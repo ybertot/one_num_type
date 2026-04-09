@@ -1,5 +1,5 @@
 From Stdlib Require Import Reals ZArith Lra.
-From OneNum Require Import R_subsets rec_def R_compute anti_unif automation.
+From OneNum Require Import R_subsets rec_def R_compute automation.
 From elpi Require Import elpi.
 
 Open Scope R_scope.
@@ -8,6 +8,11 @@ Ltac end_calculate :=
   repeat
    match goal with | id : _ = _ |- _ => (rewrite id || rewrite <- id); clear id end;
    (easy || ring || (field; (easy || lra))).
+
+Ltac end_calculate' :=
+  repeat
+   match goal with | id : _ = _ |- _ => (rewrite id || rewrite <- id); clear id end;
+   (easy || super_ring' || (super_field'; (easy || lra))).
 
 Ltac calc_LHS F  :=
   match goal with
@@ -20,7 +25,7 @@ Ltac calc_LHS' F :=
   match goal with
   | |- ?L = _ =>
     let name := fresh "temp_for_calc_LHS" in
-     assert (name: L = F);[solve [easy |super_ring' |super_field' |lra' ]| apply (eq_trans name); clear name]
+     assert (name: L = F);[solve [easy |lra' | super_ring'|super_field' |lra'  ]| apply (eq_trans name); clear name]
   end.
 
 
@@ -236,8 +241,9 @@ assert (step : c / a - b ^ 2 / (4 * a ^ 2)= - ( b ^ 2 - 4 * a * c) / (4 * a ^ 2)
 assert ((x + b / (2 * a)) ^ 2 =
         (b * b - 4 * a * c) / (4 * a ^ 2)).
   start_with ((x + b /  (2 * a)) ^ 2).
-  calc_LHS' ((x + b / (2 * a)) ^ 2 + (c / a - b ^ 2 / (4 * a ^ 2)) -
+  Timeout 5 calc_LHS' ((x + b / (2 * a)) ^ 2 + (c / a - b ^ 2 / (4 * a ^ 2)) -
     (c / a - b ^ 2 / (4 * a ^ 2))).
+    
   replace ((x + b / (2 * a)) ^ 2 + (c / a - b ^2 / (4 * a ^2))) with 0; cycle 1.
     symmetry.
     replace ((x + b / (2 * a)) ^ 2 + (c / a - b ^ 2 / (4 * a ^ 2))) with
@@ -544,10 +550,9 @@ split.
   easy.
 symmetry.
 start_with v.
-calc_LHS' (- (- v)).
 calc_LHS' (- g (c)).
 calc_LHS' (- - (f c)).
-ring.
+end_calculate'.
 Qed.
   
 Lemma cos_sub x y : cos (x - y) = cos x * cos y + sin x * sin y.
@@ -708,8 +713,8 @@ Qed.
 Lemma sin_Pi : sin Pi = 0.
 Proof.
 start_with (sin Pi).
-calc_LHS (sin (Pi / 2 + Pi / 2)).
-  do 2 super_field ; reflexivity. (* TODO repeat super_field*)
+calc_LHS' (sin (Pi / 2 + Pi / 2)).
+  (* do 2 super_field ; reflexivity. *)
 calc_LHS (cos (Pi / 2) * sin (Pi / 2) + cos (Pi / 2) * sin (Pi / 2)).
   now rewrite sin_add.
 calc_LHS (0 * sin (Pi / 2) + 0 * sin (Pi / 2)).
@@ -720,8 +725,8 @@ Qed.
 Lemma cos_Pi : cos Pi = -1.
 Proof.
 start_with (cos Pi).
-calc_LHS (cos (Pi / 2 + Pi / 2)).
-  do 2 super_field ; reflexivity. (* TODO repeat super_field*)
+calc_LHS' (cos (Pi / 2 + Pi / 2)).
+  (* do 2 super_field ; reflexivity.  *)
 calc_LHS (cos (Pi / 2) * cos (Pi / 2) - sin (Pi / 2) * sin (Pi / 2)).
   now rewrite cos_add.
 calc_LHS (0 - sin (Pi / 2) * sin (Pi / 2)).
@@ -1144,6 +1149,7 @@ apply div_le_1.
 lra.
 Qed.
 
+
 Lemma phase_and_amplitude a b : (a, b) <> (0, 0) ->
   exists rho phi, forall theta, 
     0 < rho /\ a * cos theta + b * sin theta = rho * cos (theta + phi).
@@ -1410,7 +1416,6 @@ calc_LHS (cos (Pi / (2 ^ (n + 2) * 2))).
 
   now rewrite Rpow_succ; [ | solve_Rnat].
 calc_LHS' (cos ((Pi / (2 ^ (n + 2)) / 2))).
-  (* super_field'. *)
 calc_LHS (sqrt (2 + 2 * cos (Pi / 2 ^ (n + 2))) / 2).
   rewrite cos_half_formula.
     easy.
@@ -1428,7 +1433,7 @@ calc_LHS (sqrt (2 + 2 * cos (Pi / 2 ^ (n + 2))) / 2).
 calc_LHS (sqrt (2 + 2 * (Viete_aux n / 2)) / 2).
   now rewrite IHRnat.
 calc_LHS' (sqrt (2 + Viete_aux n) / 2).
-  (* super_field'. *)
+  super_field'. 
 calc_LHS (Viete_aux (n + 1) / 2).
 rewrite (proj2 Viete_aux_eqn (n + 1)).
     super_ring'.
@@ -1569,6 +1574,7 @@ induction nnat as [ | n nnat Ihn].
     replace (0 + 1) with 1 by ring.
     rewrite prod0; lra.
   calc_LHS' (1 / \prod_(1 <= i < 1) cos (Pi / 2 ^ (i + 1))).
+
   rewrite prod0; field.
 replace (n + 1 + 1) with (n + 2) by ring.
 assert (prod_step : \prod_(1 <= i < (n + 2)) cos (Pi / 2 ^ (i + 1)) =

@@ -1,16 +1,16 @@
-pred translate_prf i:term, o:term, o:term.
-pred main_translate_prf i:term, o:term, o:term.
-pred thm_table o:term, o:term, o:term.
-pred nat_thm_table o:term, o:term, o:term.
+pred translate_prf term -> term, term.
+func main_translate_prf term -> term, term.
+pred thm_table -> term, term, term.
+pred nat_thm_table -> term, term, term.
 
-pred add_map i:term, o:term.
+func add_map term -> term.
 
 add_map {{lp:E = IZR lp:F}} 
-  (prod `lr` {{list R}} lr\ (prod `lz` {{list Z}} lz\ {{lp:lr= map IZR lp:lz -> @MappR 0 lp:E lp:lr = IZR (@MappZ 0 lp:F lp:lz) }} ) ).
+(prod `lr` {{list R}} lr\ (prod `lz` {{list Z}} lz\ {{lp:lr= map IZR lp:lz -> @MappR 0 lp:E lp:lr = IZR (@MappZ 0 lp:F lp:lz) }} )).
 
-pred hyps_to_list_proof i:int, i:term, o: term.
+func hyps_to_list_proof int, term -> term.
 
-hyps_to_list_proof 0 ({{lp:_E = IZR lp:_F}} as T) R :-
+hyps_to_list_proof 0 ({{lp:_E = IZR lp:_F}} as T) R :- !,
 add_map T R.
 
 hyps_to_list_proof N ((prod _X _Tx x\ prod _Y _Ty y\ prod _H {{lp:x = IZR lp:y}} h\ R) as T)
@@ -21,10 +21,10 @@ lp:RP (lp:F x) (lp:G y) (lp:T x y eqxy)) }}
   int_to_nat N1 N1Nat,
   hyps_to_list_proof N1 R RP.
 
-pred rnat_prf i:term, i:term, i:term, i:term, o:term. 
+func rnat_prf term, term, term, term -> term. 
 rnat_prf A A1 PRFA F Nat_prf :-
-std.do! [
-coq.typecheck Hole {{Rnat lp:A}} ok,
+  std.do! [
+  coq.typecheck Hole {{Rnat lp:A}} ok,
     coq.ltac.collect-goals Hole [G] [],
     if (coq.ltac.open (coq.ltac.call-ltac1 "solve_Rnat") G [])
        (Nat_prf = Hole)
@@ -39,17 +39,15 @@ coq.typecheck Hole {{Rnat lp:A}} ok,
            coq.error Diagnostic)
           (GPRF = {{private.compute_Rnat lp:A lp:A1 lp:PRFA eq_refl}},
            Nat_prf = GPRF)
-        )
-]
-.
+        )].
 
 
-pred meta_list_to_list i:(list term), o: term.
+func meta_list_to_list (list term) -> term.
 meta_list_to_list nil {{nil}}.
 meta_list_to_list [A|Tl] {{lp:A::lp:R}} :- meta_list_to_list Tl R.
 meta_list_to_list uvar _ :- coq.error "invalid input meta_list_to_list called with flexible argument".
 
-pred meta_list_to_proof i:(list term), o:term.
+func meta_list_to_proof (list term) -> term.
 
 meta_list_to_proof nil {{eq_refl : nil = @map Z R IZR nil}}.
 
@@ -57,7 +55,7 @@ meta_list_to_proof [P | Tl] {{f_equal2 (@cons R) lp:P lp:R}} :- meta_list_to_pro
 
 meta_list_to_proof uvar _ :- coq.error "invalid input meta_list_to_proof called with flexible argument".
 
-pred translate_prf_list i:list term, o:list term, o:list term.
+pred translate_prf_list list term -> list term, list term.
 
 translate_prf_list nil nil nil.
 
@@ -268,23 +266,22 @@ translate_prf (app [F, A | Args]) (app [F1, A1 | Args1])
   meta_list_to_proof PRFArgs LPrf,
   ].
 
-pred prf_stmt i:term, i:term, i:term, o:term.
+func prf_stmt term, term, term -> term.
 
-prf_stmt {{Z->Z}} Ft FG
-  {{forall (n : R) z, n = IZR z ->
-  lp:FG (Rabs n) = IZR (lp:Ft z)}}.
+prf_stmt {{Z->Z}} Ft FG {{forall (n : R) z, n = IZR z ->
+lp:FG (Rabs n) = IZR (lp:Ft z)}} :- !.
 
 prf_stmt {{Z->Z->Z}} Ft FG
   {{forall (r : R) (z : Z), r = IZR z ->  forall (a : R) (b : Z) , a = IZR b ->
-  (lp:FG (Rabs r)) a = IZR ((lp:Ft z) b) }}.
+  (lp:FG (Rabs r)) a = IZR ((lp:Ft z) b) }} :- !.
 
 prf_stmt {{Z -> ty_ Z (lp:N)}} Ft FG
   {{forall (r : R) (z : Z), r = IZR z -> forall (lr : list R) (lz : list Z), lr = List.map IZR lz ->
-  @MappR lp:N (lp:FG (Rabs r)) lr = IZR (@MappZ lp:N (lp:Ft z) lz)}} 
+  @MappR lp:N (lp:FG (Rabs r)) lr = IZR (@MappZ lp:N (lp:Ft z) lz)}} :- !
 .
 
-pred main_translate_prf1 i:term, i:term, o:term, o:term, o:term.
-pred translate_list_prf i:list term, o:list term, o:list term.
+func main_translate_prf1 term, term -> term,  term, term.
+pred translate_list_prf list term -> list term, list term.
 
 main_translate_prf1
   L ((fun _N {{nat}} c\ (fun _N1 Ty _)) as F) L1 F1
@@ -304,7 +301,7 @@ main_translate_prf1
       std.do! [
       translate_prf L L1 LP,
       translate_prf F F1 FPRF
-    ].
+    ],!.
 
 main_translate_prf1
   L ((fun _N {{nat}} c\ (fun _N1 Ty _)) as F) L1 F1
@@ -316,7 +313,7 @@ main_translate_prf1
       Ty = {{list (R)}},
       translate_prf L L1 _,
       translate_prf F F1 FPRF
-    ].
+    ],!.
 
 main_translate_prf1
   L ((fun _N {{nat}} c\ (fun _N1 {{list lp:Ty}} _)) as F) L1 F1
@@ -332,15 +329,14 @@ main_translate_prf1
       std.do! [
       translate_prf L L1 LP,
       translate_prf F F1 FPRF
-    ].
+    ],!.
 
 
 
 
-main_translate_prf
-  {{fun (n : R) =>
-      nth 0 (Rnat_rec lp:L lp:Frstep0 n) (cst_ R 0%R 0)}}
-  F Prf1 :-
+main_translate_prf {{fun (n : R) =>
+nth 0 (Rnat_rec lp:L lp:Frstep0 n) (cst_ R 0%R 0)}} F Prf1 :-
+  !,
   Frstep0 = (fun _ {{R}} Frstep),
   Fnstep = (fun _ {{nat}} c \ (Frstep {{INR lp:c}})),
   main_translate_prf1 L Fnstep Lz Fz Prf,
@@ -361,7 +357,7 @@ main_translate_prf
 main_translate_prf
   {{fun (r : R) =>
       nth 0 (Rnat_rec lp:L lp:Frstep0 r) (cst_ R 0%R 1)}}
-  F Prf1 :-
+  F Prf1 :- !,
   Frstep0 = (fun _ {{R}} Frstep),
   Fnstep = (fun _ {{nat}} c \ (Frstep {{INR lp:c}})),
   main_translate_prf1 L Fnstep Lz Fz Prf,
@@ -373,7 +369,7 @@ main_translate_prf
   Prf1 =
     {{
       fun (r : R) (z : Z) (nzq : r = IZR z) =>
-      private.IZR_map1'  (
+      private.IZR_map1' (
        (eq_ind_r
          (fun x : nat =>
           P_trans1
@@ -388,6 +384,7 @@ main_translate_prf
   ({{fun (r : R) =>
       nth 0 (Rnat_rec lp:L lp:Frstep0 r) (cst_ R 0%R lp:N) }})
   F Prf1 :-
+  !,
   Frstep0 = (fun _ {{R}} Frstep),
   Fnstep = (fun _ {{nat}} c \ (Frstep {{INR lp:c}})),
   main_translate_prf1 L Fnstep Lz Fz Prf,
@@ -418,7 +415,7 @@ std.do! [
   std.assert! (coq.env.const-body FGR (some Bo))
     "the constant does not have a value",
   std.assert! (main_translate_prf Bo BoZ Prf)
-    "translation failed.  Possible causes are:\n
+    "translation failed. Possible causes are:\n
 1/ the function was not generated by the command Recursive\n
 2/ some function without computational correspondence may be used\n
    (in that case, use add_computation to provide missing information)\n

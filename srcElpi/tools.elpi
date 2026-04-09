@@ -1,18 +1,18 @@
 
-pred type_to_nargs i:term, o:int.
+func type_to_nargs term -> int.
 
 type_to_nargs (prod _ _ c\T) N1 :-
   !, type_to_nargs T N, N1 is N + 1.
 
 type_to_nargs {{R}} 0.
 
-pred nargs_to_def_val i:int, o:term.
+func nargs_to_def_val int -> term.
 
 nargs_to_def_val N {{cst_ R 0%R lp:NasNat}} :-
 int_to_nat N NasNat.
 
 % sorting a list of integers removing duplicates
-pred list_insert i:int, i:list int, o:list int.
+func list_insert int, list int -> list int.
 
 list_insert I [] [I].
 
@@ -26,14 +26,14 @@ list_insert I [A | L] [A | L1] :-
   
 % sorting a list of integers: the main predicate
 
-pred list_sort i:list int, o:list int.
+func list_sort list int -> list int.
 list_sort [] [].
 
 list_sort [A | L] L1 :-
   list_sort L L2, !,
   list_insert A L2 L1.
 
-pred list_max i:list int o:int.
+func list_max list int -> int.
 list_max [A] A.
 
 list_max [A, B | L]  V:-
@@ -44,8 +44,7 @@ list_max [A, _B | L] V :-
 
 % sorting an association list for values associated to integers
 
-pred alist_insert i:pair int term, i:list (pair int term),
-  o:list (pair int term).
+func alist_insert pair int term, list (pair int term) -> list (pair int term).
 
 alist_insert (pr I _) [pr I _ | _] _ :- !,
   coq.error "There are two declarations for the same integer"  I.
@@ -58,7 +57,7 @@ alist_insert (pr I V) [pr I2 V2 | L] [pr I2 V2 | L2] :-
 
 alist_insert (pr I V) [] [pr I V].
 
-pred alist_sort i:list (pair int term), o:list (pair int term).
+func alist_sort list (pair int term) -> list (pair int term).
 
 alist_sort [] [].
 
@@ -66,7 +65,7 @@ alist_sort [A | L] L2 :-
   alist_insert A L L2.
 
 % converting a coq object of type positive to a builtin int
-pred positive_to_int i:term, o:int.
+func positive_to_int term -> int.
 % TODO regarder dans algebra tactics
 positive_to_int {{xH}} 1 :- !.
 
@@ -80,7 +79,7 @@ positive_to_int {{xO lp:X}} N1 :-
   N1 is 2 * N.
 
 % converting a real number to an int
-pred real_to_int i:term, o:int.
+func real_to_int term -> int.
 
 % actually, this works for any positive number encapsulated in two unary
 % functions
@@ -92,18 +91,18 @@ real_to_int {{0}} 0.
 % the inverse predicate, int_to_real, produces a real number that is
 % the representation of the integer.
 
-pred int_to_real i:int, o:term.
+func int_to_real int -> term.
 
 int_to_real I {{IZR lp:Iz}} :-
   int_to_Z I Iz.
 
-pred int_to_Z i:int, o:term.
+func int_to_Z int -> term.
 int_to_Z 0 {{Z0}} :- !.
 
 int_to_Z I {{Z.pos lp:Ip}} :-
   int_to_positive I Ip.
 
-pred int_to_positive i:int, o:term.
+func int_to_positive int -> term.
 int_to_positive 1 {{xH}}:- !.
 
 int_to_positive N (app[C, Td]) :-
@@ -113,7 +112,7 @@ int_to_positive N (app[C, Td]) :-
   choose_pos_constructor.aux B C,
   int_to_positive Nd Td.
 
-pred int_to_nat i:int, o:term.
+func int_to_nat int -> term.
 int_to_nat 0 {{O}} :- !.
 
 int_to_nat N {{S lp:N'}} :-
@@ -123,7 +122,7 @@ int_to_nat N {{S lp:N'}} :-
     int_to_nat N1 N'
   ].
   
-pred choose_pos_constructor.aux i:int, o:term.
+func choose_pos_constructor.aux int -> term.
 
 choose_pos_constructor.aux 1 {{xI}} :- !.
 
@@ -133,8 +132,7 @@ choose_pos_constructor.aux _ _ :-
   coq.error "choose_pos_constructor.aux only accepts 0 or 1 as input".
 
 
-pred replace_rec_call_by_seq_nth i:term, i:term, i:int, i:term, i:term, i:term ,i:term,
-  o:term.
+func replace_rec_call_by_seq_nth term, term, int, term, term, term, term -> term.
 
 % replace (F (N - k)) by (nth (L - k) V 0) everywhere in term A
 % But the subtraction (L - k) is actually computed and a number of type nat,
@@ -150,50 +148,70 @@ replace_rec_call_by_seq_nth VTy Def L F N V A B :-
     B = app[{{@nth}}, VTy, I, V, Def|Args]
   ].
 
-pred make_one_spec i:term, i:term, o:pair int term.
+func make_one_spec term, term -> pair int term.
 make_one_spec V1 V2 (pr I1 V2) :-
-  real_to_int V1 I1,!.
+    real_to_int V1 I1,!.
 
-pred list_app i:list (pair int term), i:list (pair int term),
-  o:list (pair int term).
+func list_app list (pair int term), list (pair int term) -> list (pair int term).
 
 list_app [] L2 L2.
 
 list_app [A | L1] L2 [A | L3] :-
-  list_app L1 L2 L3.
+    list_app L1 L2 L3.
 
 
-pred say i:term.
+func say term.
 say T :- coq.say {coq.term->string T}.
 
-pred sayL i:list term.
+func sayL list term.
 sayL nil :- coq.say "nil".
 sayL [A|Tl] :- coq.term->string A S, std.do![coq.say S, coq.say "::", sayL Tl].
 
-pred sayLT i:list term.
+func sayLT list term.
 sayLT nil :- coq.say "nil".
 sayLT [T|Tl] :- std.do![coq.say {coq.term->string T}, coq.say "::", sayLT Tl].
 
-pred sayLA i:list argument.
+func sayLA list argument.
 sayLA nil :- coq.say "nil".
-sayLA [A|Tl] :- std.do![coq.say A, coq.say "::", sayLA Tl].
+sayLA [trm A|Tl] :- std.do![coq.say {coq.term->string A}, coq.say "::", sayLA Tl].
 
-pred remove_duplicates i:list term, o:list term.
+func remove_duplicates list term -> list term.
 remove_duplicates [] [].
 
-remove_duplicates [T | Ts] L1 :-
-    std.mem! Ts T,
-    remove_duplicates Ts L1.
+remove_duplicates [T | Ts] [T|Ts''] :-
+    remove T Ts Ts',
+    remove_duplicates Ts' Ts''.
 
-remove_duplicates [T | Ts] [T | L1] :-
-    remove_duplicates Ts L1.
+func remove term, list term -> list term.
 
-pred terms_to_trms i:list term, o:list argument.
+remove _ [] [].
+remove T [T |L] L' :-
+    remove T L L',!.
+
+remove T [T1 |L] [T1|L'] :-
+    remove T L L'. 
+
+func terms_to_trms list term -> list argument.
 terms_to_trms nil nil.
 terms_to_trms [T | Tl] [trm T | Tl'] :-
     terms_to_trms Tl Tl'.
 
-pred seal-goals i:list goal o:list sealed-goal.
+func trms_to_terms list argument -> list term.
+trms_to_terms nil nil.
+trms_to_terms [trm T | Tl] [T | Tl'] :-
+    trms_to_terms Tl Tl'.
+
+func seal-goals list goal -> list sealed-goal.
 seal-goals [] [].
 seal-goals [G|R] [seal G|R1] :-
     seal-goals R R1.
+
+func list_to_real list term -> term.
+list_to_real nil {{@ nil R}}.
+list_to_real [T|Tl] {{@cons R lp:T lp:L}} :-
+    list_to_real Tl L.
+
+func term_to_list term -> list term.
+term_to_list {{nil}} nil.
+term_to_list {{(lp:T)::(lp:L)}}[T|Tl] :-
+    term_to_list L Tl.

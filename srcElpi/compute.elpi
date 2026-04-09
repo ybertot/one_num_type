@@ -1,5 +1,5 @@
 
-pred thm_table o:term, o:term, o:term.
+pred thm_table -> term, term, term.
 
 thm_table {{Rplus}} {{Z.add}} {{add_compute}}.
 
@@ -29,5 +29,5 @@ thm_table {{at_x'}} {{at_x_Z'}} {{at_x'_compute}}.
 % computation
 % This table is used by R_compute, and its elements
 % are produced by mirror_recursive_definition
-pred nat_thm_table o:term, o:term, o:term.
+pred nat_thm_table -> term, term, term.
 

@@ -1,54 +1,78 @@
-pred collect i:list term, i:list term, i:term, i:list term, o:list term.
+func collect list term, list term, term, list term -> list term.
 
 collect KnownOps IgnOps (app [Op | Args]) AccI AccO :-
-    std.mem! KnownOps Op,
+    std.mem! KnownOps Op,!,
     std.fold Args AccI (collect KnownOps IgnOps) AccO.
 
 collect _ IgnOps (app [Op | _]) A A :-
-    std.mem! IgnOps Op.
+    std.mem! IgnOps Op,!.
 
 collect KnownOps IgnOps (app [_ | Args]) AccI AccO :-
     std.filter Args (has_type_R) ArgsR,
     std.append AccI ArgsR Acc1,
-    std.fold Args Acc1 (collect KnownOps IgnOps) AccO.
+    std.fold Args Acc1 (collect KnownOps IgnOps) AccO,!.
 
 collect _ _ _ A A.
 
-pred has_type_R i:term.
+func has_type_R term.
 
 has_type_R T :-
     coq.typecheck T {{R}} ok.
 
-pred sub_ringable_r i:term i:list term o:list term.
+func sub_ringable_r term, list term -> list term.
 
 sub_ringable_r T L0 L  :-
     collect [{{ Rplus }}, {{ Rmult }}, {{ Ropp }}, {{ R1 }}, {{ R0 }}, {{Rminus}}] [{{IZR}}] T [T|L0] L.
 
-pred sub_fieldable_r i:term i:list term o:list term.
+func sub_fieldable_r term, list term -> list term.
 
 sub_fieldable_r T L0 L  :-
     collect [{{ Rplus }}, {{ Rmult }}, {{ Ropp }}, {{ R1 }}, {{ R0 }}, {{Rminus}}, {{Rdiv}}, {{pow}}] [{{IZR}}] T [T|L0] L.
 
-pred is_hyp_ge0  i:term i:prop.
+func all_vars term, list term -> list term.
+
+all_vars (app [_| Args]) L0 L  :-
+    !, std.fold Args L0 all_vars L.
+
+all_vars T L0 [T|L0]  :- 
+    is_var T,!.
+
+all_vars _ L L.
+
+func is_var term.
+is_var (global (const _) as T) :- 
+has_type_R T,!.
+
+is_var T :- name T, has_type_R T.
+
+
+func sub_ringable_vars term, list term, list term -> list term.
+
+sub_ringable_vars T L0 V L  :-
+    std.append V L0 L1,
+    sub_ringable_r T L1 L.
+
+
+func is_hyp_ge0  term, prop.
 
 is_hyp_ge0 T (def _ _ {{0 <= lp:T}} _). 
 is_hyp_ge0 T (decl _ _ {{0 <= lp:T}}).
 
-pred newHs i:list prop, i:list prop o:list (triple term term term).
+func newHs list prop, list prop -> list (triple term term term).
 newHs [] _ [].
 newHs [( decl A _ {{Rnat lp:X}}) | R] Ctx [(triple H P X)|R1]  :-
-    not (std.exists Ctx (is_hyp_ge0 X)),
+    not (std.exists Ctx (is_hyp_ge0 X)),!,
     add_ge0 A H P,
     newHs R Ctx R1.
 
 newHs [_| R] Ctx R1  :-
     newHs R Ctx R1.
 
-pred add_ge0 i:term, o:term, o:term.
+func add_ge0 term -> term, term.
 add_ge0 P {{(0 <= lp:X)%R}} {{Rnat_ge0 lp:X lp:P}}.
 
 
-pred term->string i:term o:string.
+func term->string term -> string.
 term->string  T S7 :-
     coq.term->string T S1,
     rex.replace "-" "minus" S1 S2,
@@ -59,7 +83,7 @@ term->string  T S7 :-
     rex.replace "[^a-zA-Z0-9]" "" S6 S7
     .
 
-pred letifyge0s i:list (triple term term term) o:term.
+func letifyge0s list (triple term term term) -> term.
 
 letifyge0s [] _.
 
@@ -67,3 +91,19 @@ letifyge0s [triple St Prf X|Tl] (let Name St Prf Bo) :-
     term->string X N, coq.name-suffix `ge0` N Name,
     pi x \
     letifyge0s Tl (Bo x).
+
+func same_goal_seal_not_seal goal, sealed-goal ->.
+
+same_goal_seal_not_seal (goal _ _ G _ _) (seal (goal _ _ G _ _)).
+
+same_goal_seal_not_seal ((goal Ctx _ T _ _) as G) (nabla _ as G') :-
+    std.rev Ctx CtxL,
+    ctx_nabla CtxL G' T1, !,
+    (not (not(T = T1))).
+
+func ctx_nabla  goal-ctx, sealed-goal -> term.
+ctx_nabla [decl X _Name _Type | Ctx'] (nabla F) T :-
+    ctx_nabla Ctx' (F X) T.
+ctx_nabla [def X _Name _Type _Bo | Ctx'] (nabla F) T :-
+    ctx_nabla Ctx' (F X) T.
+ctx_nabla [] (seal (goal _ _ T _ _)) T.

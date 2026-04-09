@@ -1,5 +1,5 @@
 
-pred fetch_recursive_equation i:term, o:list term.
+func fetch_recursive_equation term -> list term.
 
 fetch_recursive_equation X [X] :-
   X = (prod _ _ _), !.
@@ -11,9 +11,9 @@ fetch_recursive_equation (app [And, Code1, Code2]) R_eqs :-
     fetch_recursive_equation Code1 L1,
     fetch_recursive_equation Code2 L2,
     std.append L1 L2 R_eqs
-  ].
+  ],!.
 
-fetch_recursive_equation {{lp:_ = lp: _}} [].
+fetch_recursive_equation {{lp:_ = lp: _}} [] :- !.
 
 fetch_recursive_equation A _ :-
   coq.say "wrong term" A,
@@ -21,7 +21,7 @@ fetch_recursive_equation A _ :-
    "formulas of the form f 0 = v1 f 1 = v2  or forall n, .. -> f n = V2"
    "but found expressions of another form".
 
-pred collect_base_specs i:term, i:term, o:list (pair int term).
+func collect_base_specs term, term -> list (pair int term).
 
 collect_base_specs F {{lp:F lp:V1 = lp:V2}} [S] :-
   std.do! [
@@ -37,7 +37,7 @@ collect_base_specs F {{lp:Code1 /\ lp:Code2}} Specs :-
     std.append Specs1 Specs2 Specs
   ].
 
-pred check_all_present i:int, i:list (pair int term), o:int.
+func check_all_present int, list (pair int term) -> int.
 
 check_all_present N [] N.
 
@@ -50,19 +50,18 @@ check_all_present N [pr _ _ | _] _ :-
   coq.error "missing value for" N.
 
 
-pred make_initial_list i:term, i:list (pair int term), o:term.
+func make_initial_list term, list (pair int term) -> term.
 
 make_initial_list T [] {{ @nil lp:T}}.
 
 make_initial_list T [(pr  _ V) | L] (app [{{ @cons lp:T}}, V, Tl]) :-
   make_initial_list T L Tl, std.assert-ok! (coq.typecheck Tl _) "constructed a bad initial list".
 
-pred make_recursive_step_list i:term, i:term, i:(term -> term), i:int, i:int,
-   o:(term -> term).
+func make_recursive_step_list term, term, (term -> term), int, int -> (term -> term).
 
 make_recursive_step_list Ty _ZTy Func 0 _Rank R :-
   pi V\
-   app [{{ @cons }}, Ty, (Func V), {{ @nil lp:Ty}}] = R V.
+   app [{{ @cons }}, Ty, (Func V), {{ @nil lp:Ty}}] = R V, !.
 
 make_recursive_step_list Ty ZTy Func N Rank R :-
   std.do! [
@@ -76,9 +75,9 @@ make_recursive_step_list Ty ZTy Func N Rank R :-
            Func' V] = R V
   ].
 
-pred shift_real i:int, i:term, o:term.
+func shift_real int, term -> term.
 
-shift_real 0 N N.
+shift_real 0 N N :- !.
 
 shift_real K N {{lp:N + lp:K_as_real}}:-
   std.do! [
@@ -93,7 +92,7 @@ shift_real K N {{lp:N + lp:K_as_real}}:-
 % user could include premises that are too strong, thus rendering the
 % definition unusable.
 
-pred eat_implications i:term, i:term, i:term, o:term.
+func eat_implications term, term, term -> term.
 
 eat_implications F N (prod _ _ G) R :-
   %(pi x\ not(occurs x (G x))),
@@ -103,7 +102,7 @@ eat_implications F N (prod _ _ G) R :-
 
 eat_implications F N {{lp:F lp:N = lp:RHS}} RHS.
 
-pred translate_recursive_body i:int, i:term, i:term, i:term, i:term, i:term, o:term.
+func translate_recursive_body int, term, term, term, term, term -> term.
 
 translate_recursive_body Order F VTy DefN N RHS R :-
 std.do! [
@@ -137,7 +136,7 @@ std.do! [
 %  fun f => f 0 = V1 /\ ... f k = Vk /\ forall n, ... -> ... -> f n = E
 % Displays the ordered sequence of k integers (in builtin type int), such
 % that (f (n - k)) appears in E.
-pred find_uses i:term, o:term, o:term.
+func find_uses term -> term, term.
 
 find_uses (fun N Ty Bo) R Order_Z :-
   pi arg\
@@ -147,7 +146,7 @@ find_uses (fun N Ty Bo) R Order_Z :-
                               % the value of its recursion history at depth
                               % Order_Z (which must be a cic term of type Z)
 
-pred find_uses_of i:term, i:term, i:term, o:term, o:term.
+func find_uses_of term, term, term -> term, term.
 
 find_uses_of Ty F Spec Final Order_Z :-
   std.do! [
@@ -180,7 +179,7 @@ find_uses_of Ty F Spec Final Order_Z :-
   ].
 
 
-pred make_eqn_proof i:string, i:term, i:term, i:constant.
+func make_eqn_proof string, term, term, constant.
 
 make_eqn_proof N_id Abs_eqn  Order C :-
 std.do![
@@ -193,7 +192,7 @@ std.do![
     "prove_recursive_specification"
     [trm (global (const C)), trm Order]) G1 [],
   coq.env.add-const Eqs_N_id Eq_prf _ @opaque! _C_eqn,
-  coq.say "Defined" Eqs_N_id].
+  coq.say "Defined" Eqs_N_id], !.
 
 make_eqn_proof _ _ _ _ :-
   coq.say "proof of equations failed".
