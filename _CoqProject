@@ -7,5 +7,4 @@ fib_for_students.v
 intro_trigo.v
 ring_simplify_bank.v
 field_simplify_bank.v
-anti_unif.v
 automation.v

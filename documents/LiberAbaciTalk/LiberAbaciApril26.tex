@@ -79,11 +79,14 @@ nat_ind
 \frametitle{Ad hoc proofs of membership}
 \begin{itemize}
 \item When \(n, m \in {\mathbb N}\), \((n + m), (n \times m) \in {\mathbb N}\)
+\item Recover information normally given by typing
 \item When \(n, m \in {\mathbb N}\) and \(m \leq n\), \((n - m) \in {\mathbb N}\) can
 also be proved
+\begin{itemize}
 \item This requires an explicit proof
 \item Probably good in a training context for students
 \item Similar for division
+\end{itemize}
 \end{itemize}
 \end{frame}
 \begin{frame}[fragile]
@@ -114,14 +117,12 @@ R_compute (12 + 13).
 \begin{frame}[fragile]
 \frametitle{Recursive definitions, following the {\tt nat} recursive scheme}
 \begin{itemize}
-\item We provide a command {\tt Recursive} that mimicks recursive definitions
-with natural numbers
+\item We provide a command that mimicks recursive definitions on {\tt Rnat}
 \item Only ``well-defined'' for elements of {\tt Rnat}
 \item The command produces two objects
 \begin{itemize}
 \item The function of type {\tt R -> R}
 \item The proof of the logical statement for that function
-\item The function is registered in the database for {\tt R\_compute}
 \end{itemize}
 \end{itemize}
 \begin{small}
@@ -133,72 +134,104 @@ Recursive (def fib such that
                 fib n = fib (n - 2) + fib (n - 1)).
 \end{verbatim}
 \end{small}
+Note: no pattern matching, but condition {\tt Rnat (n - 2)}
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{Recursive definitions and {\tt R\_compute}}}
+\begin{itemize}
+\item When values produced by the function can be inferred to be in
+\(\mathbb Z\)
+\item The function can be added to the database for {\tt R\_compute}
+\item This requires defining a similar function of type {\tt Z -> Z}
+\end{itemize}
+\begin{small}
+\begin{alltt}
+Elpi mirror_recursive_definition fib.
+
+R_compute (fib 42).
+\textcolor{blue}{ = 267914296}
+\end{alltt}
+\end{small}
+\begin{itemize}
+\item The answer is instantaneous, because compilation uses memoisation
+\end{itemize}
 \end{frame}
 \begin{frame}
 \frametitle{Recursive definitions of functions with several arguments}
 Thomas : we need to describe your work here
 \end{frame}
-
-
-
 \begin{frame}
-\frametitle{Minimal set of tactics}
+\frametitle{A poor man's {\tt calc} tactic}
 \begin{itemize}
-\item {\tt replace}
+\item Lean has popularized a style of proofs called calculational
+\item Clever use of transitivity of equality and orders
+\item For our experiments, we only cover equality
+\item {\tt start\_with} \(formula\)
 \begin{itemize}
-\item {\tt ring} and {\tt field} for justifications
-\item No need to massage formulas step by step through rewriting
+\item Checks that the goal has the form \(F = G\)
+\item Checks that the \(formula\) and \(F\) are convertible
+\item Changes the goal into \(formula = G\)
 \end{itemize}
-\item {\tt intros}, {\tt exists}, {\tt split}, {\tt destruct} to handle
-  logical connectives (as usual)
-\item {\tt rewrite} to handle the behavior of all defined functions
- (and recursors)
-\item {\tt unfold} for functions defined by students
+\item {\tt calc\_LHS} \(formula\)
 \begin{itemize}
-\item But we should block unfolding of recursive functions
+\item Checks the goal has the form \(F = G\)
+\item Creates two new goals \(F = formula\) and \(formula = F\)
 \end{itemize}
-\item {\tt apply} and {\tt lra} to handle all side conditions related to bounds
-\item {\tt typeclasses eauto} to prove membership in {\tt Rnat}
+\item Should be read as \(... = formula\)
 \begin{itemize}
-\item Explicit handling for subtraction and division
+\item The intent is to make proofs declarative (as in {\em waterproof})
+\item Each step after one instance of {\tt calc\_LHS} should be solved in an
+  easy step
 \end{itemize}
-\item Possibility to add ad-hoc computing facilities for user-defined
-\begin{itemize}
-\item Relying on mirror functions computing on inductive {\tt nat} or {\tt Z}
-\end{itemize}
+\item {\tt end\_calculate} : checks that the intended equality is ``obvious''
 \end{itemize}
 \end{frame}
 \begin{frame}
-\frametitle{Demonstration time}
+\frametitle{Supercharging {\tt ring} and {\tt field}}
 \begin{itemize}
-\item A study of factorials and binomial numbers
-\begin{itemize}
-\item Efficient computation of factorial numbers
-\item Proofs relating the two points of view on binomial numbers,
-   ratios or recursive definition
-\item A proof of the expansion of \((x + y) ^ n\)
-\end{itemize}
-\item A study the fibonacci sequence
-\begin{itemize}
-\item \({\cal F}(i) = \frac{\phi ^ i - \psi ^ i}{\phi - \psi}\) (\(\phi\) golden ratio)
-\end{itemize}
+\item Tactics {\tt ring} and {\tt field} only work from the root
+\item Any application of an {\em unknown} function is treated as an atom
+\item Arguments are not modified by {\tt ring} or {\tt field}
+\item Example {\tt x + sqrt(x + 1) = sqrt (1 + x) + x} is not covered
+\item ring treats {\tt sqrt (x + 1)} and {\tt sqrt (1 + x)} as two different atoms
 \end{itemize}
 \end{frame}
 \begin{frame}
-\frametitle{The ``17'' exercise}
+\frametitle{A strategy that we propose}
 \begin{itemize}
-\item Prove that there exists an \(n\) larger than 4 such that\\
-\[\left(\begin{array}{c}n\\5\end{array}\right) =
-  17 \left(\begin{array}{c}n\\4\end{array}\right)\]\\
-(suggested by S. Boldo, F. Clément, D. Hamelin, M. Mayero, P. Rousselin)
-\item Easy when using the ratio of factorials and eliminating common
-sub-expressions on both side of the equality\\
-\[\frac{\cancel{n!}}{\cancel{(n - 5)!}\cancel{5!}_5} = 17 \frac{\cancel{n!}}{\cancel{(n-4)!}_{(n-4)}\cancel{4!}}\]
-\item They use the type of natural numbers and equation\\
-\[\left(\begin{array}{c}n\\p + 1\end{array}\right) \times (p + 1) =
-  \left(\begin{array}{c}n\\p\end{array}\right) \times (n - p)\]\\
+\item Use {\tt ring\_simplify} or {\tt field\_simplify}
+\begin{itemize}
+\item Normalize formulas given as argument, replace them
+\item Can handle several formulas at a time (with the same order)
+\end{itemize}
+\item normalize expressions under unknown functions
+\item repeat until stability
+\item On example: normalize {\tt (x + 1)}, {\tt 1 + x}, {\tt x + sqrt (1 + x)}
+and {\tt sqrt (1 + x) + x}
+\item This may yield {\tt x + sqrt (x + 1) = sqrt (x + 1) + x}
+\item Next normalization : {\tt x + sqrt (x + 1) = x + sqrt (x + 1)}
+\item We call the new tactics {\tt deep\_ring} and {\tt deep\_field}
+\item We also extend {\tt calc\_LHS} to include an attempt to solve with the
+  deep tactics
 \end{itemize}
 \end{frame}
+\begin{frame}[fragile]
+\frametitle{Example of proof made possible}
+\begin{alltt}
+Lemma cos_sub_Pi_half x : cos (x - Pi / 2) = sin x.
+Proof.
+start_with (cos (x - Pi / 2)).
+calc_LHS (cos x * cos (Pi / 2) + sin x * sin (Pi / 2)).
+  now rewrite cos_sub.
+calc_LHS (cos x * 0 + sin x * sin (Pi / 2)).
+  now rewrite cos_Pi_half.
+calc_LHS (cos x * 0 + sin x * 1).
+  now rewrite sin_Pi_half.
+end_calculate.
+Qed.
+\end{alltt}
+\end{frame}
+
 \end{document}
 
 
