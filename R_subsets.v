@@ -739,10 +739,75 @@ destruct amf as [Pa [P1 P2]].
 now rewrite Ih, Pa; replace (a + (p + 1)) with (a + 1 + p) by ring.
 Qed.
 
-Lemma big_shift {A : Type} (op : A -> A -> A) v
- (f : R -> A) (b k n : R) : Rnat (n - b) ->
+Lemma big_ext {A : Type} (op : A -> A -> A) v (f g : R -> A)
+  (b n : R) : Rnat (n - b) ->
+  (forall x, Rnat x -> 0 <= x < n - b -> f (b + x) = g (b + x)) ->
+  \big[op/v]_(b <= i < n) f i =
+  \big[op/v]_(b <= i < n) g i.
+Proof.
+unfold Rbigop.
+generalize (n - b); intros l lnat; revert b.
+induction lnat as [ | l lnat Ih]; intros b eq_cnd.
+  now rewrite Rseq0.
+rewrite Rseq_S; auto; simpl.
+replace b with (b + 0) at 1 3 by ring.
+rewrite eq_cnd; cycle 1.
+    try typeclasses eauto.
+  apply Rnat_ge0 in lnat; lra.
+apply f_equal, Ih.
+intros x xnat xint.
+replace (b + 1 + x) with (b + (1 + x)) by ring.
+apply eq_cnd.
+  try typeclasses eauto.
+lra.
+Qed.
+
+Lemma big_ext_low_nat {A : Type} (op : A -> A -> A) v (f g : R -> A)
+  (b n : R) : Rnat b -> Rnat (n - b) ->
+  (forall x, Rnat x -> b <= x < n -> f x = g x) ->
+  \big[op/v]_(b <= i < n) f i =
+  \big[op/v]_(b <= i < n) g i.
+Proof.
+intros bnat dnat eq_ext.
+apply big_ext; auto.
+intros x xnat xint.
+apply eq_ext; solve_Rnat.
+apply Rnat_ge0 in xnat.
+lra.
+Qed.
+
+Lemma big_shift (k : R) (b n : R) (nmbnat : Rnat (n - b))
+ {A : Type} (op : A -> A -> A) v
+ (f : R -> A) :
   \big[op/v]_(b <= i < n) (f (i + k)) =
   \big[op/v]_((b + k) <= i < (n + k)) (f i).
+Proof.
+unfold Rbigop.
+replace (n + k - (b + k)) with (n - b) by ring.
+revert nmbnat.
+generalize (n - b); intros l lnat; revert b.
+induction lnat as [ | l lnat Ih]; intros b.
+  now rewrite !Rseq0.
+rewrite !Rseq_S; auto.
+simpl; rewrite Ih.
+now replace (b + 1 + k) with (b + k + 1) by ring.
+Qed.
+
+Lemma big_shift_to_0 (b n : R) (nmbnat : Rnat (n - b))
+  {A : Type} (op : A -> A -> A) v (f : R -> A) :
+  \big[op/v]_(b <= i < n) f i =
+  \big[op/v]_(0 <= i < n - b) f (i + b).
+Proof.
+replace b with (0 + b) at 1 by ring.
+replace n with (n - b + b) at 1 by ring.
+rewrite <- big_shift;[ | ring_simplify (n - b - 0); easy].
+easy.
+Qed.
+
+Lemma big_shift_free (k : R) {A : Type} (op : A -> A -> A) v
+  (f : R -> A) (b n : R) : Rnat (n - b) ->
+  \big[op/v]_(b <= i < n) f i =
+  \big[op/v]_((b + k) <= i < (n + k)) f (i - k).
 Proof.
 unfold Rbigop.
 replace (n + k - (b + k)) with (n - b) by ring.
@@ -751,6 +816,7 @@ induction lnat as [ | l lnat Ih]; intros b.
   now rewrite !Rseq0.
 rewrite !Rseq_S; auto.
 simpl; rewrite Ih.
+replace (b + k - k) with b by ring.
 now replace (b + 1 + k) with (b + k + 1) by ring.
 Qed.
 
@@ -763,9 +829,7 @@ Lemma big_split {A : Type}(E F : R -> A) (g : A -> A -> A) (idx : A)
     (\big[g / idx]_(a <= i < b) F i).
 Proof.
 intros amg cg hnat.
-replace a with (0 + a) by ring.
-replace b with (b - a + a) by ring.
-rewrite <- !big_shift; solve_Rnat.
+rewrite !(big_shift_to_0 _ _ hnat).
 revert hnat; generalize (b - a).
 induction 1 as [ | n nnat Ihn].
   now rewrite !big0, (proj1 (proj2 amg)).
@@ -774,7 +838,7 @@ rewrite !(big_recr _ _ _ 0 (n + 1)); auto; solve_Rnat; try lra.
 replace (n + 1 - 1) with n by ring.
 rewrite Ihn.
 repeat rewrite <- (proj1 amg).
-now rewrite (cg (E (n + a)) (g _ _)), <- (proj1 amg), (cg (F _)).
+now rewrite (cg (E _) (g _ _)), <- (proj1 amg), (cg (F _)).
 Qed.
 
 Lemma big1 {A : Type}(E : R -> A) (f : A -> A -> A) (idx : A) (a : R)
@@ -885,43 +949,6 @@ induction knat as [ | k knat Ih]; intros b.
 rewrite Rseq_S'; replace (k + 1 - 1) with k by ring; auto.
 simpl.
 rewrite <- Ih; ring.
-Qed.
-
-Lemma big_ext {A : Type} (op : A -> A -> A) v (f g : R -> A)
-  (b n : R) : Rnat (n - b) ->
-  (forall x, Rnat x -> 0 <= x < n - b -> f (b + x) = g (b + x)) ->
-  \big[op/v]_(b <= i < n) f i =
-  \big[op/v]_(b <= i < n) g i.
-Proof.
-unfold Rbigop.
-generalize (n - b); intros l lnat; revert b.
-induction lnat as [ | l lnat Ih]; intros b eq_cnd.
-  now rewrite Rseq0.
-rewrite Rseq_S; auto; simpl.
-replace b with (b + 0) at 1 3 by ring.
-rewrite eq_cnd; cycle 1.
-    try typeclasses eauto.
-  apply Rnat_ge0 in lnat; lra.
-apply f_equal, Ih.
-intros x xnat xint.
-replace (b + 1 + x) with (b + (1 + x)) by ring.
-apply eq_cnd.
-  try typeclasses eauto.
-lra.
-Qed.
-
-Lemma big_ext_low_nat {A : Type} (op : A -> A -> A) v (f g : R -> A)
-  (b n : R) : Rnat b -> Rnat (n - b) ->
-  (forall x, Rnat x -> b <= x < n -> f x = g x) ->
-  \big[op/v]_(b <= i < n) f i =
-  \big[op/v]_(b <= i < n) g i.
-Proof.
-intros bnat dnat eq_ext.
-apply big_ext; auto.
-intros x xnat xint.
-apply eq_ext; solve_Rnat.
-apply Rnat_ge0 in xnat.
-lra.
 Qed.
 
 Definition floor (x : R) : R := IZR (Zfloor x).
@@ -1085,6 +1112,19 @@ replace (x ^ 1) with x by ring.
 easy.
 Qed.
 
+Lemma Rpow_incr_le x y z : Rnat y -> Rnat z ->
+  1 <= x -> y <= z -> x ^ y <= x ^ z.
+Proof.
+intros ynat znat xge1 ylez.
+assert (y = z \/ y < z) as [yz | yltz] by lra.
+  now rewrite yz; lra.
+assert (x = 1 \/ 1 < x) as [x1 | xgt1] by lra.
+  rewrite x1, !Rpow1_l.
+  lra.
+enough (x ^ y < x ^ z) by lra.
+apply Rpow_incr_lt; easy.
+Qed.
+
 (* To generalize (only the diff needs to be Rnat) and
   move to R_subsets *)
 Lemma prod_inverse f n m :
@@ -1098,9 +1138,7 @@ assert (mnnat : Rnat (m - n)).
 enough (\prod_(n <= i < m) (1 / f i) =
         1 / \prod_(n <= i < m) f i /\
         \prod_(n <= i < m) f i <> 0) by tauto.
-replace n with (0 + n) by ring.
-replace m with (m - n + n) by ring.
-rewrite <- !big_shift;[ | solve_Rnat | solve_Rnat].
+Timeout 1 rewrite !(big_shift_to_0 _ _ mnnat).
 assert (fcond' : forall i, Rnat i -> 
    0 <= i < m - n -> f (n + i) <> 0).
   intros i inat iint.
@@ -1158,8 +1196,6 @@ Lemma prod_const m n a : Rnat m -> Rnat n -> m <= n ->
   \prod_(m <= i < n) a = a ^ (n - m).
 Proof.
 intros mnat nnat mlen.
-replace m with (0 + m) at 1 by ring.
-replace n with ((n - m) + m) at 1 by ring.
-rewrite <- big_shift;[ | solve_Rnat; apply Rnat_sub; easy].
+rewrite big_shift_to_0;[ | apply Rnat_sub; easy].
 rewrite prod_const_0_n;[easy | apply Rnat_sub; easy].
 Qed.

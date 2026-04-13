@@ -137,7 +137,7 @@ Recursive (def fib such that
 Note: no pattern matching, but condition {\tt Rnat (n - 2)}
 \end{frame}
 \begin{frame}[fragile]
-\frametitle{Recursive definitions and {\tt R\_compute}}}
+\frametitle{Recursive definitions and {\tt R\_compute}}
 \begin{itemize}
 \item When values produced by the function can be inferred to be in
 \(\mathbb Z\)
@@ -230,6 +230,25 @@ calc_LHS (cos x * 0 + sin x * 1).
 end_calculate.
 Qed.
 \end{alltt}
+\end{frame}
+\begin{frame}
+\frametitle{Formule de Viète pour le calcul de \(\pi\)}
+\[\pi = 2 \cdot \frac 2 {\sqrt{2}} \cdots \frac 2 {\sqrt{2 + \cdots \sqrt{2}}} \cdots\]
+\begin{itemize}
+\item Use of recursive definition to define \(\sqrt {2 + \sqrt {\cdots + \sqrt 2}}\)
+\item Use of iterated products to define the main formula
+\item {\bf Key point 1}: \(\sin \frac{\pi}{2 ^ {n + 1}} =  \frac{\sin \frac{\pi}{2 ^ n}}{2 \cos \frac{\pi}{2 ^ {n + 1}}}\)  et \(\sin \frac{\pi}{2} = 1\)
+\item {\bf Key point 2}: \(\cos {\frac{\pi}{2 ^ n}} = \frac{\sqrt{2 + \sqrt{... + \sqrt 2}}}{2}\)
+\item {\bf Key point 3}: 
+  \(\lim_{n -> \infty} \frac{\frac{\pi}{2 ^ n}}{\sin \frac{\pi}{2 ^ n}} = 1\)
+\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{Context for the formal proof of Viète's formula}
+\begin{itemize}
+\item {\tt intro\_trigo.v}: following notes of J. Puydt
+\item {\tt trinom} tactics: solutions to 2nd degree equations
+\end{itemize}
 \end{frame}
 
 \end{document}
