@@ -153,12 +153,42 @@ R_compute (fib 42).
 \end{alltt}
 \end{small}
 \begin{itemize}
-\item The answer is instantaneous, because compilation uses memoisation
+\item The answer is instantaneous, because compilation changes the computation sutructure
 \end{itemize}
 \end{frame}
-\begin{frame}
-\frametitle{Recursive definitions of functions with several arguments}
-Thomas : we need to describe your work here
+\begin{frame}[fragile]
+ \frametitle{Recursive definitions of functions with several arguments}
+\begin{itemize}
+\item Some functions take more than one argument such as binomial coefficients :
+ \begin{small}
+\begin{verbatim}
+ Recursive (def bin such that
+   bin 0 = (fun m : R => at_x 0 1 0 m) /\
+   forall n, Rnat (n - 1) ->
+   bin n = fun m : R => at_x 0 1
+       (bin (n - 1) (m - 1) + bin (n - 1) m) m).
+\end{verbatim}
+ \end{small}
+ \end{itemize}
+\end{frame}
+\begin{frame}[fragile]
+  \frametitle{Recursive definitions of functions with several arguments}
+  \begin{itemize}
+
+ \item To handle functions with an arbitrary number of arguments, we introduce a \emph{new family of types}: \texttt{ty\_ T n}.
+ \begin{verbatim}
+ Fixpoint ty_ (T : Type) (n : nat) : Type :=
+    match n with
+    0 => T
+    |S p => (T -> ty_ T p)
+     end.
+Fixpoint cst_ (T : Type) (k : T) (n : nat) : (ty_ T n):=
+    match n with
+    0 => k
+    |S p => (fun _ => (cst_ T k p))
+    end.
+\end{verbatim}
+ \end{itemize}
 \end{frame}
 \begin{frame}
 \frametitle{A poor man's {\tt calc} tactic}
@@ -239,7 +269,7 @@ Qed.
 \item Use of iterated products to define the main formula
 \item {\bf Key point 1}: \(\sin \frac{\pi}{2 ^ {n + 1}} =  \frac{\sin \frac{\pi}{2 ^ n}}{2 \cos \frac{\pi}{2 ^ {n + 1}}}\)  et \(\sin \frac{\pi}{2} = 1\)
 \item {\bf Key point 2}: \(\cos {\frac{\pi}{2 ^ n}} = \frac{\sqrt{2 + \sqrt{... + \sqrt 2}}}{2}\)
-\item {\bf Key point 3}: 
+\item {\bf Key point 3}:
   \(\lim_{n -> \infty} \frac{\frac{\pi}{2 ^ n}}{\sin \frac{\pi}{2 ^ n}} = 1\)
 \end{itemize}
 \end{frame}
