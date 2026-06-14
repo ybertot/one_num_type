@@ -543,7 +543,8 @@ start_with v.
 calc_LHS' (- (- v)).
 calc_LHS' (- g (c)).
 calc_LHS' (- - (f c)).
-ring.
+calc_LHS' (f c).
+end_calculate.
 Qed.
 
 Lemma cos_pos : forall x, -Pi / 2 < x < Pi / 2 -> 0 < cos x.
