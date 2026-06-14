@@ -7,7 +7,8 @@ Definition RField_lemma5 :=
   get_signZ_th (Ztriv_div_th Rset IZR).
 
 Ltac compute_gcd D N :=
-  constr:(pair 1%Z (pair (PX (Pc 2) 1 (Pc 0)) (pair (Pc 1) (PX (Pc 1) 1 (Pc 0))))%Z).
+  constr:(pair 1%Z (pair (PX (Pc 2) 1 (Pc 0))
+    (pair (Pc 1) (PX (Pc 1) 1 (Pc 0))))%Z).
 
 
 (* TODO: find how to reduce Pphi_pow without reducing IZR. *)
@@ -42,15 +43,14 @@ Ltac find_fraction dummy :=
       match compute_gcd D1 N1 with
       | (pair ?F (pair ?D2 (pair ?N2 ?Gcd))) =>
         assert (fact_n0 : IZR F <> 0) by (apply eq_IZR_contrapositive; easy);
-        assert (gcd_cond 0 1 Rplus Rmult Rminus Ropp eq 0%Z 1%Z Z.eqb IZR 
+        enough (gcd_cond 0 1 Rplus Rmult Rminus Ropp eq 0%Z 1%Z Z.eqb IZR 
           BinNat.N.to_nat
         pow get_signZ FV D D2 N N2 Gcd /\
           (Pmul 0%Z 1%Z Z.add Z.mul Z.eqb (Pc F) N =
           Pmul 0%Z 1%Z Z.add Z.mul Z.eqb N2 Gcd /\
           Pmul 0%Z 1%Z Z.add Z.mul Z.eqb (Pc F) D =
           Pmul 0%Z 1%Z Z.add Z.mul Z.eqb D2 Gcd)) as [hyp_aux [num_eq den_eq]];
-        [split;[split;[intros [? [? ?]]; easy|
-          reduce_Pphi_pow] |easy ] |
+        [
           generalize (hyp F N2 D2 Gcd hyp_aux fact_n0 num_eq den_eq);
           clear hyp_aux hyp fact_n0 num_eq;
           intros hyp;
@@ -60,12 +60,15 @@ Ltac find_fraction dummy :=
             rewrite hyp;[ unfold display_pow_linear; reduce_Pphi_pow| 
              cbv [PCond condition PEeval BinList.nth BinNat.N.to_nat
                   List.hd PosDef.Pos.to_nat Init.Nat.add PosDef.Pos.iter_op]]
-          end]
+          end | split;[split;[intros [? [? ?]]; easy|
+          reduce_Pphi_pow] |easy ]]
       end
     end
   end.
 
 Ltac fs5 := Field_simplify_gcd RField_lemma5 ltac:(find_fraction).
+
+Ltac tester f := idtac; f.
 
 Lemma toto : PI / (PI ^ 2 + PI ^ 2) = exp 1 / (exp 1 + exp 1).
 field_simplify_gcd fs5  / (PI / (PI ^ 2 + PI ^ 2)).
