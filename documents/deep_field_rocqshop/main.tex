@@ -10,9 +10,10 @@
 \topcropBezier=19cm %alternatively 16cm if the inclusions are in letter format
 
 \setbeamertemplate{footline}[frame number]
-\title{Improving the Ring and Field tactics to ease mathematical learning\\
-\small A solution involving an oracle, foreign function calls, and meta-programming}
-\author{Yves Bertot}
+\title{Improving the tactics Ring and Field tactics\\
+\small With an oracle and foreign function calls}
+\author{Yves Bertot\\
+joint work with Thomas Portet}
 \date{July 2026}
 \mode<presentation>
 \begin{document}
@@ -31,144 +32,52 @@
 \begin{frame}
 \frametitle{The context}
 \begin{itemize}
-\item Given the goal \(\frac \pi {\pi ^ 2 * \pi ^ 2} = \frac 1{2* pi}\)
+\item Given the goal \(\frac \pi {\pi ^ 2 + \pi ^ 2} = \frac 1{2 pi}\)
 \begin{itemize}
-  \item {\tt field} does it and requires the proofs of
-  \(\pi ^ 2 + \pi ^ 2 \neq 0\) and \(\pi \neq 0\)
+  \item {\tt field} solves it and requires the proofs of
+   \(\pi ^ 2 + \pi ^ 2 \neq 0\) and \(\pi \neq 0\)
 \end{itemize}
-\item Given the goal \(e^{\frac \pi {\pi ^ 2 * \pi ^ 2}} = e^{\frac 1{2* pi}}\)
+\item Given the goal \(e^{\left(\frac \pi {\pi ^ 2 * \pi ^ 2}\right)} = e^{\left(\frac 1{2* pi}\right)}\)
 \begin{itemize}
 \item {\tt field} fails
+\item \(x \mapsto e ^ x\) is a function outside the field fragment
 \end{itemize}
-  
-\item 
-\item Type theory promotes {\em Leibniz} equality as the main tool
-to reason modulo equality
+\item {\tt ring} has the same problem (for formulas without divisions)
 \begin{itemize}
-\item especially for rewriting
-\end{itemize}
-\item But Leibniz equality requires objects that \underline{really exist}
-\end{itemize}
-\end{frame}
-\begin{frame}
-\frametitle{Discrepancy in idioms}
-\[\sum_{i = 0}^{n} i = \sum_{i = 0}^{n} \sqrt{i ^ 2}\]
-\begin{itemize}
-\item The math teacher's proof (I believe)
-\begin{itemize}
-\item {\em Replace \(\sqrt{i^2}\) with \(i\) in the right-hand side sum.}
-\item {\em Note that the sum ranges over positive values}
-\end{itemize}
-\item The formally verified proof
-\begin{enumerate}
-\item Establish \(\forall i, 0 \leq i \leq n \Rightarrow i = \sqrt{i ^ 2}\)
-\item For this, fix \(i\) such that \(0 \leq i \leq n\),
-\item Then \(i = \sqrt{i ^ 2}\) (by some proof),
-\item then apply the extensionality lemma for sums:
-\[\forall f g, (\forall i, 0 \leq i \leq n \Rightarrow f(i) = g(i)) \Rightarrow
-\sum_{i = 0}^{n} f(i) = \sum_{i = 0}^{n} g(i)\]
-\end{enumerate}
-\end{itemize}
-\end{frame}
-\begin{frame}
-\frametitle{The curse of \(\alpha\)-conversion}
-\begin{itemize}
-\item There is no doubt that, if \(i\) exists and is larger than 0,
-\(i = \sqrt{i^2}\),
-\item Leibniz says: if \(n = m\), you can replace \(n\) with \(m\) in
-any formula
-\begin{itemize}
-\item But the numbers \(i\) and \(\sqrt{i}\) \underline{do not even exist}
-in the formula
-\[\sum_{i = 0}^{n} \sqrt{i^2}\]
-\item Bound variable names do not count for logical reasoning
- \[\sum_{i = 0}^{n} {\sqrt{i^2}} = 
-\sum_{j = 0}^{n} {\sqrt{j^2}}\]
-\item \(\sqrt{i ^ 2}\) does not occur in the right-hand side formula!
-\item So you cannot use Leibniz' principle directly
+\item \(\pi ^ 2 + \pi * \pi = 2 \pi ^ 2\) is solved
+\item \(e ^ {\pi ^ 2 + \pi * \pi} = e ^ {2 \pi ^ 2}\) is not
 \end{itemize}
 \end{itemize}
 \end{frame}
 \begin{frame}
-\frametitle{A preliminary solution}
+\frametitle{A study of {\tt ring}}
 \begin{itemize}
-\item Make the sentence {\em Replace \(\sqrt{i^2}\) with \(i\) in the sum.}
-understandable by the proof system
-\item Do not work modulo \(\alpha\)-conversion
-\end{itemize}
-\begin{enumerate}
-\item Recognize that \(\sqrt{i^2}\) is not well-formed because we are missing
-a variable with the name \(i\)
-\item By scanning the formula, detect that \(i\) is bound in at least one place,
-\item Search for instances of \(\sqrt{i^2}\) in the multiple places where
-this may occur
-\item Do this again if there are nested binding patterns
-\item Every time one enters inside an operator with bound variables, apply
-a suitable ``extensionality'' theorem
-\end{enumerate}
-\end{frame}
-\begin{frame}
-\frametitle{Example using the solution}
-
-\vfill
-
-\begin{center}
-\Huge DEMO
-\end{center}
-
-\vfill
-
-\textcolor{ttblue}{\href{https://github.com/ybertot/one_num_type/}{dépot git}}, 
-\textcolor{ttblue}{\href{https://github.com/ybertot/one_num_type/blob/main/extensional_replace.v}{fichier d'expérience}}
-\end{frame}
-
-\begin{frame}
-\frametitle{A prototype implementation}
-\begin{itemize}
-\item Required an extension of the {\tt Elpi} meta-programming language
-\item Authorize passing ``open terms'' as argument to tactics
-\begin{itemize}
-\item An open term is well typed in an extension of the context
-\item Example, if \(i\) does not exist in the context\\
- \(\sqrt{i^2}\) is not well-typed,\\
- but \(\lambda i : {\mathbb R}, \sqrt{i^2}\) is well typed
-\end{itemize}
-\item The tactic receives two open terms, which can be viewed has a
-{\em rewrite rule}
-\item the context is search for a subcontext where:
-\begin{itemize}
-\item All ``open variables'' are accounded
-\item The left-hand side of the rewrite rule occurs
-\end{itemize}
+\item Expressions outside the ring fragment considered as ``variables''
+\item No scrutiny inside these expressions
 \end{itemize}
 \end{frame}
 \begin{frame}
-\frametitle{Building a proof}
+\frametitle{Proposed solution: simplify arguments}
 \begin{itemize}
-\item Default extensionality: two functions that are equal everywhere can
-be substituted for each other
-\begin{itemize}
-\item Axiom {\tt functional\_extensionality} provided by Rocq
-\end{itemize}
-\item Ad hoc extensionality: compare functions only on a subset
-\begin{itemize}
-\item For integrals: the subset is the interval between the bounds
-\item For discrete sums with integer bounds: the subset is the intersection
-of the integers and the interval between the bounds
-\end{itemize}
+\item loop of {\tt ring\_simplify} actions
+\item until stabilization
+\item finally solve by reflexivity
 \end{itemize}
 \end{frame}
 \begin{frame}
-\frametitle{Future work}
+\frametitle{The issue with {\tt field\_simplify}}
 \begin{itemize}
-\item Provide a comfortable interface to add new ad-hoc extensionality
-principles
-\item Rely on {\tt setoid rewrite}, advanced location selection
-\item Handle goals that are not equalities
-\item perform replacement modulo orders
-\item Find links with {\em observational type theory}
+\item default of normalization
+\item example
 \end{itemize}
-
+\end{frame}
+\begin{frame}
+\frametitle{Improving {\tt field\_simplify}}
+\begin{itemize}
+\item Obtain reduced fractions
+\item Need to compute greatest common divisors of polynomial formulas
+\item include extra computations inside the behavior of {\tt field\_simplify}
+\end{itemize}
 \end{frame}
 
 \end{document}
