@@ -10,7 +10,7 @@
 \topcropBezier=19cm %alternatively 16cm if the inclusions are in letter format
 
 \setbeamertemplate{footline}[frame number]
-\title{Improving the tactics Ring and Field tactics\\
+\title{Improving the tactics Ring and Field\\
 \small With an oracle and foreign function calls}
 \author{Yves Bertot\\
 joint work with Thomas Portet}
@@ -22,6 +22,7 @@ joint work with Thomas Portet}
 \begin{frame}
 \frametitle{Plan}
 \begin{itemize}
+\item LiberAbaci objectives: easy encoding of easy math
 \item Situations where the reflexive tactics are unsatisfactory
 \item A solution for {\tt ring} using {\tt ring\_simplify}
 \item A remaining problem with {\tt field\_simplify}
@@ -30,30 +31,84 @@ joint work with Thomas Portet}
 \end{itemize}
 \end{frame}
 \begin{frame}
+\frametitle{LiberAbaci: Using Rocq for early Math Education}
+\begin{itemize}
+\item Target: Mathematics, first year of higher education
+\item fine-tune the ambient theory
+\begin{itemize}
+\item Single type of numbers, use of subsets
+\item Import theorems from other theories (prospective, using Trocq)
+\end{itemize}
+\item Declarative progression of proofs
+\begin{itemize}
+\item {\tt assert} or {\tt enough}
+\item {\tt calc} as inspired by {\sc Lean}
+\end{itemize}
+\item Rely on a well-chosen {\tt easy} tactic for justifications
+\begin{itemize}
+\item Solve obvious steps, but avoid being operational ({\tt rewrite})
+\item {\tt ring}, {\tt field}, {\tt nra}
+\end{itemize}
+\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{Easy encoding of easy math}
+\begin{itemize}
+\item Declarative proof scripts as in Misar, Isar, verbose-lean
+\item {\tt calc} as inspired by Lean
+\item Beware of strong tactics (students don't learn)
+\item Beware of weak tactics (students learn the wrong skill)
+\item Focus on {\tt ring} and {\tt field}
+\end{itemize}
+\end{frame}
+\begin{frame}
 \frametitle{The context}
 \begin{itemize}
-\item Given the goal \(\frac \pi {\pi ^ 2 + \pi ^ 2} = \frac 1{2 pi}\)
+\item Given the goal \(\frac \pi {\pi ^ 2 + \pi ^ 2} = \frac 1{2 \pi}\)
 \begin{itemize}
   \item {\tt field} solves it and requires the proofs of
    \(\pi ^ 2 + \pi ^ 2 \neq 0\) and \(\pi \neq 0\)
 \end{itemize}
-\item Given the goal \(e^{\left(\frac \pi {\pi ^ 2 * \pi ^ 2}\right)} = e^{\left(\frac 1{2* pi}\right)}\)
+\item Given the goal \(e^{\left(\frac \pi {\pi ^ 2 + \pi ^ 2}\right)} = e^{\left(\frac 1{2 \pi}\right)}\)
 \begin{itemize}
 \item {\tt field} fails
 \item \(x \mapsto e ^ x\) is a function outside the field fragment
 \end{itemize}
 \item {\tt ring} has the same problem (for formulas without divisions)
 \begin{itemize}
-\item \(\pi ^ 2 + \pi * \pi = 2 \pi ^ 2\) is solved
-\item \(e ^ {\pi ^ 2 + \pi * \pi} = e ^ {2 \pi ^ 2}\) is not
+\item \(\pi ^ 2 + \pi \times \pi = 2 \pi ^ 2\) is solved
+\item \(e ^ {\left(\pi ^ 2 + \pi \times \pi\right)} = e ^ {2 \pi ^ 2}\) is not
 \end{itemize}
 \end{itemize}
 \end{frame}
 \begin{frame}
 \frametitle{A study of {\tt ring}}
 \begin{itemize}
+\item A formal language with just integer constants, \(\times\), \(+\), \(-\),
+and variables is defined
+\item This language is the ring of polynoms.
+\item Polynoms can also be ``normalized'': ordered in variables and powers
 \item Expressions outside the ring fragment considered as ``variables''
-\item No scrutiny inside these expressions
+\item {\em reification}: map formulas to the formal language
+\item Normalize into polynomial expressions
+\item When normalized expressions are equal, conclude positively
+\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{Examples of {\tt ring}}
+\begin{itemize}
+\item \(\pi \times (\pi \times 1) + \pi \times \pi\) is {\tt X * (X * 1) + X * X}\\
+\begin{itemize}
+\item  {\tt X} instantiated with \(\pi\)
+\item Expansion of the power function
+\end{itemize}
+\item By contrast \(e^{\left(\pi \times (\pi \times 1) + \pi * \pi\right)} = e ^ {2 \pi ^2}\) is
+{\tt X = Y},
+\begin{itemize}
+\item {\tt X} instanciated with \(e^{\left(\pi ^ 2 + \pi * \pi\right)}\)\\
+{\tt Y} instanciated with \(e ^ {2 \pi ^2}\)
+\item Two different polynomial expressions: failure
+\end{itemize}
 \end{itemize}
 \end{frame}
 \begin{frame}
@@ -62,6 +117,38 @@ joint work with Thomas Portet}
 \item loop of {\tt ring\_simplify} actions
 \item until stabilization
 \item finally solve by reflexivity
+\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{Example solution for {\tt ring}}
+\begin{itemize}
+\item \(cos (x + cos (x + x)) = cos (cos (2 x) + (1 - (1 - x)))\)
+\item collect all formulas appearing as equality members of function arguments
+\begin{itemize}
+\item \(cos (x + cos (x + x))\)
+\item \(x + cos (x + x)\) 
+\item \(x + x\)
+\item \(cos (cos (2 x) + (1 - (1 - x)))\)
+\item \(cos (2 x) + (1 - (1 - x))\)
+\item \(2 x\)
+\end{itemize}
+\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{Normalize the expressions}
+\begin{itemize}
+\item Call {\tt ring\_simplify} on all these expressions
+\begin{itemize}
+\item \(cos (x + cos (x + x))  \rightarrow \framebox{\(cos(x + cos (x + x))\)}\)
+\item \(x + cos (x + x) \rightarrow \framebox{\(x + cos (x + x)\)}\)
+\item \(x + x \rightarrow \framebox{\( 2 x\)}\)
+\item \(cos (cos (2 x) + (1 - (1 - x))) \rightarrow 
+\framebox{\(cos (cos (2 x) + (1 - (1 - x)))\)}\)
+\item \(cos (2 x) + (1 - (1 - x)) \rightarrow \framebox{\(x + cos (2 x)\)}\)
+\item \(2 x \rightarrow \framebox{\(2 x\)}\)
+\end{itemize}
+\item Old equality : \(cos (x + cos (x + x)) = cos (cos (2 x) + (1 - (1 - x)))\)
+\item New equality : \(cos (x + cos (2 x)) = cos (x + cos (2 x)))\)
 \end{itemize}
 \end{frame}
 \begin{frame}
