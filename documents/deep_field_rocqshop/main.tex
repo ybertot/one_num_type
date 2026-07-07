@@ -152,21 +152,77 @@ and variables is defined
 \end{itemize}
 \end{frame}
 \begin{frame}
-\frametitle{The issue with {\tt field\_simplify}}
+\frametitle{Common structure for {\tt field} and {\tt ring}}
 \begin{itemize}
-\item default of normalization
-\item example
+\item Produce ``normal forms'' and then test their equality
+\item For {\tt ring}
+\begin{itemize}
+\item Normal forms are polynomials
+\item Equality is syntactic
+\end{itemize}
+\item For {\tt field}
+\begin{itemize}
+\item Normal forms are fractions
+\item Equality is cross product: \(\frac{p}{q}=\frac{r}{s} \Leftrightarrow p \times s = q \times r \wedge q \neq 0 \wedge s \neq 0\)
+\item The equality test of {\tt field} relies on {\tt ring}
+\end{itemize}
 \end{itemize}
 \end{frame}
 \begin{frame}
-\frametitle{Improving {\tt field\_simplify}}
+\frametitle{Problem with {\tt field\_simplify} for our deep behavior}
 \begin{itemize}
-\item Obtain reduced fractions
-\item Need to compute greatest common divisors of polynomial formulas
-\item include extra computations inside the behavior of {\tt field\_simplify}
+\item {\tt field\_simplify} only produces normal forms for ``fraction equality''
+\item Reification relies on syntactic equality
+\item \(\frac{2 \pi}{4}\) and \(\frac{1 \pi}{2}\) are equal as fractions
+\item {\tt field\_simplify} does not produce the same syntactic expression
 \end{itemize}
 \end{frame}
-
+\begin{frame}
+\frametitle{Improve {\tt field\_simplify}}
+\begin{itemize}
+\item A variant that computes reduced fractions
+\item Rely on external code to compute this gcd
+\item Describe the infrastructure for such an extension
+\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{Justification theorems}
+\begin{itemize}
+\item For {\tt field\_simplify}\\
+\(\forall l~e~\psi, {\tt Fnorm}~l~e = \psi \rightarrow
+{\tt PCond (condition}~\psi{\tt )} \rightarrow\)\\
+\strut\hskip1cm \({\tt FEeval}~l~e = {\tt P}_\phi~l~({\tt norm}~({\tt num}~\psi )) /
+   {\tt P}_\phi~l~({\tt norm}~ ({\tt denum}~\psi))\)
+\item For our extension\\
+\(\forall l~e~\psi, {\tt Fnorm}~l~e = \psi \rightarrow
+{\tt PCond (condition}~\psi{\tt )} \rightarrow\)\\
+\(\forall m~\nu~\delta~\gamma,
+  (m\times {\tt num}~\psi = \nu \times \gamma \wedge
+  m\times {\tt denum}~\phi = \delta \times \gamma) \rightarrow\) \\
+\(m \neq 0 \wedge P_\phi~l~({\tt norm}~\gamma) \neq 0 \wedge 
+{\tt P}_\phi~l~({\tt norm}~\delta) \neq 0
+\rightarrow\)\\
+\strut\hskip1cm \({\tt FEeval}~l~e = {\tt P}_\phi~l~ ({\tt norm}~\nu) /
+   {\tt P}_\phi~l~({\tt norm}~ \delta)\)
+\item We use an oracle to provide the values \(m\), \(\nu\), \(\delta\), and \(\gamma\)
+\item The ``common divisor'' and \(m\) non-zero conditions are easy
+\item The conditions of non-zero for \(\gamma\) and \(\delta\) have to be kept
+\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{Examples of {\tt Fnorm}, {\tt norm}, {\tt FEeval}}
+\begin{itemize}
+\item \(1 / (\sin 1 / (\cos 1 + \cos 1))\)
+\item Unknown expressions are \(\sin 1\), \(\cos 1\)
+\item the ``field'' formula \(e\) is \(1 / (X_1 / (X_2 + X_2)\)
+\item {\tt Fnorm}~\(e\) is \((X_2 + X_2) / X_1\) (with conditions)
+\item {\tt norm} \((X_2 + X_2)\) is \(2 X_2\)
+\item \({\tt P}_\phi~[\sin 1;\cos 1]~(2 X_2)\) is \(2 \cos 1\)
+\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{}
+\end{frame}
 \end{document}
 
 
