@@ -190,8 +190,8 @@ and variables is defined
 \begin{itemize}
 \item For {\tt field\_simplify}\\
 \(\forall l~e~\psi, {\tt Fnorm}~l~e = \psi \rightarrow
-{\tt PCond (condition}~\psi{\tt )} \rightarrow\)\\
-\strut\hskip1cm \({\tt FEeval}~l~e = {\tt P}_\phi~l~({\tt norm}~({\tt num}~\psi )) /
+{\tt PCond (condition}~\psi{\tt )} \rightarrow\)
+\strut\hskip1cm\({\tt FEeval}~l~e = {\tt P}_\phi~l~({\tt norm}~({\tt num}~\psi )) /
    {\tt P}_\phi~l~({\tt norm}~ ({\tt denum}~\psi))\)
 \item For our extension\\
 \(\forall l~e~\psi, {\tt Fnorm}~l~e = \psi \rightarrow
@@ -221,7 +221,31 @@ and variables is defined
 \end{itemize}
 \end{frame}
 \begin{frame}
-\frametitle{}
+\frametitle{Calling an oracle}
+\begin{itemize}
+\item An OCaml function manipulates a datatype of ring expressions
+  (with variables)
+\item takes as input two polynomials
+\item produces as output the greatest common divisor(with rational coefficients)
+\end{itemize}
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{Polynom gcd}
+\begin{verbatim}
+(* file gcd.mli *)
+type rat = { num: int; den: int }
+
+type poly =
+  Const of rat
+| Var of int
+| Add of poly * poly
+| Mul of poly * poly
+
+val poly_gcd : poly -> poly -> poly
+(* TODO : only one function, returning a triplet of polynomials *)
+val factorize : poly -> poly -> poly * poly
+\end{verbatim}
+Note that this program is not protected against overflows
 \end{frame}
 \end{document}
 
