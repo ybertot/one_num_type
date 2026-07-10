@@ -215,7 +215,7 @@ Check dd.
 Check dd_Z_mirror.
 Check dd_Z_prf.
 
-R_compute (dd 212).
+R_compute (((dd 212) + 78) * 1123).
 
 Check fib_eqn.
 
@@ -315,7 +315,8 @@ lra.
 Qed.
 
 Lemma root_to_fib_sum (x n : R) : Rnat n ->
-  golden_ratio_polynomial x = 0 -> x ^ (n + 2) = x ^ (n + 1) + x ^ n.
+  golden_ratio_polynomial x = 0 ->
+   x ^ (n + 2) = x ^ (n + 1) + x ^ n.
 Proof.
 intros nnat root_prop.
 assert (xnq : x ^ (n + 1) + x ^ n = x ^ n * (x + 1)).
@@ -350,7 +351,8 @@ exact phi'_root.
 Qed.
 
 Lemma Fibonacci_and_golden_ratio n:
-    Rnat n -> fib n = (phi ^ n - phi' ^ n)/ sqrt 5.
+    Rnat n -> fib n =
+     (phi ^ n - phi' ^ n)/ sqrt 5.
 Proof.
 destruct fib_eqn as [fib0 [fib1 fib_suc]].
 assert (s5gt0 : 0 < sqrt 5).
