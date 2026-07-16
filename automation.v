@@ -1,5 +1,5 @@
 From elpi Require Import elpi.
-From Stdlib Require Import Reals Lra.
+From Stdlib Require Import List Reals Lra.
 From OneNum Require Import R_subsets rec_def ring_simplify_bank field_simplify_bank.
 
 From OneNum.srcElpi Extra Dependency "tools.elpi" as tools.
@@ -7,14 +7,9 @@ From OneNum.srcElpi Extra Dependency "automation.elpi" as automation.
 
 Open Scope R_scope.
 
-Tactic Notation "super_ring" :=
-  elpi super_ring.
 Elpi Tactic super_ring.
 Elpi Accumulate File automation.
 Elpi Accumulate File tools.
-
-Ltac super_ring' :=
-repeat  (progress (super_ring ;try reflexivity)) ;  try reflexivity.
 
 Elpi Accumulate lp:{{
 
@@ -33,13 +28,20 @@ Elpi Accumulate lp:{{
     coq.ltac.fail _ "problem super_ring".
 
 }}.
+
+Tactic Notation "super_ring" :=
+  elpi super_ring.
+
+Ltac super_ring' :=
+repeat  (progress (super_ring ;try reflexivity)) ;  try reflexivity.
+
 Section Test.
 Variable x y z t: R.
 
 Elpi Query lp:{{
  T = {{ cos ( x+ y)}},
 collect [{{Rplus}}] []T [] L1,
-sayL L1 
+sayL L1
 }}.
 
 Goal cos ( x+ y) = cos (y+ x).
@@ -101,7 +103,7 @@ Elpi Accumulate File tools.
 
 Elpi Accumulate lp:{{
 
-solve (goal Ctx _ {{lp:T1 = lp:T2}} _  _ as G ) GL :-
+solve (goal _ _ {{lp:T1 = lp:T2}} _  _ as G ) GL :-
     sub_fieldable_r T1 [] L1,
     sub_fieldable_r T2 L1 L2,
     remove_duplicates L2 L,
@@ -142,7 +144,7 @@ Ltac add_ge0s := elpi add_ge0s.
 
 (* TODO : we need to iterate on super_field ; but super_field may create additional goals, so progress doesn't work. We need to verify that the first goal does progress *)
 Ltac super_field' :=
-super_field ;  try reflexivity ; (add_ge0s ; try lra) .
+super_field ;  try reflexivity ; (add_ge0s ; try lra).
 
 Ltac lra' :=
 add_ge0s; lra .
@@ -161,7 +163,7 @@ Section Test.
 Variable x y z : R.
 
 Goal (Rnat x) -> (Rnat y)->(Rnat (x - y ^3))  -> (Rnat z)  -> (0 <= z) -> 0 <= x.
-intros. 
+intros.
 Fail assumption.
 Ltac2 Eval (assert_hyps_eq 8).
 ltac1:(add_ge0s).
