@@ -94,7 +94,7 @@ and variables is defined
 \item When normalized expressions are equal, conclude positively
 \end{itemize}
 \end{frame}
-\begin{frame}
+\begin{frame}%tp 7
 \frametitle{Examples of {\tt ring}}
 \begin{itemize}
 \item \(\pi \times (\pi \times 1) + \pi \times \pi\) is {\tt X * (X * 1) + X * X}\\
@@ -102,16 +102,16 @@ and variables is defined
 \item  {\tt X} instantiated with \(\pi\)
 \item Expansion of the power function
 \end{itemize}
-\item By contrast \(e^{\left(\pi \times (\pi \times 1) + \pi * \pi\right)} = e ^ {2 \pi ^2}\) is
+\item By contrast \(e^{\left(\pi \times (\pi \times 1) + \pi * \pi\right)} = e ^ {2 \times (\pi \times (\pi \times 1))}\) is
 {\tt X = Y},
 \begin{itemize}
-\item {\tt X} instanciated with \(e^{\left(\pi ^ 2 + \pi * \pi\right)}\)\\
-{\tt Y} instanciated with \(e ^ {2 \pi ^2}\)
+\item {\tt X} instanciated with \(e^{\left(\pi \times (\pi \times 1) + \pi * \pi\right)}\)\\
+{\tt Y} instanciated with \(e ^ {2 \times (\pi \times (\pi \times 1))}\)
 \item Two different polynomial expressions: failure
 \end{itemize}
 \end{itemize}
 \end{frame}
-\begin{frame}
+\begin{frame} %tp 8
 \frametitle{Proposed solution: simplify arguments}
 \begin{itemize}
 \item loop of {\tt ring\_simplify} actions
@@ -119,11 +119,11 @@ and variables is defined
 \item finally solve by reflexivity
 \end{itemize}
 \end{frame}
-\begin{frame}
+\begin{frame} %tp 9
 \frametitle{Example solution for {\tt ring}}
 \begin{itemize}
 \item \(cos (x + cos (x + x)) = cos (cos (2 x) + (1 - (1 - x)))\)
-\item collect all formulas appearing as equality members of function arguments
+\item collect all formulas appearing as equality members or function arguments
 \begin{itemize}
 \item \(cos (x + cos (x + x))\)
 \item \(x + cos (x + x)\) 
@@ -134,7 +134,7 @@ and variables is defined
 \end{itemize}
 \end{itemize}
 \end{frame}
-\begin{frame}
+\begin{frame} % tp 10
 \frametitle{Normalize the expressions}
 \begin{itemize}
 \item Call {\tt ring\_simplify} on all these expressions
@@ -151,7 +151,7 @@ and variables is defined
 \item New equality : \(cos (x + cos (2 x)) = cos (x + cos (2 x)))\)
 \end{itemize}
 \end{frame}
-\begin{frame}
+\begin{frame} % tp 11
 \frametitle{Common structure for {\tt field} and {\tt ring}}
 \begin{itemize}
 \item Produce ``normal forms'' and then test their equality
@@ -168,37 +168,40 @@ and variables is defined
 \end{itemize}
 \end{itemize}
 \end{frame}
-\begin{frame}
+\begin{frame} % tp 12
 \frametitle{Problem with {\tt field\_simplify} for our deep behavior}
 \begin{itemize}
 \item {\tt field\_simplify} only produces normal forms for ``fraction equality''
 \item Reification relies on syntactic equality
-\item \(\frac{2 \pi}{4}\) and \(\frac{1 \pi}{2}\) are equal as fractions
+\item \(\frac{2 \pi}{4}\) and \(\frac{\pi}{2}\) are equal as fractions
+\begin{itemize}
+\item \(2 \times 2 \pi = 4 \times \pi\) as verified by {\tt ring}
+\end{itemize}
 \item {\tt field\_simplify} does not produce the same syntactic expression
 \end{itemize}
 \end{frame}
-\begin{frame}
+\begin{frame} % tp 13
 \frametitle{Improve {\tt field\_simplify}}
 \begin{itemize}
 \item A variant that computes reduced fractions
-\item Rely on external code to compute this gcd
-\item Describe the infrastructure for such an extension
+\item Rely on external code to compute the gcd of polynomials
+\item The rest of this talk describe the infrastructure
 \end{itemize}
 \end{frame}
 \begin{frame}
-\frametitle{Justification theorems}
+\frametitle{Justification theorems (stripped down)}
 \begin{itemize}
 \item For {\tt field\_simplify}\\
-\(\forall l~e~\psi, {\tt Fnorm}~l~e = \psi \rightarrow
-{\tt PCond (condition}~\psi{\tt )} \rightarrow\)\\
-\strut\hskip1cm \({\tt FEeval}~l~e = {\tt P}_\phi~l~({\tt norm}~({\tt num}~\psi )) /
-   {\tt P}_\phi~l~({\tt norm}~ ({\tt denum}~\psi))\)
+\(\forall l~e~r, {\tt Fnorm}~l~e = r \rightarrow
+{\tt PCond (condition}~r{\tt )} \rightarrow\)
+\strut\hskip1cm \({\tt FEeval}~l~e = {\tt P}_\phi~l~({\tt norm}~({\tt num}~r )) /
+   {\tt P}_\phi~l~({\tt norm}~ ({\tt denum}~r))\)
 \item For our extension\\
-\(\forall l~e~\psi, {\tt Fnorm}~l~e = \psi \rightarrow
-{\tt PCond (condition}~\psi{\tt )} \rightarrow\)\\
+\(\forall l~e~r, {\tt Fnorm}~l~e = r \rightarrow
+{\tt PCond (condition}~r{\tt )} \rightarrow\)\\
 \(\forall m~\nu~\delta~\gamma,
-  (m\times {\tt num}~\psi = \nu \times \gamma \wedge
-  m\times {\tt denum}~\phi = \delta \times \gamma) \rightarrow\) \\
+  (m\times {\tt num}~r = \nu \times \gamma \wedge
+  m\times {\tt denum}~r = \delta \times \gamma) \rightarrow\) \\
 \(m \neq 0 \wedge P_\phi~l~({\tt norm}~\gamma) \neq 0 \wedge 
 {\tt P}_\phi~l~({\tt norm}~\delta) \neq 0
 \rightarrow\)\\
