@@ -26,7 +26,7 @@ joint work with Thomas Portet}
 \item Situations where the reflexive tactics are unsatisfactory
 \item A solution for {\tt ring} using {\tt ring\_simplify}
 \item A remaining problem with {\tt field\_simplify}
-\item More computation: greatest common divisor, Gröbner bases
+\item Solution greatest common divisor, Gröbner bases
 \item integrating in the reflexive framework
 \end{itemize}
 \end{frame}
@@ -43,6 +43,7 @@ joint work with Thomas Portet}
 \begin{itemize}
 \item {\tt assert} or {\tt enough}
 \item {\tt calc} as inspired by {\sc Lean}
+\item Recent work by A. Dehorey
 \end{itemize}
 \item Rely on a well-chosen {\tt easy} tactic for justifications
 \begin{itemize}
@@ -52,17 +53,7 @@ joint work with Thomas Portet}
 \end{itemize}
 \end{frame}
 \begin{frame}
-\frametitle{Easy encoding of easy math}
-\begin{itemize}
-\item Declarative proof scripts as in Misar, Isar, verbose-lean
-\item {\tt calc} as inspired by Lean
-\item Beware of strong tactics (students don't learn)
-\item Beware of weak tactics (students learn the wrong skill)
-\item Focus on {\tt ring} and {\tt field}
-\end{itemize}
-\end{frame}
-\begin{frame}
-\frametitle{The context}
+\frametitle{The context and the problem}
 \begin{itemize}
 \item Given the goal \(\frac \pi {\pi ^ 2 + \pi ^ 2} = \frac 1{2 \pi}\)
 \begin{itemize}
@@ -77,7 +68,8 @@ joint work with Thomas Portet}
 \item {\tt ring} has the same problem (for formulas without divisions)
 \begin{itemize}
 \item \(\pi ^ 2 + \pi \times \pi = 2 \pi ^ 2\) is solved
-\item \(e ^ {\left(\pi ^ 2 + \pi \times \pi\right)} = e ^ {2 \pi ^ 2}\) is not
+\item \(ln {\left(\pi ^ 2 + \pi \times \pi\right)} = 
+  ln\left(2 \pi ^ 2\right)\) is not
 \end{itemize}
 \end{itemize}
 \end{frame}
@@ -94,24 +86,27 @@ and variables is defined
 \item When normalized expressions are equal, conclude positively
 \end{itemize}
 \end{frame}
-\begin{frame}%tp 7
+\begin{frame}[fragile]%tp6
 \frametitle{Examples of {\tt ring}}
 \begin{itemize}
-\item \(\pi \times (\pi \times 1) + \pi \times \pi\) is {\tt X * (X * 1) + X * X}\\
-\begin{itemize}
+\item \(\pi \times (\pi \times 1) + \pi \times \pi\) is {\tt X * (X * 1) + X * X}\begin{itemize}
 \item  {\tt X} instantiated with \(\pi\)
-\item Expansion of the power function
 \end{itemize}
-\item By contrast \(e^{\left(\pi \times (\pi \times 1) + \pi * \pi\right)} = e ^ {2 \times (\pi \times (\pi \times 1))}\) is
+\item \(\pi \times (\pi \times 1) + \pi \times \pi = 2 \times \pi \times \pi\) is\\
+{\tt X * ( X * 1) + X * X = 2 * X * X}
+\begin{itemize}
+\item This equality can be solved without knowledge about \(\pi\)
+\end{itemize}
+\item By contrast \(ln {\left(\pi \times (\pi \times 1) + \pi * \pi\right)} = ln {\left(2 \times (\pi \times (\pi \times 1))\right)}\) is
 {\tt X = Y},
 \begin{itemize}
-\item {\tt X} instanciated with \(e^{\left(\pi \times (\pi \times 1) + \pi * \pi\right)}\)\\
-{\tt Y} instanciated with \(e ^ {2 \times (\pi \times (\pi \times 1))}\)
+\item {\tt X} instanciated with \(ln{\left(\pi \times (\pi \times 1) + \pi * \pi\right)}\)\\
+{\tt Y} instanciated with \(ln {\left(2 \times (\pi \times (\pi \times 1))\right)}\)
 \item Two different polynomial expressions: failure
 \end{itemize}
 \end{itemize}
 \end{frame}
-\begin{frame} %tp 8
+\begin{frame} %tp 7
 \frametitle{Proposed solution: simplify arguments}
 \begin{itemize}
 \item loop of {\tt ring\_simplify} actions
@@ -119,39 +114,40 @@ and variables is defined
 \item finally solve by reflexivity
 \end{itemize}
 \end{frame}
-\begin{frame} %tp 9
+\begin{frame} %tp 8
 \frametitle{Example solution for {\tt ring}}
 \begin{itemize}
-\item \(cos (x + cos (x + x)) = cos (cos (2 x) + (1 - (1 - x)))\)
-\item collect all formulas appearing as equality members or function arguments
+\item \(\cos (x + \cos (x + x)) = \cos (\cos (2 x) + (1 - (1 - x)))\)
+\item collect all formulas appearing as equality members or as function arguments
 \begin{itemize}
-\item \(cos (x + cos (x + x))\)
-\item \(x + cos (x + x)\) 
+\item \(\cos (x + \cos (x + x))\)
+\item \(x + \cos (x + x)\) 
 \item \(x + x\)
-\item \(cos (cos (2 x) + (1 - (1 - x)))\)
-\item \(cos (2 x) + (1 - (1 - x))\)
+\item \(\cos (\cos (2 x) + (1 - (1 - x)))\)
+\item \(\cos (2 x) + (1 - (1 - x))\)
 \item \(2 x\)
 \end{itemize}
 \end{itemize}
 \end{frame}
-\begin{frame} % tp 10
+\begin{frame} % tp 9
 \frametitle{Normalize the expressions}
 \begin{itemize}
 \item Call {\tt ring\_simplify} on all these expressions
+\item Fix an order of unknowns : \(x\), \(\cos (x + x)\),  \(\cos (2 x)\), \dots
 \begin{itemize}
-\item \(cos (x + cos (x + x))  \rightarrow \framebox{\(cos(x + cos (x + x))\)}\)
-\item \(x + cos (x + x) \rightarrow \framebox{\(x + cos (x + x)\)}\)
+\item \(\cos (x + \cos (x + x))  \rightarrow \framebox{\(\cos(x + \cos (x + x))\)}\)
+\item \(x + \cos (x + x) \rightarrow \framebox{\(x + \cos (x + x)\)}\)
 \item \(x + x \rightarrow \framebox{\( 2 x\)}\)
-\item \(cos (cos (2 x) + (1 - (1 - x))) \rightarrow 
-\framebox{\(cos (cos (2 x) + (1 - (1 - x)))\)}\)
-\item \(cos (2 x) + (1 - (1 - x)) \rightarrow \framebox{\(x + cos (2 x)\)}\)
+\item \(\cos (\cos (2 x) + (1 - (1 - x))) \rightarrow 
+\framebox{\(\cos (\cos (2 x) + (1 - (1 - x)))\)}\)
+\item \(\cos (2 x) + (1 - (1 - x)) \rightarrow \framebox{\(x + \cos (2 x)\)}\)
 \item \(2 x \rightarrow \framebox{\(2 x\)}\)
 \end{itemize}
-\item Old equality : \(cos (x + cos (x + x)) = cos (cos (2 x) + (1 - (1 - x)))\)
-\item New equality : \(cos (x + cos (2 x)) = cos (x + cos (2 x)))\)
+\item Old equality : \(\cos (x + \cos (x + x)) = \cos (\cos (2 x) + (1 - (1 - x)))\)
+\item New equality : \(\cos (x + \cos (2 x)) = \cos (x + \cos (2 x)))\)
 \end{itemize}
 \end{frame}
-\begin{frame} % tp 11
+\begin{frame} % tp 10
 \frametitle{Common structure for {\tt field} and {\tt ring}}
 \begin{itemize}
 \item Produce ``normal forms'' and then test their equality
@@ -165,19 +161,27 @@ and variables is defined
 \item Normal forms are fractions
 \item Equality is cross product: \(\frac{p}{q}=\frac{r}{s} \Leftrightarrow p \times s = q \times r \wedge q \neq 0 \wedge s \neq 0\)
 \item The equality test of {\tt field} relies on {\tt ring}
+\item {\tt field} produces side conditions (non-zero conditions)
 \end{itemize}
 \end{itemize}
 \end{frame}
 \begin{frame} % tp 12
 \frametitle{Problem with {\tt field\_simplify} for our deep behavior}
 \begin{itemize}
-\item {\tt field\_simplify} only produces normal forms for ``fraction equality''
+\item {\tt field\_simplify} uses normal forms modulo fraction equality
+\begin{itemize}
+\item cross-product equality
+\end{itemize}
 \item Reification relies on syntactic equality
 \item \(\frac{2 \pi}{4}\) and \(\frac{\pi}{2}\) are equal as fractions
 \begin{itemize}
 \item \(2 \times 2 \pi = 4 \times \pi\) as verified by {\tt ring}
 \end{itemize}
 \item {\tt field\_simplify} does not produce the same syntactic expression
+\begin{itemize}
+\item \(\cos \frac{2 \pi}{4}\) is never transformed into 
+\(\cos \frac{\pi}{2}\)
+\end{itemize}
 \end{itemize}
 \end{frame}
 \begin{frame} % tp 13
@@ -185,31 +189,28 @@ and variables is defined
 \begin{itemize}
 \item A variant that computes reduced fractions
 \item Rely on external code to compute the gcd of polynomials
-\item The rest of this talk describe the infrastructure
+\item The rest of this talk describes the infrastructure
 \end{itemize}
 \end{frame}
-\begin{frame}
+\begin{frame}[fragile]
 \frametitle{Justification theorems (stripped down)}
 \begin{itemize}
-\item For {\tt field\_simplify}\\
+\item Existing theorem for {\tt field\_simplify}\\
 \(\forall l~e~r, {\tt Fnorm}~l~e = r \rightarrow
 {\tt PCond (condition}~r{\tt )} \rightarrow\)
 \strut\hskip1cm \({\tt FEeval}~l~e = {\tt P}_\phi~l~({\tt norm}~({\tt num}~r )) /
    {\tt P}_\phi~l~({\tt norm}~ ({\tt denum}~r))\)
 \item For our extension\\
-\(\forall l~e~r, {\tt Fnorm}~l~e = r \rightarrow
-{\tt PCond (condition}~r{\tt )} \rightarrow\)\\
-\(\forall m~\nu~\delta~\gamma,
-  (m\times {\tt num}~r = \nu \times \gamma \wedge
-  m\times {\tt denum}~r = \delta \times \gamma) \rightarrow\) \\
-\(m \neq 0 \wedge P_\phi~l~({\tt norm}~\gamma) \neq 0 \wedge 
-{\tt P}_\phi~l~({\tt norm}~\delta) \neq 0
-\rightarrow\)\\
-\strut\hskip1cm \({\tt FEeval}~l~e = {\tt P}_\phi~l~ ({\tt norm}~\nu) /
+\(\forall l~e~r, {\tt Fnorm}~l~e = r \rightarrow\)\\
+\(\forall m~\nu~\delta~\gamma,\)\\
+  \( m \neq 0 \rightarrow m\times {\tt num}~r = \nu \times \gamma \rightarrow
+  m\times {\tt denum}~r = \delta \times \gamma \rightarrow\) \\
+\({\tt PCond (condition}~r{\tt )} \rightarrow\)\\
+\({\tt FEeval}~l~e = {\tt P}_\phi~l~ ({\tt norm}~\nu) /
    {\tt P}_\phi~l~({\tt norm}~ \delta)\)
+
 \item We use an oracle to provide the values \(m\), \(\nu\), \(\delta\), and \(\gamma\)
-\item The ``common divisor'' and \(m\) non-zero conditions are easy
-\item The conditions of non-zero for \(\gamma\) and \(\delta\) have to be kept
+\item The  \(m\) non-zero and common divisor conditions are easy
 \end{itemize}
 \end{frame}
 \begin{frame}
@@ -218,13 +219,347 @@ and variables is defined
 \item \(1 / (\sin 1 / (\cos 1 + \cos 1))\)
 \item Unknown expressions are \(\sin 1\), \(\cos 1\)
 \item the ``field'' formula \(e\) is \(1 / (X_1 / (X_2 + X_2)\)
-\item {\tt Fnorm}~\(e\) is \((X_2 + X_2) / X_1\) (with conditions)
-\item {\tt norm} \((X_2 + X_2)\) is \(2 X_2\)
+\item {\tt FEeval}~\([\sin 1; \cos 1]\)~(\(1 / (X_1 / (X_2 + X_2))\)) is
+ \(1 / (\sin 1 / (\cos 1 + \cos 1))\)
+\item \(r =\) {\tt Fnorm}~\(e\) is \((X_2 + X_2) / X_1\) (with conditions)
+\item \({\tt norm}~({\tt num}~r) =\) {\tt norm} \((X_2 + X_2)\) is \(2 X_2\)
 \item \({\tt P}_\phi~[\sin 1;\cos 1]~(2 X_2)\) is \(2 \cos 1\)
+\item Two different types of polynomials need {\tt FEeval} and {\tt P\(_\phi\)}
 \end{itemize}
 \end{frame}
 \begin{frame}
-\frametitle{}
+\frametitle{The external program to compute greatest common divisors}
+\begin{itemize}
+\item Expressions with addition, multiplication, integers, and variables
+\item Takes as input two polynomials \(P_n\) and \(P_d\)
+\item Produces a non-zero integer \(m\) and three polynomials \(\nu\), \(\delta\), \(\gamma\)
+\begin{itemize}
+\item \(m \times P_n = \nu \times \gamma\)\qquad \(m \times P_\delta = \delta \times \gamma\)
+\end{itemize}
+\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{Elpi as the go-between}
+\begin{itemize}
+\item Elpi is a prolog-like language
+\item Term manipulation
+\item Twist: foreign function interface
+\end{itemize}
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{The Polynomial type in OCaml}
+\begin{verbatim}
+type poly = 
+  Const of int
+| Var of int
+| Add of poly * poly
+| Mul of poly * poly
+\end{verbatim}
+\end{frame}
+\begin{frame}
+\frametitle{Interface declaration}
+\begin{itemize}
+\item OCaml code that declares a type in Elpi and conversions to an OCaml type
+\begin{itemize}
+\item Type {\tt polyT} and constructors {\tt pcst}, {\tt var}, {\tt add}, {\tt mul}
+\end{itemize}
+\item With a similar {\tt poly\_} value to use in OCaml
+\begin{itemize}
+\item To use in other interface declarations
+\end{itemize}
+\end{itemize}
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{Full declaration for {\tt polyT}}
+\begin{itemize}
+\item Twenty lines, including some documentation
+\item using {\tt rat\_}
+\end{itemize}
+\begin{tiny}
+\begin{verbatim}
+let poly_ = AlgebraicData.declare {
+  ty = TyName "polyT";
+  doc = "A type of ring expressions, simply with numeric constants," ^
+        " variables, addition, and multiplication";
+  pp = pp_poly;
+  constructors = [
+    K("pcst","constant polynomial", A(BuiltInData.int, N),
+      B (fun n -> Const n),
+      M (fun ~ok ~ko t -> match t with Const r -> ok r | _ -> ko ()));
+    K("var","indexed variable",A (BuiltInData.int, N),
+      B (fun n -> Var n),
+      M (fun ~ok ~ko t -> match t with Var n -> ok n | _ -> ko ()));
+    K("add","binary addition",S(S(N)),
+      B (fun x y -> Add (x, y)),
+      M (fun ~ok ~ko t -> match t with Add (x,y) -> ok x y | _ -> ko ()));
+    K("mul","binary multiplication",S(S(N)),
+      B (fun x y -> Mul (x, y)),
+      M (fun ~ok ~ko t -> match t with Mul (x,y) -> ok x y | _ -> ko ()));
+      ]
+} |> (!<)
+\end{verbatim}
+\end{tiny}
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{Header and first constructor}
+\begin{small}
+\begin{verbatim}
+let poly_ = AlgebraicData.declare {
+  ty = TyName "polyT";
+  doc = "..";
+  pp = pp_poly;
+  constructors = [
+    K("pcst","constant polynomial", A(BuiltInData.int, N),
+      B (fun n -> Const n),
+      M (fun ~ok ~ko t -> 
+             match t with Const r -> ok r | _ -> ko ()));
+\end{verbatim}
+\end{small}
+\begin{itemize}
+\item Declares an Elpi type with name {\tt polyT} and constructor {\tt pcst}
+\item {\tt  A(BuiltInData.int, N)} is a type description
+\item {\tt B}, {\tt M} give ``to OCaml'' and ``from OCaml'' conversions
+\item The value {\tt poly\_} can be used in other interfaces
+\end{itemize}
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{Constructor description for addition}
+\begin{verbatim}
+    K("add","binary addition", S(S(N)),
+      B (fun x y -> Add (x, y)),
+      M (fun ~ok ~ko t -> 
+          match t with 
+            Add (x,y) -> ok x y
+          | _ -> ko ()));
+\end{verbatim}
+\begin{itemize}
+\item {\tt S} (for {\em self}) instead of {\tt A} in type description
+\item Matching function makes use of {\tt ko} when matching fails
+\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{Encoding and decoding}
+\begin{itemize}
+\item Rocq has two datatypes to represent polynomials
+\begin{itemize}
+\item {\tt PExpr} and {\tt Pol}
+\item With a function to convert {\tt PExpr} to {\tt Pol} ({\tt norm})
+\end{itemize}
+\item Elpi has the datatype {\tt polyT}
+\item We add a conversion function from {\tt Pol} to {\tt polyT}
+\begin{itemize}
+\item Complex: {\tt Pol} is a sparse Horner form
+\end{itemize}
+\item And a conversion function from {\tt PolyT} to {\tt PExpr}
+\begin{itemize}
+\item Easy: {\tt PExpr} is a direct mirror of {\tt polyT}
+\end{itemize}
+\end{itemize}
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{decoding to {\tt PExpr} and {\tt Pol}}
+\begin{small}
+\begin{verbatim}
+func pe_decode_naive polyT -> term.
+pe_decode_naive (pcst Num) {{@PEc Z lp:Num1 }} :- !,
+  z_decode Num Num1.
+pe_decode_naive (var Y) {{@PEX Z lp:X}} :- !,
+ pos_decode Y X.
+pe_decode_naive (add P1 P2) {{@PEadd Z lp:X1 lp:X2}} :- !,
+  pe_decode_naive P1 X1, pe_decode_naive P2 X2.
+pe_decode_naive (mul P1 P2) {{@PEmul Z lp:X1 lp:X2}} :- !,
+  pe_decode_naive P1 X1, pe_decode_naive P2 X2.
+
+func pol_decode polyT -> term.
+pol_decode PolyT_a Result:-
+  pe_decode_naive PolyT_a Pe_a,
+  coq.reduction.vm.norm {{norm lp:Pe_a}} {{Pol Z}} Result.
+\end{verbatim}
+\end{small}
+\begin{itemize}
+\item Example of Elpi execution calling CiC execution
+\end{itemize}
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{External function}
+\begin{itemize}
+\item OCaml code provides\\
+\begin{verbatim}
+   Gcd.poly_gcd :
+        poly -> poly -> (int * poly * poly * poly)
+\end{verbatim}
+\end{itemize}
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{Declaring {poly\_gcd} as an Elpi predicate}
+\begin{verbatim}
+let gcd_poly_api =
+    let ty = poly_ in
+    BuiltIn.MLCode(Pred ("gcd_poly",
+    In(ty, "p1", In(ty, "p2",
+    Out(API.BuiltInData.int, "factor",
+    Out(ty, "gcd",Out (ty, "p1_div",Out (ty, "p2_div",
+    Easy("documentation"))))))),
+    fun a b _ _ _ _ ~depth ->
+      (match Gcd.poly_gcd a b with
+        (v1, v2, v3, v4) -> !: v1 +! v2 +! v3 +! v4)),
+    DocAbove)
+\end{verbatim}
+\begin{itemize}
+\item Declares a predicate called {\tt gcd\_poly}
+\item Use of {\tt poly\_} to describe the type of arguments
+\item Six arguments are passed, with input/output specification
+\end{itemize}
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{Wrapping up the Foreign function interface}
+\begin{verbatim}
+let builtins =
+  API.BuiltIn.declare ~file_name:"ext.elpi" [
+  MLData poly_;
+  gcd_poly_api;
+]
+\end{verbatim}
+\begin{itemize}
+\item This is in a file that is compiled and loaded as a plugin
+\item {\tt ext.elpi} contains type declarations for Elpi
+\item {\tt dune} infrastructure is added to process these files
+\end{itemize}
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{Generated Elpi declarations}
+\begin{verbatim}
+kind polyT type.
+
+external symbol pcst : int -> polyT = "1".  %doc
+external symbol var : int -> polyT = "1".  %doc
+external symbol add : polyT -> polyT -> polyT = "1". %doc
+external symbol mul : polyT -> polyT -> polyT = "1". %doc
+
+external func gcd_poly polyT, polyT -> 
+  int,polyT, polyT, polyT
+\end{verbatim}
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{Elpi code with foreign function call}
+\begin{verbatim}
+func gcd_and_factors term, term -> term, term, term, term.
+gcd_and_factors N D Ne De Gcd' MZ :-
+  pol_encode N Nx, pol_encode D Dx,
+  gcd_poly Nx Dx M G' N' D',
+  pol_decode N' Ne, pol_decode D' De,
+  pol_decode G' Gcd', z_decode M MZ.
+\end{verbatim}
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{Availability as a tactic}
+\begin{verbatim}
+lpi Tactic factorize_by_gcd.
+Elpi Accumulate Plugin "ext.elpi".
+Elpi Accumulate File encode.
+Elpi Accumulate lp:{{
+
+solve (goal _ _ _ _ [trm N, trm D] as G) GL :-
+  gcd_and_factors N D N' D' Gcd LCM,
+  (refine {{(lp:LCM, (lp:N', (lp:D', lp:Gcd)))}} G GL).
+}}.
+\end{verbatim}
+\begin{itemize}
+\item A tactic that returns a value (a quadruplet)
+\end{itemize}
+\end{frame}
+\begin{frame}[fragile] %TODO: remove fragile if useless
+\frametitle{Including in {\tt Field} implementation}
+\begin{itemize}
+\item {\tt field} and {\tt ring} have {\tt OCaml} and {\tt stdlib} parts
+\item Adding a new theorem should be handled by Rocq-core
+\begin{itemize}
+\item Not in this version
+\end{itemize}
+\item Workaround to stay in {\tt stdlib}: parameterizable tactic
+\begin{itemize}
+\item Perform the same pre and post-processing as before
+\item parameter 1: the normalization function
+\item parameter 2: the justification theorem
+\item parameter 3: a finishing tactic
+\end{itemize}
+\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{What to reuse}
+\begin{itemize}
+\item {\tt field\_simplify} pre and post-processes expressions
+\item Computes all unknowns and abstracted formulas
+\item Applies the pre-defined lemma to each expression
+\begin{itemize}
+\item We need to provide the lemma ourselves
+\end{itemize}
+\item Obtains an equality and rewrite with it
+\begin{itemize}
+\item We collect the numerator and denominator
+\item Perform our computation, rewrite with new results
+\end{itemize}
+\item Keep the infrastructure by modifying stdlib
+\begin{itemize}
+\item Modified versions of {\tt Field\_simplify\_gcd}, {\tt Field\_norm\_gen},
+{\tt ReflexiveRewriteTactic}, and {\tt ApplyLemmaThenAndCont} tactics
+\end{itemize}
+\end{itemize}
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{Collecting the results and finishing}
+\begin{verbatim}
+Ltac fraction_finisher Term FV D N :=
+let D1 := eval vm_compute in D in let N1 := ... in
+let res :=
+  constr:(ltac:(elpi factorize_by_gcd
+            ltac_term:(N1) ltac_term:(D1))) in
+let F := eval cbv [fst] in (fst res) in let N2 ... in
+assert (H := H0 F N2 D2 Gcd);
+lazymatch type of H with
+| _ -> _ -> _ -> _ -> ?t = ?r =>
+change t with Term in H; try rewrite H; clear H0 H;
+  [reduce_Pphi_pow | easy| easy | easy| reduce_PCond]
+end.
+\end{verbatim}
+\end{frame}
+\begin{frame}
+\frametitle{Lessons learned}
+\begin{itemize}
+\item Navigating interfaces between 4 languages
+\begin{itemize}
+\item Calculus of Constructions ({\tt CiC}, {\tt Ltac}, {\tt Elpi}, {\tt OCaml}
+\item {\tt Ltac} at the center
+\end{itemize}
+\item Translation of {\tt CiC} to {\tt OCaml} possible directly but heavy
+\item Elpi provides a concise approach
+\begin{itemize}
+\item Easy access to typechecking and conversion
+\end{itemize}
+\item {\tt ring}/{\tt field} infrastructure written in {\tt Ltac}
+\begin{itemize}
+\item Hard to read and evolve
+\end{itemize}
+\item Bugs are very hard to track
+\begin{itemize}
+\item Recent bug: a 0 instead of a 1 inside the OCaml code
+\end{itemize}
+\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{Future work}
+\begin{itemize}
+\item {\tt deep\_field}
+\begin{itemize}
+\item Careful staging of sub-expressions
+\item Avoid redundancy in generated conditions
+\end{itemize}
+\item Handling exponents in both {\tt deep\_ring} and {\tt deep\_field}
+\begin{itemize}
+\item commutative group isomorphism
+\end{itemize}
+\item {\tt poly\_gcd} needs improvements: use of unbound integers
+\end{itemize}
 \end{frame}
 \end{document}
 
