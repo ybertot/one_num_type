@@ -147,7 +147,7 @@ replace_rec_call_by_seq_nth VTy Def L F N V A B :-
     real_to_int K Kn,
     In is L - Kn,
     int_to_nat In I,
-    B = app[{{@nth}}, VTy, I, V, Def|Args]
+    B = app[{{@List.nth}}, VTy, I, V, Def|Args]
   ].
 
 pred make_one_spec i:term, i:term, o:pair int term.

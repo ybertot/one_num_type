@@ -1,4 +1,7 @@
--R . OneNum
+-R theories OneNum
+-R _build/default/theories OneNum
+-I gcd_dir
+
 R_subsets.v
 rec_def.v
 R_compute.v
@@ -8,3 +11,11 @@ intro_trigo.v
 ring_simplify_bank.v
 field_simplify_bank.v
 automation.v
+
+META.simple_gcd
+gcd_dir/gcd.ml
+gcd_dir/gcdg.mlg
+gcd_dir/gcd.mli
+gcd_dir/gcd_wrapper.ml
+gcd_dir/gcd_plugin.mlpack
+

@@ -5,6 +5,8 @@ Set Warnings "notation-overridden".
 From elpi Require Import elpi.
 Open Scope R_scope.
 
+Compute 12.
+
 Definition Zsqr (x : Z) := (x * x)%Z.
 
 Lemma Zsqr_prf x : Rsqr (IZR x) = IZR (Zsqr x).
@@ -38,6 +40,7 @@ Recursive (def fib such that
 Print fib.
 
 Elpi mirror_recursive_definition fib.
+R_compute (fib 42).
 Check fib_Z_prf.
 Print fib_Z_mirror.
 R_compute (fib 7 - fib 2).

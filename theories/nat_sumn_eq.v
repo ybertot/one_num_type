@@ -1,4 +1,4 @@
-Require Import Arith Lia.
+From Stdlib Require Import Arith Lia.
 
 (* This file is rather a counter-example showing the difficulty of working
   with natural numbers and euclidean division. *)
@@ -21,11 +21,11 @@ destruct p as [ | p'].
   easy.
 replace (S p' - 1) with p' by lia.
 replace (S (S p') - 1) with (S p') by lia.
-Search (_ * _ = _ * _).
+(* Search (_ * _ = _ * _). *)
 rewrite <- (Nat.mul_cancel_r _ _ 2); auto.
-Search ((_ + _) * _).
+(* Search ((_ + _) * _). *)
 rewrite Nat.mul_add_distr_r.
-Search (_ * (_ / _)).
+(* Search (_ * (_ / _)). *)
 (* At this point, we wish to get rig of division by 2.  We know that
   S k * k is even, because at least one of the two factors is even. *)
 assert (even_prod : forall k, S k * k / 2 * 2 = S k * k).

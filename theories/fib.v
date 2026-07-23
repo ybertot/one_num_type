@@ -1,4 +1,4 @@
-Require Import List Reals.
+From Stdlib Require Import List Reals.
 Open Scope R_scope.
 
 (* Experimenting with Rnat as a subset of R, equiped with a recursive
@@ -28,10 +28,10 @@ Definition fib' :=
 Lemma RnatZ x: Rnat (IZR (Z.pos x)).
 Proof.
 change (Z.pos x) with (Z.abs (Z.pos x)).
-rewrite <-Zabs2Nat.id_abs.
+rewrite <- Znat.Zabs2Nat.id_abs.
 induction (Z.abs_nat (Z.pos x)).
   exact Rnat0.
-rewrite Nat2Z.inj_succ, succ_IZR.
+rewrite Znat.Nat2Z.inj_succ, succ_IZR.
 now apply Rnat_succ, IHn.
 Qed.
 

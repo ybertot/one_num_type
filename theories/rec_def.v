@@ -1,8 +1,8 @@
 From elpi Require Import elpi.
 From Stdlib Require Import List Reals ClassicalEpsilon Lia Lra.
 From Stdlib Require Import Wellfounded.
-From OneNum.srcElpi Extra Dependency "tools.elpi" as tools.
-From OneNum.srcElpi Extra Dependency "recursive.elpi" as recursive.
+From srcElpi Extra Dependency "tools.elpi" as tools.
+From srcElpi Extra Dependency "recursive.elpi" as recursive.
 Set Warnings "-notation-overridden".
 Require Import R_subsets.
 Set Warnings "+notation-overridden".

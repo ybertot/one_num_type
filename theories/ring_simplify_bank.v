@@ -1,4 +1,4 @@
-Require Import Ring. 
+From Stdlib Require Import Ring. 
 
 Ltac r0 :=ring_simplify.
 

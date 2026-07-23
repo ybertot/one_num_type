@@ -1,7 +1,7 @@
-Require Import List FunctionalExtensionality Lra.
+From Stdlib Require Import List FunctionalExtensionality Lra.
 From elpi Require Import elpi.
 
-Require Import Reals.
+From Stdlib Require Import Reals.
 From OneNum Require Import R_subsets.
 
 Open Scope R_scope.
@@ -49,7 +49,6 @@ Lemma eq_trans_rev {A : Type} (x y z : A) :
 Proof. exact (fun h1 h2 => @eq_trans A x y z h2 h1). Qed.
 
 Elpi Tactic replace.
-
 
 Elpi Accumulate lp:{{
 
@@ -308,9 +307,7 @@ argument->string (open-trm N F) S :-
 solve (goal _ _ {{lp:X = lp:Y }} _ [Arg1, Arg2] as G) GL1 :-
   mk-equality (pr Arg1 Arg2) Y [] Y2 P1 _,
   if (Y == Y2) (
-    coq.say "attempting left hand side",
     mk-equality (pr Arg1 Arg2) X [] X2 P _,
-    coq.say "equality succeeded",
     if (X == X2) (
       coq.error "tactic repl: the pattern" {argument->string Arg1}
         "does not occur in the goal")
@@ -324,11 +321,6 @@ solve (goal _ _ {{lp:X = lp:Y }} _ [Arg1, Arg2] as G) GL1 :-
     (coq.ltac.open (coq.ltac.call "lazy_beta" []) Ng2 [GL_aux],
      GL1 = [Ng, GL_aux | Extras])
     (GL1 = GL).
-
-solve (goal _ _ _ _ [Arg1, Arg2]) _ :-
-  coq.say Arg1,
-  coq.say Arg2,
-  fail.
 
 solve (goal _ _ _ _ [] as _G) _GL :-
   coq.say "failed".

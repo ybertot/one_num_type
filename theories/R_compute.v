@@ -2,10 +2,10 @@
 
 From elpi Require Import elpi.
 From Stdlib Require Import List Reals ClassicalEpsilon Lia Lra.
-From OneNum.srcElpi Extra Dependency "translate_prf.elpi" as translate_prf.
-From OneNum.srcElpi Extra Dependency "compute.elpi" as compute.
-From OneNum.srcElpi Extra Dependency "gen.elpi" as gen.
-From OneNum.srcElpi Extra Dependency "tools.elpi" as tools.
+From srcElpi Extra Dependency "translate_prf.elpi" as translate_prf.
+From srcElpi Extra Dependency "compute.elpi" as compute.
+From srcElpi Extra Dependency "gen.elpi" as gen.
+From srcElpi Extra Dependency "tools.elpi" as tools.
 #[local]
 Set Warnings "-notation-overridden".
 
