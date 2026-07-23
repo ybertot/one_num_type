@@ -1,4 +1,5 @@
--R . OneNum
+-R theories OneNum
+-R _build/default/theories OneNum
 -I gcd_dir
 
 R_subsets.v

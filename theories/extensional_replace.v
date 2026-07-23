@@ -1,7 +1,7 @@
-Require Import List FunctionalExtensionality Lra.
+From Stdlib Require Import List FunctionalExtensionality Lra.
 From elpi Require Import elpi.
 
-Require Import Reals.
+From Stdlib Require Import Reals.
 From OneNum Require Import R_subsets.
 
 Open Scope R_scope.
@@ -50,7 +50,6 @@ Proof. exact (fun h1 h2 => @eq_trans A x y z h2 h1). Qed.
 
 Elpi Tactic replace.
 
-
 Elpi Accumulate lp:{{
 
 pred preserve_bound_variables i:term o:term.
@@ -58,18 +57,21 @@ pred preserve_bound_variables i:term o:term.
 preserve_bound_variables I O :-
   (((pi N T F N1 T1 F1 \
     copy (fun N T F) (fun N1 T1 F1) :-
+    !,
     copy T T1,
     fresh-name N T N1,
     (@pi-decl N1 T1 x\
       copy (F x) (F1 x))),
     (pi B B1 N T F N1 T1 F1 \
       copy (let N T B F)(let N1 T1 B1 F1) :-
+        !,
         copy T T1,
         copy B B1,
         fresh-name N T N1,
         (@pi-decl N1 T1 x\ copy (F x) (F1 x))),
     (pi N T F N1 T1 F1 \
       copy (prod N T F) (prod N1 T1 F1) :-
+        !,
         copy T T1,
         fresh-name N T N1,
         (@pi-decl N1 T1 x\
@@ -117,7 +119,7 @@ mk-app-prf [F1, A | Args1] [F2, B | Args2] [Pf, Pa | Ps] P :-
   mk-app-prf [app [F1, A] | Args1] [app [F2, B] | Args2]
     [{{app_prf lp:F1 lp:F2 lp:A lp:B lp:Pf lp:Pa}} | Ps] P.
 
-pred fold-map2 i:list term i:A i:(term -> A -> term -> term -> A -> prop)
+pred fold-map2 i:list term i:A i:(pred term, A -> term, term, A)
   o:list term o:list term o:A.
 
 fold-map2 [] A _ [] [] A.
@@ -157,7 +159,7 @@ instantiate_pair N T C (pr A1 A2) (pr B1 B2) :-
   std.assert! (instantiate N T C A1 B1) "first instantiate failed",
   instantiate N T C A2 B2].
 
-pred mk-equality i:(pair argument argument), i:term i:A, o:term, o:term, o:A.
+pred mk-equality i:(pair argument argument), i:term, i:A, o:term, o:term, o:A.
 
 mk-equality (pr (open-trm 0 S) (open-trm 0 T)) S A T P A :- !,
   TY = {{lp:S = lp:T}},
@@ -305,9 +307,7 @@ argument->string (open-trm N F) S :-
 solve (goal _ _ {{lp:X = lp:Y }} _ [Arg1, Arg2] as G) GL1 :-
   mk-equality (pr Arg1 Arg2) Y [] Y2 P1 _,
   if (Y == Y2) (
-    coq.say "attempting left hand side",
     mk-equality (pr Arg1 Arg2) X [] X2 P _,
-    coq.say "equality succeeded",
     if (X == X2) (
       coq.error "tactic repl: the pattern" {argument->string Arg1}
         "does not occur in the goal")
@@ -322,11 +322,6 @@ solve (goal _ _ {{lp:X = lp:Y }} _ [Arg1, Arg2] as G) GL1 :-
      GL1 = [Ng, GL_aux | Extras])
     (GL1 = GL).
 
-solve (goal _ _ _ _ [Arg1, Arg2]) _ :-
-  coq.say Arg1,
-  coq.say Arg2,
-  fail.
-
 solve (goal _ _ _ _ [] as _G) _GL :-
   coq.say "failed".
 }}.
@@ -336,10 +331,14 @@ Tactic Notation (at level 0) "repl" uconstr(x) uconstr(y) :=
 
 Section demo_zone.
 
+Set Typeclasses Strict Resolution.
+
 Lemma test1 :   \sum_(0 <= i < 10) (i + 1) =
   \sum_(0 <= i < 10) (sqrt (i ^ 2) + 1).
 Proof.
 repl (sqrt (i ^ 2)) i.
+  3: shelve.
+  Unshelve.
   easy.
 rewrite sqrt_pow_2.
     easy.
@@ -350,14 +349,16 @@ Qed.
 Lemma test2 : \sum_(0 <= i < 10) (sqrt (i ^ 2) + 1) = \sum_(0 <= i < 10) (1 + i).
 Proof.
 repl (sqrt (i ^ 2)) (i).
+    3: shelve.  Unshelve.
     repl (1 + i) (i + 1).
+      3: shelve. Unshelve.
+    Show Proof.
         easy.
       ring.
-    solve_Rnat.
-  rewrite sqrt_pow_2.
-    easy.
-  lra.
-solve_Rnat.
+    rewrite sqrt_pow_2.
+      easy.
+    lra.
+all: solve_Rnat.
 Qed.
 
 Lemma test_as_before :

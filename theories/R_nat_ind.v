@@ -1,4 +1,4 @@
-Require Import Reals ClassicalEpsilon Lia Lra List.
+From Stdlib Require Import Reals ClassicalEpsilon Lia Lra List.
 From Coquelicot Require Import Coquelicot.
 Import ListNotations.
 
@@ -13,9 +13,9 @@ Proof.
 split; intros [w pw].
   exists (Z.of_nat w).
   split; [now rewrite pw; apply INR_IZR_INZ | ].
-  apply Zle_0_nat.
+  apply Zorder.Zle_0_nat.
 exists (Z.to_nat w).
-rewrite INR_IZR_INZ, Z2Nat.id; tauto.
+rewrite INR_IZR_INZ, Znat.Z2Nat.id; tauto.
 Qed.
 
 Lemma Rnat_IZR z : (0 <= z)%Z -> Rnat (IZR z).
@@ -232,7 +232,7 @@ assert (tmp2 := epsilon_spec (inhabits nil) _ exv1 m' mnat).
 unfold Rseq; rewrite tmp, tmp2; simpl.
 rewrite Rplus_0_r, <- seq_shift, map_map.
 apply f_equal; apply map_ext.
-intros a; rewrite Nat2Z.inj_succ, succ_IZR; ring.
+intros a; rewrite Znat.Nat2Z.inj_succ, succ_IZR; ring.
 Qed.
 
 Lemma Rseq_S' (n m : R) : Rnat (m - 1) ->
@@ -267,7 +267,7 @@ Lemma INR_IZN x : (0 <= x)%Z -> IZR x = INR (Z.to_nat x).
 Proof.
 intros xge0.
 destruct (IZN _ xge0) as [n Pn].
-now rewrite Pn, <- INR_IZR_INZ, Nat2Z.id.
+now rewrite Pn, <- INR_IZR_INZ, Znat.Nat2Z.id.
 Qed.
 
 Lemma expand_Rseq_thm (x : R) (y : nat) :
@@ -1252,3 +1252,5 @@ Qed.
 (* It also shows that computation about immediate natural number values
   needs to be made more fluid: see all the patterns
      replace ... with ... by ring  *)
+
+End Taylor_Lagrange.
