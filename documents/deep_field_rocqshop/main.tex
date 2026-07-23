@@ -267,13 +267,13 @@ type poly =
 \begin{itemize}
 \item To use in other interface declarations
 \end{itemize}
+\item Elpi declaration in a generated file
 \end{itemize}
 \end{frame}
 \begin{frame}[fragile]
 \frametitle{Full declaration for {\tt polyT}}
 \begin{itemize}
 \item Twenty lines, including some documentation
-\item using {\tt rat\_}
 \end{itemize}
 \begin{tiny}
 \begin{verbatim}
@@ -352,7 +352,7 @@ let poly_ = AlgebraicData.declare {
 \end{itemize}
 \item And a conversion function from {\tt PolyT} to {\tt PExpr}
 \begin{itemize}
-\item Easy: {\tt PExpr} is a direct mirror of {\tt polyT}
+\item Easy: {\tt PExpr} contains a direct mirror of {\tt polyT}
 \end{itemize}
 \end{itemize}
 \end{frame}
@@ -406,7 +406,7 @@ let gcd_poly_api =
     DocAbove)
 \end{verbatim}
 \begin{itemize}
-\item Declares a predicate called {\tt gcd\_poly}
+\item Declares a predicate called {\tt gcd\_poly} (3rd line)
 \item Use of {\tt poly\_} to describe the type of arguments
 \item Six arguments are passed, with input/output specification
 \end{itemize}
@@ -450,6 +450,10 @@ gcd_and_factors N D Ne De Gcd' MZ :-
   pol_decode N' Ne, pol_decode D' De,
   pol_decode G' Gcd', z_decode M MZ.
 \end{verbatim}
+\begin{itemize}
+\item Type {\tt term} from the point of view of Elpi is for CiC terms
+\item from the point of view of CiC the types should be {\tt Pol Z}, {\tt Pol Z}, {\tt Z}, {\tt Pol Z}, {\tt Pol Z}, {\tt Pol Z}
+\end{itemize}
 \end{frame}
 \begin{frame}[fragile]
 \frametitle{Availability as a tactic}
@@ -465,7 +469,7 @@ solve (goal _ _ _ _ [trm N, trm D] as G) GL :-
 }}.
 \end{verbatim}
 \begin{itemize}
-\item A tactic that returns a value (a quadruplet)
+\item A tactic that returns a value in CiC (a quadruplet)
 \end{itemize}
 \end{frame}
 \begin{frame}[fragile] %TODO: remove fragile if useless
@@ -508,20 +512,22 @@ solve (goal _ _ _ _ [trm N, trm D] as G) GL :-
 \end{frame}
 \begin{frame}[fragile]
 \frametitle{Collecting the results and finishing}
+\begin{small}
 \begin{verbatim}
-Ltac fraction_finisher Term FV D N :=
-let D1 := eval vm_compute in D in let N1 := ... in
+Ltac fraction_finisher Term hyp D N :=
+let hyp2 := fresh "rew_l2" in
 let res :=
   constr:(ltac:(elpi factorize_by_gcd
-            ltac_term:(N1) ltac_term:(D1))) in
-let F := eval cbv [fst] in (fst res) in let N2 ... in
-assert (H := H0 F N2 D2 Gcd);
-lazymatch type of H with
+            ltac_term:(N) ltac_term:(D))) in
+let F := eval cbv [fst] in (fst res) in let N2 := ... in
+assert (hyp2 := hyp F N2 D2 Gcd);
+lazymatch type of hyp2 with
 | _ -> _ -> _ -> _ -> ?t = ?r =>
-change t with Term in H; try rewrite H; clear H0 H;
-  [reduce_Pphi_pow | easy| easy | easy| reduce_PCond]
+change t with Term in hyp2; try rewrite hyp2; clear hyp hyp2;
+  [reduce_Pphi_pow | easy | easy | easy | reduce_PCond]
 end.
 \end{verbatim}
+\end{small}
 \end{frame}
 \begin{frame}
 \frametitle{Lessons learned}
@@ -534,7 +540,7 @@ end.
 \item Translation of {\tt CiC} to {\tt OCaml} possible directly but heavy
 \item Elpi provides a concise approach
 \begin{itemize}
-\item Easy access to typechecking and conversion
+\item Easy access to CiC terms, typechecking, and conversion
 \end{itemize}
 \item {\tt ring}/{\tt field} infrastructure written in {\tt Ltac}
 \begin{itemize}
@@ -554,11 +560,11 @@ end.
 \item Careful staging of sub-expressions
 \item Avoid redundancy in generated conditions
 \end{itemize}
-\item Handling exponents in both {\tt deep\_ring} and {\tt deep\_field}
+\item Handle exponents in both {\tt deep\_ring} and {\tt deep\_field}
 \begin{itemize}
 \item commutative group isomorphism
 \end{itemize}
-\item {\tt poly\_gcd} needs improvements: use of unbound integers
+\item Improve {\tt poly\_gcd}: use of unbound integers
 \end{itemize}
 \end{frame}
 \end{document}
