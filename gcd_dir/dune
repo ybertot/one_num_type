@@ -1,0 +1,5 @@
+(library
+ (name gcd_plugin)
+ (public_name OneNum.gcd_plugin)
+ (preprocess (pps ppx_deriving.std))
+ (libraries rocq-runtime.plugins.ltac rocq-runtime.vernac rocq-elpi.elpi elpi))

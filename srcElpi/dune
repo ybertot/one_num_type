@@ -1,0 +1,13 @@
+(rocq.theory
+ (name srcElpi)
+ (theories elpi_elpi elpi Stdlib)
+ (package OneNum))
+
+(rule
+ (target dummy.v)
+ (deps
+  (glob_files *.elpi))
+ (action
+  (with-stdout-to %{target}
+   (progn
+     (run rocq_elpi_shafile %{deps})))))
